@@ -6,12 +6,12 @@ const Navbar = () => {
   const isMobile = useIsMobile();
 
   return (
-    <nav className="bg-background border-b border-border/40 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 w-full">
+    <nav className="bg-background/80 border-b border-border/40 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 w-full">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex">
             <Link to="/" className="flex items-center">
-              <span className="text-2xl font-bold bg-gradient-to-r from-primary to-primary-light bg-clip-text text-transparent">
+              <span className="text-2xl font-bold text-black">
                 PalmCacia
               </span>
             </Link>

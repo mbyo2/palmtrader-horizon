@@ -24,18 +24,18 @@ const StockList = () => {
         placeholder="Search stocks..."
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        className="max-w-md"
+        className="max-w-md bg-background/50"
       />
       <div className="space-y-2">
         {filteredStocks.map((stock) => (
-          <Card key={stock.symbol} className="p-4 hover:shadow-lg transition-shadow">
+          <Card key={stock.symbol} className="card-gradient p-4 hover:shadow-lg transition-all duration-200">
             <div className="flex justify-between items-center">
               <div>
-                <h3 className="font-semibold">{stock.symbol}</h3>
-                <p className="text-sm text-gray-600">{stock.name}</p>
+                <h3 className="font-semibold text-foreground">{stock.symbol}</h3>
+                <p className="text-sm text-foreground/70">{stock.name}</p>
               </div>
               <div className="text-right">
-                <p className="font-bold">${stock.price}</p>
+                <p className="font-bold text-foreground">${stock.price}</p>
                 <span className={`text-sm ${stock.change.startsWith("+") ? "text-green-500" : "text-red-500"}`}>
                   {stock.change}
                 </span>

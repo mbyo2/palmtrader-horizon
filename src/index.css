@@ -54,6 +54,15 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground font-sans antialiased;
+    @apply bg-gradient-to-br from-background via-background to-secondary/20 min-h-screen font-sans antialiased;
+    background-attachment: fixed;
   }
+}
+
+.gradient-text {
+  @apply bg-gradient-to-r from-primary via-primary-light to-secondary bg-clip-text text-transparent;
+}
+
+.card-gradient {
+  @apply bg-gradient-to-br from-background/80 to-secondary/5 backdrop-blur-sm border border-border/50;
 }
