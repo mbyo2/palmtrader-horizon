@@ -25,12 +25,16 @@ export default {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         primary: {
-          DEFAULT: "#4A148C",
+          DEFAULT: "#7c2cf3",
           foreground: "#ffffff",
+          light: "#8354f4",
+          dark: "#3c1c8c",
         },
         secondary: {
-          DEFAULT: "#FFD700",
-          foreground: "#000000",
+          DEFAULT: "#6b549e",
+          foreground: "#ffffff",
+          light: "#bac59a",
+          dark: "#48356e",
         },
         destructive: {
           DEFAULT: "hsl(var(--destructive))",
@@ -54,7 +58,7 @@ export default {
         },
       },
       fontFamily: {
-        sans: ["Inter", "sans-serif"],
+        sans: ["Capsula", "sans-serif"],
       },
       borderRadius: {
         lg: "var(--radius)",
