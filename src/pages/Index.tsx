@@ -1,6 +1,8 @@
 import Navbar from "@/components/Navbar";
 import MarketOverview from "@/components/MarketOverview";
 import StockList from "@/components/StockList";
+import TradingView from "@/components/Trading/TradingView";
+import OrderHistory from "@/components/Trading/OrderHistory";
 
 const Index = () => {
   return (
@@ -10,9 +12,20 @@ const Index = () => {
         <h1 className="text-4xl font-bold mb-8 gradient-text">
           Market Overview
         </h1>
-        <MarketOverview />
-        <h2 className="text-2xl font-bold mb-4 gradient-text">Popular Stocks</h2>
-        <StockList />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          <MarketOverview />
+          <TradingView />
+        </div>
+        <div className="space-y-8">
+          <div>
+            <h2 className="text-2xl font-bold mb-4 gradient-text">Order History</h2>
+            <OrderHistory />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold mb-4 gradient-text">Popular Stocks</h2>
+            <StockList />
+          </div>
+        </div>
       </main>
     </div>
   );
