@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Stock {
   symbol: string;
@@ -18,28 +19,46 @@ const StockList = () => {
     { symbol: "ZSUG", name: "Zambia Sugar", price: "8.90", change: "+1.5%" },
   ]);
 
-  // Simulate real-time updates
   useEffect(() => {
-    const updateInterval = setInterval(() => {
-      setStocks(prevStocks => 
-        prevStocks.map(stock => {
-          // Generate a random price change between -1% and +1%
-          const changePercent = (Math.random() * 2 - 1) / 100;
-          const currentPrice = parseFloat(stock.price);
-          const newPrice = currentPrice * (1 + changePercent);
-          const priceChange = ((newPrice - currentPrice) / currentPrice) * 100;
+    // Subscribe to real-time updates
+    const channel = supabase
+      .channel('stock-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'market_data'
+        },
+        (payload) => {
+          console.log('Received real-time stock data:', payload)
           
-          return {
-            ...stock,
-            previousPrice: stock.price, // Store previous price for animation
-            price: newPrice.toFixed(2),
-            change: `${priceChange >= 0 ? '+' : ''}${priceChange.toFixed(1)}%`
-          };
-        })
-      );
-    }, 3000); // Update every 3 seconds
+          // Update the corresponding stock data
+          setStocks(prevStocks => 
+            prevStocks.map(stock => {
+              if (stock.symbol === payload.new.symbol) {
+                const newPrice = parseFloat(payload.new.price).toFixed(2);
+                const previousPrice = parseFloat(stock.price);
+                const priceChange = ((parseFloat(newPrice) - previousPrice) / previousPrice) * 100;
+                
+                return {
+                  ...stock,
+                  previousPrice: stock.price,
+                  price: newPrice,
+                  change: `${priceChange >= 0 ? '+' : ''}${priceChange.toFixed(1)}%`
+                };
+              }
+              return stock;
+            })
+          );
+        }
+      )
+      .subscribe();
 
-    return () => clearInterval(updateInterval);
+    // Cleanup subscription on unmount
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const filteredStocks = stocks.filter(

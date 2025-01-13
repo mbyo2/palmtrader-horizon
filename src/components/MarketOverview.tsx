@@ -1,5 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Market {
   name: string;
@@ -15,28 +16,53 @@ const MarketOverview = () => {
     { name: "JSE", value: "68,432.12", change: "+0.8%" },
   ]);
 
-  // Simulate real-time updates
   useEffect(() => {
-    const updateInterval = setInterval(() => {
-      setMarkets(prevMarkets => 
-        prevMarkets.map(market => {
-          // Generate a random price change between -0.5% and +0.5%
-          const changePercent = (Math.random() * 1 - 0.5) / 100;
-          const currentValue = parseFloat(market.value.replace(',', ''));
-          const newValue = currentValue * (1 + changePercent);
-          const valueChange = ((newValue - currentValue) / currentValue) * 100;
+    // Subscribe to real-time updates
+    const channel = supabase
+      .channel('market-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'market_data'
+        },
+        (payload) => {
+          console.log('Received real-time market data:', payload)
           
-          return {
-            ...market,
-            previousValue: market.value,
-            value: newValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-            change: `${valueChange >= 0 ? '+' : ''}${valueChange.toFixed(1)}%`
-          };
-        })
-      );
-    }, 5000); // Update every 5 seconds
+          // Update the corresponding market data
+          setMarkets(prevMarkets => 
+            prevMarkets.map(market => {
+              // Match the market symbol with the incoming data
+              if (market.name.includes(payload.new.symbol)) {
+                const newValue = parseFloat(payload.new.price).toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2
+                });
+                
+                // Calculate the change percentage
+                const previousValueNum = parseFloat(market.value.replace(',', ''));
+                const newValueNum = payload.new.price;
+                const changePercent = ((newValueNum - previousValueNum) / previousValueNum) * 100;
+                
+                return {
+                  ...market,
+                  previousValue: market.value,
+                  value: newValue,
+                  change: `${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(1)}%`
+                };
+              }
+              return market;
+            })
+          );
+        }
+      )
+      .subscribe();
 
-    return () => clearInterval(updateInterval);
+    // Cleanup subscription on unmount
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   return (

@@ -7,8 +7,9 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response(null, { headers: corsHeaders })
   }
 
   try {
@@ -20,15 +21,18 @@ serve(async (req) => {
     const body = await req.json()
     console.log('Received webhook data:', body)
 
+    // Finnhub sends data in the format { data: [{ s: symbol, p: price, t: timestamp, v: volume }] }
+    const marketData = body.data.map((item: any) => ({
+      symbol: item.s,
+      price: item.p,
+      timestamp: item.t,
+      type: 'trade'
+    }))
+
     // Store the market data in Supabase
     const { data, error } = await supabase
       .from('market_data')
-      .insert({
-        symbol: body.data?.s,
-        price: body.data?.p,
-        timestamp: body.data?.t,
-        type: body.type
-      })
+      .insert(marketData)
 
     if (error) throw error
 
