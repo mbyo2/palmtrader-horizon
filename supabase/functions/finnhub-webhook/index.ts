@@ -3,7 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-finnhub-secret',
 }
 
 serve(async (req) => {
@@ -13,6 +13,21 @@ serve(async (req) => {
   }
 
   try {
+    // Verify Finnhub webhook secret
+    const finnhubSecret = req.headers.get('x-finnhub-secret');
+    const expectedSecret = Deno.env.get('FINNHUB_WEBHOOK_SECRET');
+
+    if (!finnhubSecret || finnhubSecret !== expectedSecret) {
+      console.error('Invalid webhook secret');
+      return new Response(
+        JSON.stringify({ error: 'Invalid webhook secret' }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 401 
+        }
+      );
+    }
+
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -34,10 +49,15 @@ serve(async (req) => {
       .from('market_data')
       .insert(marketData)
 
-    if (error) throw error
+    if (error) {
+      console.error('Error inserting market data:', error)
+      throw error
+    }
+
+    console.log('Successfully processed webhook data:', data)
 
     return new Response(
-      JSON.stringify({ message: 'Webhook processed successfully' }),
+      JSON.stringify({ message: 'Webhook processed successfully', data }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
