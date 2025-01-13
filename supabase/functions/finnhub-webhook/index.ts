@@ -7,8 +7,13 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
+  console.log('Received webhook request')
+  console.log('Method:', req.method)
+  console.log('Headers:', Object.fromEntries(req.headers.entries()))
+
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
+    console.log('Handling CORS preflight request')
     return new Response(null, { headers: corsHeaders })
   }
 
@@ -17,8 +22,11 @@ serve(async (req) => {
     const finnhubSecret = req.headers.get('x-finnhub-secret');
     const expectedSecret = Deno.env.get('FINNHUB_WEBHOOK_SECRET');
 
+    console.log('Checking webhook secret...')
+    console.log('Received secret:', finnhubSecret ? 'Present' : 'Missing')
+    
     if (!finnhubSecret || finnhubSecret !== expectedSecret) {
-      console.error('Invalid webhook secret');
+      console.error('Invalid webhook secret')
       return new Response(
         JSON.stringify({ error: 'Invalid webhook secret' }),
         { 
@@ -28,13 +36,13 @@ serve(async (req) => {
       );
     }
 
+    const body = await req.json()
+    console.log('Received webhook data:', JSON.stringify(body, null, 2))
+
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
-
-    const body = await req.json()
-    console.log('Received webhook data:', body)
 
     // Finnhub sends data in the format { data: [{ s: symbol, p: price, t: timestamp, v: volume }] }
     const marketData = body.data.map((item: any) => ({
@@ -43,6 +51,8 @@ serve(async (req) => {
       timestamp: item.t,
       type: 'trade'
     }))
+
+    console.log('Processed market data:', JSON.stringify(marketData, null, 2))
 
     // Store the market data in Supabase
     const { data, error } = await supabase
