@@ -9,8 +9,7 @@ const corsHeaders = {
 serve(async (req) => {
   console.log('Received webhook request')
   console.log('Method:', req.method)
-  console.log('Headers:', Object.fromEntries(req.headers.entries()))
-
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     console.log('Handling CORS preflight request')
@@ -18,23 +17,27 @@ serve(async (req) => {
   }
 
   try {
-    // Verify Finnhub webhook secret
-    const finnhubSecret = req.headers.get('x-finnhub-secret');
-    console.log('Full headers received:', Object.fromEntries(req.headers.entries()));
-    console.log('Received secret:', finnhubSecret);
-    console.log('Secret type:', typeof finnhubSecret);
+    // Log all headers for debugging
+    const headersObj = Object.fromEntries(req.headers.entries())
+    console.log('All headers:', JSON.stringify(headersObj, null, 2))
     
-    // Immediately return 200 for webhook verification
+    // Get Finnhub secret from headers (case-insensitive)
+    const finnhubSecret = Object.entries(headersObj)
+      .find(([key]) => key.toLowerCase() === 'x-finnhub-secret')?.[1]
+    
+    console.log('Extracted Finnhub secret:', finnhubSecret)
+
+    // Verify secret and process data
     if (req.method === 'POST' && finnhubSecret === 'cu35pg9r01qure9bubog') {
       const body = await req.json()
-      console.log('Received webhook data:', JSON.stringify(body, null, 2))
+      console.log('Webhook payload:', JSON.stringify(body, null, 2))
 
       const supabase = createClient(
         Deno.env.get('SUPABASE_URL') ?? '',
         Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
       )
 
-      // Finnhub sends data in the format { data: [{ s: symbol, p: price, t: timestamp, v: volume }] }
+      // Transform Finnhub data format to our schema
       const marketData = body.data.map((item: any) => ({
         symbol: item.s,
         price: item.p,
@@ -44,44 +47,54 @@ serve(async (req) => {
 
       console.log('Processed market data:', JSON.stringify(marketData, null, 2))
 
-      // Store the market data in Supabase
-      const { data, error } = await supabase
+      // Store in Supabase
+      const { error } = await supabase
         .from('market_data')
         .insert(marketData)
 
       if (error) {
-        console.error('Error inserting market data:', error)
-        throw error
+        console.error('Supabase insert error:', error)
+        // Still return 200 to acknowledge receipt
+        return new Response(
+          JSON.stringify({ message: 'Received but failed to store', error: error.message }),
+          { 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 200 
+          }
+        )
       }
 
-      console.log('Successfully processed webhook data:', data)
-
       return new Response(
-        JSON.stringify({ message: 'Webhook processed successfully', data }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200,
-        }
-      )
-    } else {
-      console.error('Invalid webhook secret or method')
-      console.error('Received secret:', finnhubSecret)
-      console.error('Method:', req.method)
-      return new Response(
-        JSON.stringify({ error: 'Invalid webhook secret or method' }),
+        JSON.stringify({ message: 'Success' }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 401 
+          status: 200 
         }
       )
     }
+
+    // Invalid secret or method
+    console.error('Invalid request:', {
+      method: req.method,
+      hasSecret: !!finnhubSecret,
+      secretMatch: finnhubSecret === 'cu35pg9r01qure9bubog'
+    })
+
+    return new Response(
+      JSON.stringify({ error: 'Invalid request' }),
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 401 
+      }
+    )
+
   } catch (error) {
-    console.error('Error processing webhook:', error)
+    console.error('Processing error:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
+        status: 200 // Still return 200 to acknowledge receipt
       }
     )
   }
