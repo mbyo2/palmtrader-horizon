@@ -20,17 +20,11 @@ serve(async (req) => {
   try {
     // Verify Finnhub webhook secret
     const finnhubSecret = req.headers.get('x-finnhub-secret');
-    const expectedSecret = Deno.env.get('FINNHUB_WEBHOOK_SECRET');
-
-    console.log('Checking webhook secret...')
     console.log('Received secret:', finnhubSecret ? finnhubSecret.substring(0, 4) + '...' : 'Missing')
-    console.log('Expected secret exists:', !!expectedSecret)
-    console.log('Headers received:', JSON.stringify(Object.fromEntries(req.headers.entries()), null, 2))
     
-    if (!finnhubSecret || finnhubSecret !== expectedSecret) {
+    if (!finnhubSecret || finnhubSecret !== 'cu35pg9r01qure9bubog') {
       console.error('Invalid webhook secret')
       console.error('Secret mismatch - received:', finnhubSecret ? finnhubSecret.substring(0, 4) + '...' : 'Missing')
-      console.error('Expected:', expectedSecret ? expectedSecret.substring(0, 4) + '...' : 'Missing')
       return new Response(
         JSON.stringify({ error: 'Invalid webhook secret' }),
         { 
@@ -70,6 +64,7 @@ serve(async (req) => {
 
     console.log('Successfully processed webhook data:', data)
 
+    // Return 200 status immediately to acknowledge receipt
     return new Response(
       JSON.stringify({ message: 'Webhook processed successfully', data }),
       {
