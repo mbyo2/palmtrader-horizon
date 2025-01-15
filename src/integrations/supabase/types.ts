@@ -36,6 +36,51 @@ export type Database = {
         }
         Relationships: []
       }
+      options_trades: {
+        Row: {
+          contracts: number
+          created_at: string | null
+          expiration_date: string
+          id: string
+          option_type: string
+          premium_per_contract: number
+          status: string | null
+          strike_price: number
+          symbol: string
+          total_premium: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          contracts: number
+          created_at?: string | null
+          expiration_date: string
+          id?: string
+          option_type: string
+          premium_per_contract: number
+          status?: string | null
+          strike_price: number
+          symbol: string
+          total_premium: number
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          contracts?: number
+          created_at?: string | null
+          expiration_date?: string
+          id?: string
+          option_type?: string
+          premium_per_contract?: number
+          status?: string | null
+          strike_price?: number
+          symbol?: string
+          total_premium?: number
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       portfolio: {
         Row: {
           average_price: number
@@ -90,37 +135,100 @@ export type Database = {
         }
         Relationships: []
       }
+      recurring_investments: {
+        Row: {
+          amount: number
+          created_at: string | null
+          frequency: string
+          id: string
+          is_active: boolean | null
+          next_execution_date: string
+          symbol: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          frequency: string
+          id?: string
+          is_active?: boolean | null
+          next_execution_date: string
+          symbol: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          frequency?: string
+          id?: string
+          is_active?: boolean | null
+          next_execution_date?: string
+          symbol?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       trades: {
         Row: {
           created_at: string
           id: string
+          is_fractional: boolean | null
+          limit_price: number | null
+          next_execution_date: string | null
+          oco_link_id: string | null
+          order_type: string | null
           price: number
+          recurring_schedule: string | null
+          risk_level: string | null
           shares: number
           status: string
+          stop_price: number | null
           symbol: string
           total_amount: number
+          trailing_percent: number | null
           type: string
           user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
+          is_fractional?: boolean | null
+          limit_price?: number | null
+          next_execution_date?: string | null
+          oco_link_id?: string | null
+          order_type?: string | null
           price: number
+          recurring_schedule?: string | null
+          risk_level?: string | null
           shares: number
           status?: string
+          stop_price?: number | null
           symbol: string
           total_amount: number
+          trailing_percent?: number | null
           type: string
           user_id: string
         }
         Update: {
           created_at?: string
           id?: string
+          is_fractional?: boolean | null
+          limit_price?: number | null
+          next_execution_date?: string | null
+          oco_link_id?: string | null
+          order_type?: string | null
           price?: number
+          recurring_schedule?: string | null
+          risk_level?: string | null
           shares?: number
           status?: string
+          stop_price?: number | null
           symbol?: string
           total_amount?: number
+          trailing_percent?: number | null
           type?: string
           user_id?: string
         }

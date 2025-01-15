@@ -3,6 +3,8 @@ import MarketOverview from "@/components/MarketOverview";
 import StockList from "@/components/StockList";
 import TradingView from "@/components/Trading/TradingView";
 import OrderHistory from "@/components/Trading/OrderHistory";
+import OptionsTrading from "@/components/Trading/OptionsTrading";
+import RecurringInvestments from "@/components/Trading/RecurringInvestments";
 
 const Index = () => {
   return (
@@ -16,13 +18,21 @@ const Index = () => {
           <MarketOverview />
           <TradingView />
         </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          <OptionsTrading />
+          <RecurringInvestments />
+        </div>
         <div className="space-y-8">
           <div>
-            <h2 className="text-2xl font-bold mb-4 gradient-text">Order History</h2>
+            <h2 className="text-2xl font-bold mb-4 gradient-text">
+              Order History
+            </h2>
             <OrderHistory />
           </div>
           <div>
-            <h2 className="text-2xl font-bold mb-4 gradient-text">Popular Stocks</h2>
+            <h2 className="text-2xl font-bold mb-4 gradient-text">
+              Popular Stocks
+            </h2>
             <StockList />
           </div>
         </div>
