@@ -11,7 +11,7 @@ const CompanyFundamentals = ({ symbol }: { symbol: string }) => {
         .from("company_fundamentals")
         .select("*")
         .eq("symbol", symbol)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       return data;
@@ -25,7 +25,7 @@ const CompanyFundamentals = ({ symbol }: { symbol: string }) => {
   if (!fundamentals) {
     return (
       <Card className="p-4">
-        <p className="text-muted-foreground">No fundamental data available</p>
+        <p className="text-muted-foreground">No fundamental data available for {symbol}</p>
       </Card>
     );
   }
