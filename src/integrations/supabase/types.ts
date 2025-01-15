@@ -9,6 +9,93 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      analyst_ratings: {
+        Row: {
+          analyst_firm: string
+          created_at: string
+          id: string
+          previous_price_target: number | null
+          previous_rating: string | null
+          price_target: number | null
+          rating: string
+          rating_date: string
+          symbol: string
+        }
+        Insert: {
+          analyst_firm: string
+          created_at?: string
+          id?: string
+          previous_price_target?: number | null
+          previous_rating?: string | null
+          price_target?: number | null
+          rating: string
+          rating_date: string
+          symbol: string
+        }
+        Update: {
+          analyst_firm?: string
+          created_at?: string
+          id?: string
+          previous_price_target?: number | null
+          previous_rating?: string | null
+          price_target?: number | null
+          rating?: string
+          rating_date?: string
+          symbol?: string
+        }
+        Relationships: []
+      }
+      company_fundamentals: {
+        Row: {
+          created_at: string
+          debt_to_equity: number | null
+          dividend_yield: number | null
+          eps: number | null
+          id: string
+          industry: string | null
+          market_cap: number | null
+          name: string
+          pe_ratio: number | null
+          profit_margin: number | null
+          revenue: number | null
+          sector: string | null
+          symbol: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          debt_to_equity?: number | null
+          dividend_yield?: number | null
+          eps?: number | null
+          id?: string
+          industry?: string | null
+          market_cap?: number | null
+          name: string
+          pe_ratio?: number | null
+          profit_margin?: number | null
+          revenue?: number | null
+          sector?: string | null
+          symbol: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          debt_to_equity?: number | null
+          dividend_yield?: number | null
+          eps?: number | null
+          id?: string
+          industry?: string | null
+          market_cap?: number | null
+          name?: string
+          pe_ratio?: number | null
+          profit_margin?: number | null
+          revenue?: number | null
+          sector?: string | null
+          symbol?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       market_data: {
         Row: {
           created_at: string
@@ -33,6 +120,45 @@ export type Database = {
           symbol?: string
           timestamp?: number
           type?: string
+        }
+        Relationships: []
+      }
+      market_news: {
+        Row: {
+          created_at: string
+          id: string
+          image_url: string | null
+          published_at: string
+          sentiment: string | null
+          source: string
+          summary: string | null
+          symbols: string[] | null
+          title: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          published_at: string
+          sentiment?: string | null
+          source: string
+          summary?: string | null
+          symbols?: string[] | null
+          title: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          published_at?: string
+          sentiment?: string | null
+          source?: string
+          summary?: string | null
+          symbols?: string[] | null
+          title?: string
+          url?: string
         }
         Relationships: []
       }

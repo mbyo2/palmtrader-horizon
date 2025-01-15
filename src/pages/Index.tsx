@@ -6,6 +6,7 @@ import OrderHistory from "@/components/Trading/OrderHistory";
 import OptionsTrading from "@/components/Trading/OptionsTrading";
 import RecurringInvestments from "@/components/Trading/RecurringInvestments";
 import PortfolioAnalytics from "@/components/Trading/PortfolioAnalytics";
+import ResearchTools from "@/components/Research/ResearchTools";
 
 const Index = () => {
   return (
@@ -21,6 +22,10 @@ const Index = () => {
         </div>
         <div className="mb-8">
           <PortfolioAnalytics />
+        </div>
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold mb-4 gradient-text">Research Tools</h2>
+          <ResearchTools />
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
           <OptionsTrading />
