@@ -5,6 +5,7 @@ import TradingView from "@/components/Trading/TradingView";
 import OrderHistory from "@/components/Trading/OrderHistory";
 import OptionsTrading from "@/components/Trading/OptionsTrading";
 import RecurringInvestments from "@/components/Trading/RecurringInvestments";
+import PortfolioAnalytics from "@/components/Trading/PortfolioAnalytics";
 
 const Index = () => {
   return (
@@ -17,6 +18,9 @@ const Index = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
           <MarketOverview />
           <TradingView />
+        </div>
+        <div className="mb-8">
+          <PortfolioAnalytics />
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
           <OptionsTrading />
