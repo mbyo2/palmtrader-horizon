@@ -6,6 +6,9 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import Markets from "./pages/Markets";
+import Watchlist from "./pages/Watchlist";
+import Portfolio from "./pages/Portfolio";
 
 const queryClient = new QueryClient();
 
@@ -19,6 +22,9 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/markets" element={<Markets />} />
+            <Route path="/watchlist" element={<Watchlist />} />
+            <Route path="/portfolio" element={<Portfolio />} />
           </Routes>
         </TooltipProvider>
       </ThemeProvider>
