@@ -6,6 +6,7 @@ import { Search } from "lucide-react";
 import CompanyFundamentals from "./CompanyFundamentals";
 import MarketNews from "./MarketNews";
 import AnalystRatings from "./AnalystRatings";
+import Comments from "../Social/Comments";
 
 const ResearchTools = () => {
   const [symbol, setSymbol] = useState("AAPL");
@@ -38,6 +39,11 @@ const ResearchTools = () => {
       </div>
       
       <MarketNews symbol={symbol} />
+      
+      <Card className="p-4">
+        <h3 className="text-lg font-semibold mb-4">Discussion</h3>
+        <Comments symbol={symbol} />
+      </Card>
     </div>
   );
 };

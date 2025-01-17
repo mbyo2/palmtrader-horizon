@@ -7,6 +7,7 @@ import OptionsTrading from "@/components/Trading/OptionsTrading";
 import RecurringInvestments from "@/components/Trading/RecurringInvestments";
 import PortfolioAnalytics from "@/components/Trading/PortfolioAnalytics";
 import ResearchTools from "@/components/Research/ResearchTools";
+import Comments from "@/components/Social/Comments";
 
 const Index = () => {
   return (
@@ -43,6 +44,12 @@ const Index = () => {
               Popular Stocks
             </h2>
             <StockList />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold mb-4 gradient-text">
+              Community Discussion
+            </h2>
+            <Comments />
           </div>
         </div>
       </main>
