@@ -7,6 +7,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { toast } from "./ui/use-toast";
+import CurrencySelector from "./CurrencySelector";
 
 const Navbar = () => {
   const isMobile = useIsMobile();
@@ -83,6 +84,7 @@ const Navbar = () => {
                     >
                       Portfolio
                     </Link>
+                    <CurrencySelector />
                   </>
                 )}
                 {user ? (
@@ -141,6 +143,9 @@ const Navbar = () => {
                 >
                   Portfolio
                 </Link>
+                <div className="px-3 py-2">
+                  <CurrencySelector />
+                </div>
               </>
             )}
             {user ? (
