@@ -38,6 +38,7 @@ const Comments = ({ symbol }: CommentsProps) => {
 
   const loadComments = async () => {
     try {
+      console.log("Loading comments for symbol:", symbol);
       const query = supabase
         .from("comments")
         .select(`
@@ -51,7 +52,11 @@ const Comments = ({ symbol }: CommentsProps) => {
       }
 
       const { data, error } = await query;
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching comments:", error);
+        throw error;
+      }
+      console.log("Fetched comments:", data);
       setComments(data || []);
     } catch (error) {
       console.error("Error loading comments:", error);
