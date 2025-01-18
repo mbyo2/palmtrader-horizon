@@ -11,6 +11,8 @@ import ResearchTools from "@/components/Research/ResearchTools";
 import Comments from "@/components/Social/Comments";
 import PopularStocks from "@/components/Social/PopularStocks";
 import SocialShare from "@/components/Social/SocialShare";
+import PriceAlertForm from "@/components/Alerts/PriceAlertForm";
+import PriceAlertList from "@/components/Alerts/PriceAlertList";
 
 const Index = () => {
   return (
@@ -37,10 +39,19 @@ const Index = () => {
           <PortfolioAnalytics />
         </div>
 
-        <div className="mb-6 sm:mb-8">
-          <h2 className="text-xl sm:text-2xl font-bold mb-4 gradient-text">Research Tools</h2>
-          <div className="overflow-x-auto">
-            <ResearchTools />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 mb-6 sm:mb-8">
+          <div>
+            <h2 className="text-xl sm:text-2xl font-bold mb-4 gradient-text">Price Alerts</h2>
+            <div className="space-y-4">
+              <PriceAlertForm />
+              <PriceAlertList />
+            </div>
+          </div>
+          <div>
+            <h2 className="text-xl sm:text-2xl font-bold mb-4 gradient-text">Research Tools</h2>
+            <div className="overflow-x-auto">
+              <ResearchTools />
+            </div>
           </div>
         </div>
 
