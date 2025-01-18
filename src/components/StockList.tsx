@@ -2,6 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import WatchlistButton from "./WatchlistButton";
 
 interface Stock {
   symbol: string;
@@ -83,11 +84,14 @@ const StockList = () => {
             className="card-gradient p-4 hover:shadow-lg transition-all duration-200"
           >
             <div className="flex justify-between items-center">
-              <div>
-                <h3 className="font-semibold text-foreground">{stock.symbol}</h3>
-                <p className="text-sm text-foreground/70">{stock.name}</p>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center space-x-2">
+                  <h3 className="font-semibold text-foreground truncate">{stock.symbol}</h3>
+                  <WatchlistButton symbol={stock.symbol} />
+                </div>
+                <p className="text-sm text-foreground/70 truncate">{stock.name}</p>
               </div>
-              <div className="text-right">
+              <div className="text-right ml-4">
                 <p className={`font-bold text-foreground transition-colors duration-300 ${
                   stock.previousPrice && parseFloat(stock.price) > parseFloat(stock.previousPrice)
                     ? 'text-green-500'
