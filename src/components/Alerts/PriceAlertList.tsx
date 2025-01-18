@@ -50,7 +50,9 @@ const PriceAlertList = () => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setAlerts(data || []);
+      
+      // Type assertion to ensure data matches PriceAlert interface
+      setAlerts((data || []) as PriceAlert[]);
     } catch (error) {
       console.error("Error fetching alerts:", error);
     }

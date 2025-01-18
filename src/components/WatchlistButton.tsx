@@ -64,7 +64,10 @@ const WatchlistButton = ({ symbol }: WatchlistButtonProps) => {
       } else {
         await supabase
           .from("watchlists")
-          .insert([{ symbol }]);
+          .insert([{ 
+            symbol,
+            user_id: session.session.user.id 
+          }]);
         
         toast({
           title: "Added to watchlist",
