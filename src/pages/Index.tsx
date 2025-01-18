@@ -13,6 +13,8 @@ import PopularStocks from "@/components/Social/PopularStocks";
 import SocialShare from "@/components/Social/SocialShare";
 import PriceAlertForm from "@/components/Alerts/PriceAlertForm";
 import PriceAlertList from "@/components/Alerts/PriceAlertList";
+import BankAccountManagement from "@/components/Banking/BankAccountManagement";
+import FundTransfers from "@/components/Banking/FundTransfers";
 
 const Index = () => {
   return (
@@ -23,7 +25,10 @@ const Index = () => {
           <h1 className="text-3xl sm:text-4xl font-bold gradient-text">
             Market Overview
           </h1>
-          <SocialShare symbol="MARKET" title="Check out this amazing trading platform!" />
+          <SocialShare
+            symbol="MARKET"
+            title="Check out this amazing trading platform!"
+          />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 mb-6 sm:mb-8">
@@ -35,20 +40,29 @@ const Index = () => {
           </div>
         </div>
 
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 mb-6 sm:mb-8">
+          <BankAccountManagement />
+          <FundTransfers />
+        </div>
+
         <div className="mb-6 sm:mb-8">
           <PortfolioAnalytics />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 mb-6 sm:mb-8">
           <div>
-            <h2 className="text-xl sm:text-2xl font-bold mb-4 gradient-text">Price Alerts</h2>
+            <h2 className="text-xl sm:text-2xl font-bold mb-4 gradient-text">
+              Price Alerts
+            </h2>
             <div className="space-y-4">
               <PriceAlertForm />
               <PriceAlertList />
             </div>
           </div>
           <div>
-            <h2 className="text-xl sm:text-2xl font-bold mb-4 gradient-text">Research Tools</h2>
+            <h2 className="text-xl sm:text-2xl font-bold mb-4 gradient-text">
+              Research Tools
+            </h2>
             <div className="overflow-x-auto">
               <ResearchTools />
             </div>

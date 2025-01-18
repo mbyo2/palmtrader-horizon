@@ -45,6 +45,45 @@ export type Database = {
         }
         Relationships: []
       }
+      bank_accounts: {
+        Row: {
+          account_name: string
+          account_number: string
+          bank_name: string
+          branch_code: string | null
+          created_at: string
+          id: string
+          is_primary: boolean | null
+          is_verified: boolean | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_name: string
+          account_number: string
+          bank_name: string
+          branch_code?: string | null
+          created_at?: string
+          id?: string
+          is_primary?: boolean | null
+          is_verified?: boolean | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_name?: string
+          account_number?: string
+          bank_name?: string
+          branch_code?: string | null
+          created_at?: string
+          id?: string
+          is_primary?: boolean | null
+          is_verified?: boolean | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       comments: {
         Row: {
           content: string
@@ -140,6 +179,50 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      fund_transfers: {
+        Row: {
+          amount: number
+          bank_account_id: string
+          created_at: string
+          direction: string
+          id: string
+          status: string
+          transaction_ref: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          bank_account_id: string
+          created_at?: string
+          direction: string
+          id?: string
+          status?: string
+          transaction_ref?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          bank_account_id?: string
+          created_at?: string
+          direction?: string
+          id?: string
+          status?: string
+          transaction_ref?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fund_transfers_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       market_data: {
         Row: {
