@@ -1,9 +1,9 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { PortfolioAnalytics } from "@/components/Trading/PortfolioAnalytics";
-import { OrderHistory } from "@/components/Trading/OrderHistory";
-import { RecurringInvestments } from "@/components/Trading/RecurringInvestments";
+import PortfolioAnalytics from "@/components/Trading/PortfolioAnalytics";
+import OrderHistory from "@/components/Trading/OrderHistory";
+import RecurringInvestments from "@/components/Trading/RecurringInvestments";
 
 const Portfolio = () => {
   const navigate = useNavigate();

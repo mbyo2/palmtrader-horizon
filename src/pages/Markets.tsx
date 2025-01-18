@@ -1,4 +1,4 @@
-import { ResearchTools } from "@/components/Research";
+import ResearchTools from "@/components/Research/ResearchTools";
 
 const Markets = () => {
   return (
