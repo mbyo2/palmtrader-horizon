@@ -1,54 +1,73 @@
-import { Github, Twitter } from "lucide-react";
+import { Copyright, Github, Twitter, Globe } from "lucide-react";
 import { Button } from "./ui/button";
 
 const Footer = () => {
+  const currentYear = new Date().getFullYear();
+
   return (
     <footer className="w-full border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex flex-col items-center justify-between gap-4 py-10 md:h-24 md:flex-row md:py-0">
         <div className="flex flex-col items-center gap-4 px-8 md:flex-row md:gap-2 md:px-0">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Copyright className="h-4 w-4" />
+            <span>{currentYear} Palm Cacia.</span>
+          </div>
           <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
-            Built by{" "}
+            Made by{" "}
             <a
-              href="https://twitter.com/yourusername"
+              href="https://mabvutobanda.online"
               target="_blank"
               rel="noreferrer"
-              className="font-medium underline underline-offset-4"
+              className="font-medium underline underline-offset-4 hover:text-primary"
             >
-              Your Company
+              Mabvuto Banda
             </a>
-            . The source code is available on{" "}
-            <a
-              href="https://github.com/yourusername/yourrepo"
-              target="_blank"
-              rel="noreferrer"
-              className="font-medium underline underline-offset-4"
-            >
-              GitHub
-            </a>
-            .
           </p>
         </div>
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild>
-            <a
-              href="https://github.com/yourusername/yourrepo"
-              target="_blank"
-              rel="noreferrer"
-            >
-              <Github className="h-4 w-4" />
-              <span className="sr-only">GitHub</span>
+        <div className="flex flex-col md:flex-row items-center gap-4">
+          <nav className="flex gap-4 text-sm text-muted-foreground">
+            <a href="/markets" className="hover:text-primary transition-colors">
+              Markets
             </a>
-          </Button>
-          <Button variant="ghost" size="icon" asChild>
-            <a
-              href="https://twitter.com/yourusername"
-              target="_blank"
-              rel="noreferrer"
-            >
-              <Twitter className="h-4 w-4" />
-              <span className="sr-only">Twitter</span>
+            <a href="/portfolio" className="hover:text-primary transition-colors">
+              Portfolio
             </a>
-          </Button>
+            <a href="/watchlist" className="hover:text-primary transition-colors">
+              Watchlist
+            </a>
+          </nav>
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" asChild>
+              <a
+                href="https://github.com/palmcacia"
+                target="_blank"
+                rel="noreferrer"
+              >
+                <Github className="h-4 w-4" />
+                <span className="sr-only">GitHub</span>
+              </a>
+            </Button>
+            <Button variant="ghost" size="icon" asChild>
+              <a
+                href="https://twitter.com/palmcacia"
+                target="_blank"
+                rel="noreferrer"
+              >
+                <Twitter className="h-4 w-4" />
+                <span className="sr-only">Twitter</span>
+              </a>
+            </Button>
+            <Button variant="ghost" size="icon" asChild>
+              <a
+                href="https://palmcacia.com"
+                target="_blank"
+                rel="noreferrer"
+              >
+                <Globe className="h-4 w-4" />
+                <span className="sr-only">Website</span>
+              </a>
+            </Button>
+          </div>
         </div>
       </div>
     </footer>
