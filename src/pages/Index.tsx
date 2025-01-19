@@ -1,20 +1,28 @@
+import { lazy, Suspense } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import MarketOverview from "@/components/MarketOverview";
-import StockList from "@/components/StockList";
-import TradingView from "@/components/Trading/TradingView";
-import OrderHistory from "@/components/Trading/OrderHistory";
-import OptionsTrading from "@/components/Trading/OptionsTrading";
-import RecurringInvestments from "@/components/Trading/RecurringInvestments";
-import PortfolioAnalytics from "@/components/Trading/PortfolioAnalytics";
-import ResearchTools from "@/components/Research/ResearchTools";
-import Comments from "@/components/Social/Comments";
-import PopularStocks from "@/components/Social/PopularStocks";
-import SocialShare from "@/components/Social/SocialShare";
-import PriceAlertForm from "@/components/Alerts/PriceAlertForm";
-import PriceAlertList from "@/components/Alerts/PriceAlertList";
-import BankAccountManagement from "@/components/Banking/BankAccountManagement";
-import FundTransfers from "@/components/Banking/FundTransfers";
+import { Skeleton } from "@/components/ui/skeleton";
+
+// Lazy load components that aren't immediately visible
+const StockList = lazy(() => import("@/components/StockList"));
+const TradingView = lazy(() => import("@/components/Trading/TradingView"));
+const PortfolioAnalytics = lazy(() => import("@/components/Trading/PortfolioAnalytics"));
+const ResearchTools = lazy(() => import("@/components/Research/ResearchTools"));
+const BankAccountManagement = lazy(() => import("@/components/Banking/BankAccountManagement"));
+const FundTransfers = lazy(() => import("@/components/Banking/FundTransfers"));
+const PriceAlertForm = lazy(() => import("@/components/Alerts/PriceAlertForm"));
+const PriceAlertList = lazy(() => import("@/components/Alerts/PriceAlertList"));
+const Comments = lazy(() => import("@/components/Social/Comments"));
+const PopularStocks = lazy(() => import("@/components/Social/PopularStocks"));
+const SocialShare = lazy(() => import("@/components/Social/SocialShare"));
+
+// Loading fallback component
+const LoadingFallback = () => (
+  <div className="w-full h-48">
+    <Skeleton className="w-full h-full" />
+  </div>
+);
 
 const Index = () => {
   return (
@@ -25,96 +33,94 @@ const Index = () => {
           <h1 className="text-3xl sm:text-4xl font-bold gradient-text">
             Market Overview
           </h1>
-          <SocialShare
-            symbol="MARKET"
-            title="Check out this amazing trading platform!"
-          />
+          <Suspense fallback={<LoadingFallback />}>
+            <SocialShare
+              symbol="MARKET"
+              title="Check out this amazing trading platform!"
+            />
+          </Suspense>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 mb-6 sm:mb-8">
           <div className="w-full overflow-x-auto">
             <MarketOverview />
           </div>
-          <div className="w-full min-h-[400px]">
-            <TradingView />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 mb-6 sm:mb-8">
-          <BankAccountManagement />
-          <FundTransfers />
-        </div>
-
-        <div className="mb-6 sm:mb-8">
-          <PortfolioAnalytics />
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 mb-6 sm:mb-8">
-          <div>
-            <h2 className="text-xl sm:text-2xl font-bold mb-4 gradient-text">
-              Price Alerts
-            </h2>
-            <div className="space-y-4">
-              <PriceAlertForm />
-              <PriceAlertList />
+          <Suspense fallback={<LoadingFallback />}>
+            <div className="w-full min-h-[400px]">
+              <TradingView />
             </div>
-          </div>
-          <div>
-            <h2 className="text-xl sm:text-2xl font-bold mb-4 gradient-text">
-              Research Tools
-            </h2>
-            <div className="overflow-x-auto">
-              <ResearchTools />
-            </div>
-          </div>
+          </Suspense>
         </div>
 
+        <Suspense fallback={<LoadingFallback />}>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 mb-6 sm:mb-8">
+            <BankAccountManagement />
+            <FundTransfers />
+          </div>
+        </Suspense>
+
+        <Suspense fallback={<LoadingFallback />}>
+          <div className="mb-6 sm:mb-8">
+            <PortfolioAnalytics />
+          </div>
+        </Suspense>
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 mb-6 sm:mb-8">
-          <div className="card-gradient p-4 sm:p-6 rounded-lg">
-            <OptionsTrading />
-          </div>
-          <div className="card-gradient p-4 sm:p-6 rounded-lg">
-            <RecurringInvestments />
-          </div>
+          <Suspense fallback={<LoadingFallback />}>
+            <div>
+              <h2 className="text-xl sm:text-2xl font-bold mb-4 gradient-text">
+                Price Alerts
+              </h2>
+              <div className="space-y-4">
+                <PriceAlertForm />
+                <PriceAlertList />
+              </div>
+            </div>
+          </Suspense>
+          <Suspense fallback={<LoadingFallback />}>
+            <div>
+              <h2 className="text-xl sm:text-2xl font-bold mb-4 gradient-text">
+                Research Tools
+              </h2>
+              <div className="overflow-x-auto">
+                <ResearchTools />
+              </div>
+            </div>
+          </Suspense>
         </div>
 
         <div className="space-y-6 sm:space-y-8">
-          <div>
-            <h2 className="text-xl sm:text-2xl font-bold mb-4 gradient-text">
-              Order History
-            </h2>
-            <div className="overflow-x-auto">
-              <OrderHistory />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
-            <div>
-              <h2 className="text-xl sm:text-2xl font-bold mb-4 gradient-text">
-                Popular Stocks
-              </h2>
-              <div className="card-gradient p-4 sm:p-6 rounded-lg">
-                <PopularStocks />
+          <Suspense fallback={<LoadingFallback />}>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
+              <div>
+                <h2 className="text-xl sm:text-2xl font-bold mb-4 gradient-text">
+                  Popular Stocks
+                </h2>
+                <div className="card-gradient p-4 sm:p-6 rounded-lg">
+                  <PopularStocks />
+                </div>
+              </div>
+              <div>
+                <h2 className="text-xl sm:text-2xl font-bold mb-4 gradient-text">
+                  Stock List
+                </h2>
+                <div className="card-gradient p-4 sm:p-6 rounded-lg">
+                  <StockList />
+                </div>
               </div>
             </div>
+          </Suspense>
+
+          <Suspense fallback={<LoadingFallback />}>
             <div>
               <h2 className="text-xl sm:text-2xl font-bold mb-4 gradient-text">
-                Stock List
+                Community Discussion
               </h2>
               <div className="card-gradient p-4 sm:p-6 rounded-lg">
-                <StockList />
+                <Comments />
               </div>
             </div>
-          </div>
-
-          <div>
-            <h2 className="text-xl sm:text-2xl font-bold mb-4 gradient-text">
-              Community Discussion
-            </h2>
-            <div className="card-gradient p-4 sm:p-6 rounded-lg">
-              <Comments />
-            </div>
-          </div>
+          </Suspense>
         </div>
       </main>
       <Footer />

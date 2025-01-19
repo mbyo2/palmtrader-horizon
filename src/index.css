@@ -57,6 +57,25 @@
     @apply bg-gradient-to-br from-background via-background to-secondary/20 min-h-screen font-sans antialiased;
     background-attachment: fixed;
   }
+  
+  /* Optimize paint and layout operations */
+  * {
+    backface-visibility: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  /* Reduce repaints for fixed elements */
+  .fixed, .sticky {
+    will-change: transform;
+  }
+  
+  /* Optimize animations */
+  @media (prefers-reduced-motion: no-preference) {
+    .animate {
+      will-change: transform, opacity;
+    }
+  }
 }
 
 .gradient-text {
@@ -65,4 +84,9 @@
 
 .card-gradient {
   @apply bg-gradient-to-br from-background/80 to-secondary/5 backdrop-blur-sm border border-border/50;
+}
+
+/* Add content-visibility for better performance */
+.defer-paint {
+  content-visibility: auto;
 }
