@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Bank, CreditCard } from "lucide-react";
+import { Building2, CreditCard } from "lucide-react";
 
 interface BankAccount {
   id: string;
@@ -102,7 +102,7 @@ const BankAccountManagement = () => {
     <Card className="p-6 card-gradient">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold flex items-center gap-2">
-          <Bank className="h-5 w-5" />
+          <Building2 className="h-5 w-5" />
           Bank Accounts
         </h2>
         <Button onClick={() => setShowForm(!showForm)}>
