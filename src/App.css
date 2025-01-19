@@ -1,42 +1,55 @@
 #root {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 1rem;
   text-align: center;
 }
 
 .logo {
   height: 6em;
   padding: 1.5em;
-  will-change: filter;
+  transform: translateZ(0); /* Use GPU acceleration */
   transition: filter 300ms;
+  will-change: filter;
 }
+
 .logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
+  filter: drop-shadow(0 0 1em #646cffaa);
 }
+
 .logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+  filter: drop-shadow(0 0 1em #61dafbaa);
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
+/* Optimize animations for reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .logo {
+    transition: none;
   }
 }
 
-@media (prefers-reduced-motion: no-preference) {
+/* Remove unnecessary animations when user prefers reduced motion */
+@media (prefers-reduced-motion: reduce) {
   a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
+    animation: none;
   }
 }
 
 .card {
   padding: 2em;
+  transform: translateZ(0); /* Use GPU acceleration */
 }
 
 .read-the-docs {
   color: #888;
+}
+
+/* Optimize paint operations */
+* {
+  transform: translateZ(0);
+}
+
+/* Reduce reflow operations */
+.layout-container {
+  contain: layout style paint;
 }

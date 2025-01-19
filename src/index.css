@@ -53,40 +53,71 @@
   * {
     @apply border-border;
   }
-  body {
-    @apply bg-gradient-to-br from-background via-background to-secondary/20 min-h-screen font-sans antialiased;
-    background-attachment: fixed;
+  
+  html {
+    scroll-behavior: auto !important; /* Disable smooth scroll for better performance */
+    height: 100%;
+    overscroll-behavior: none; /* Prevent bounce effects */
   }
   
-  /* Optimize paint and layout operations */
+  body {
+    @apply bg-background text-foreground min-h-screen font-sans antialiased;
+    height: 100%;
+    overflow-y: auto;
+    overscroll-behavior: none;
+  }
+
+  /* Use GPU acceleration for fixed elements */
+  .fixed, .sticky {
+    transform: translateZ(0);
+    will-change: transform;
+    backface-visibility: hidden;
+  }
+  
+  /* Optimize paint operations */
   * {
     backface-visibility: hidden;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
-  
-  /* Reduce repaints for fixed elements */
-  .fixed, .sticky {
-    will-change: transform;
+
+  /* Reduce layout shifts */
+  img, video {
+    @apply h-auto max-w-full;
+    content-visibility: auto;
   }
-  
-  /* Optimize animations */
-  @media (prefers-reduced-motion: no-preference) {
-    .animate {
-      will-change: transform, opacity;
-    }
+
+  /* Optimize large lists */
+  .virtual-list {
+    content-visibility: auto;
+    contain: style layout paint;
   }
 }
 
+/* Optimize gradients */
 .gradient-text {
-  @apply bg-gradient-to-r from-primary via-primary-light to-secondary bg-clip-text text-transparent;
+  @apply bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent;
+  background-size: 100%;
+  background-attachment: local;
 }
 
 .card-gradient {
-  @apply bg-gradient-to-br from-background/80 to-secondary/5 backdrop-blur-sm border border-border/50;
+  @apply bg-background/80 backdrop-blur-[2px] border border-border/50;
+  background-attachment: local;
+}
+
+/* Optimize animations */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* Add content-visibility for better performance */
 .defer-paint {
   content-visibility: auto;
+  contain: style layout paint;
 }
