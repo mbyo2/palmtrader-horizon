@@ -1,129 +1,53 @@
-import { lazy, Suspense } from "react";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import MarketOverview from "@/components/MarketOverview";
-import { Skeleton } from "@/components/ui/skeleton";
-
-// Lazy load components that aren't immediately visible
-const StockList = lazy(() => import("@/components/StockList"));
-const TradingView = lazy(() => import("@/components/Trading/TradingView"));
-const PortfolioAnalytics = lazy(() => import("@/components/Trading/PortfolioAnalytics"));
-const ResearchTools = lazy(() => import("@/components/Research/ResearchTools"));
-const BankAccountManagement = lazy(() => import("@/components/Banking/BankAccountManagement"));
-const FundTransfers = lazy(() => import("@/components/Banking/FundTransfers"));
-const PriceAlertForm = lazy(() => import("@/components/Alerts/PriceAlertForm"));
-const PriceAlertList = lazy(() => import("@/components/Alerts/PriceAlertList"));
-const Comments = lazy(() => import("@/components/Social/Comments"));
-const PopularStocks = lazy(() => import("@/components/Social/PopularStocks"));
-const SocialShare = lazy(() => import("@/components/Social/SocialShare"));
-
-// Loading fallback component
-const LoadingFallback = () => (
-  <div className="w-full h-48">
-    <Skeleton className="w-full h-full" />
-  </div>
-);
+import { useAuth } from "@/hooks/useAuth";
+import UserManagement from "@/components/Admin/UserManagement";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { ArrowRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const Index = () => {
+  const { isAdmin, user } = useAuth();
+  const navigate = useNavigate();
+
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar />
-      <main className="flex-1 container mx-auto px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8">
-          <h1 className="text-3xl sm:text-4xl font-bold gradient-text">
-            Market Overview
-          </h1>
-          <Suspense fallback={<LoadingFallback />}>
-            <SocialShare
-              symbol="MARKET"
-              title="Check out this amazing trading platform!"
-            />
-          </Suspense>
+    <div className="container py-6 space-y-6">
+      <h1 className="text-3xl font-bold">Welcome to PalmCacia</h1>
+      
+      {isAdmin() && <UserManagement />}
+      
+      {!user ? (
+        <Card className="p-6">
+          <h2 className="text-2xl font-bold mb-4">Get Started</h2>
+          <p className="text-muted-foreground mb-4">
+            Sign in or create an account to start trading and managing your portfolio.
+          </p>
+          <Button onClick={() => navigate('/auth')}>
+            Get Started <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        </Card>
+      ) : (
+        <div className="grid gap-6 md:grid-cols-2">
+          <Card className="p-6">
+            <h2 className="text-2xl font-bold mb-4">Markets</h2>
+            <p className="text-muted-foreground mb-4">
+              View real-time market data and trade your favorite stocks.
+            </p>
+            <Button onClick={() => navigate('/markets')}>
+              View Markets <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </Card>
+          
+          <Card className="p-6">
+            <h2 className="text-2xl font-bold mb-4">Portfolio</h2>
+            <p className="text-muted-foreground mb-4">
+              Track your investments and manage your trading positions.
+            </p>
+            <Button onClick={() => navigate('/portfolio')}>
+              View Portfolio <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </Card>
         </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 mb-6 sm:mb-8">
-          <div className="w-full overflow-x-auto">
-            <MarketOverview />
-          </div>
-          <Suspense fallback={<LoadingFallback />}>
-            <div className="w-full min-h-[400px]">
-              <TradingView />
-            </div>
-          </Suspense>
-        </div>
-
-        <Suspense fallback={<LoadingFallback />}>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 mb-6 sm:mb-8">
-            <BankAccountManagement />
-            <FundTransfers />
-          </div>
-        </Suspense>
-
-        <Suspense fallback={<LoadingFallback />}>
-          <div className="mb-6 sm:mb-8">
-            <PortfolioAnalytics />
-          </div>
-        </Suspense>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 mb-6 sm:mb-8">
-          <Suspense fallback={<LoadingFallback />}>
-            <div>
-              <h2 className="text-xl sm:text-2xl font-bold mb-4 gradient-text">
-                Price Alerts
-              </h2>
-              <div className="space-y-4">
-                <PriceAlertForm />
-                <PriceAlertList />
-              </div>
-            </div>
-          </Suspense>
-          <Suspense fallback={<LoadingFallback />}>
-            <div>
-              <h2 className="text-xl sm:text-2xl font-bold mb-4 gradient-text">
-                Research Tools
-              </h2>
-              <div className="overflow-x-auto">
-                <ResearchTools />
-              </div>
-            </div>
-          </Suspense>
-        </div>
-
-        <div className="space-y-6 sm:space-y-8">
-          <Suspense fallback={<LoadingFallback />}>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
-              <div>
-                <h2 className="text-xl sm:text-2xl font-bold mb-4 gradient-text">
-                  Popular Stocks
-                </h2>
-                <div className="card-gradient p-4 sm:p-6 rounded-lg">
-                  <PopularStocks />
-                </div>
-              </div>
-              <div>
-                <h2 className="text-xl sm:text-2xl font-bold mb-4 gradient-text">
-                  Stock List
-                </h2>
-                <div className="card-gradient p-4 sm:p-6 rounded-lg">
-                  <StockList />
-                </div>
-              </div>
-            </div>
-          </Suspense>
-
-          <Suspense fallback={<LoadingFallback />}>
-            <div>
-              <h2 className="text-xl sm:text-2xl font-bold mb-4 gradient-text">
-                Community Discussion
-              </h2>
-              <div className="card-gradient p-4 sm:p-6 rounded-lg">
-                <Comments />
-              </div>
-            </div>
-          </Suspense>
-        </div>
-      </main>
-      <Footer />
+      )}
     </div>
   );
 };
