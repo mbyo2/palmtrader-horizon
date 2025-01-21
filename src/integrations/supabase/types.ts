@@ -9,6 +9,54 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      account_details: {
+        Row: {
+          account_status: Database["public"]["Enums"]["account_status"]
+          created_at: string
+          date_of_birth: string | null
+          first_name: string | null
+          id: string
+          is_email_verified: boolean | null
+          is_phone_verified: boolean | null
+          kyc_status: Database["public"]["Enums"]["kyc_status"]
+          last_name: string | null
+          phone_number: string | null
+          role: Database["public"]["Enums"]["account_role"]
+          tax_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_status?: Database["public"]["Enums"]["account_status"]
+          created_at?: string
+          date_of_birth?: string | null
+          first_name?: string | null
+          id: string
+          is_email_verified?: boolean | null
+          is_phone_verified?: boolean | null
+          kyc_status?: Database["public"]["Enums"]["kyc_status"]
+          last_name?: string | null
+          phone_number?: string | null
+          role?: Database["public"]["Enums"]["account_role"]
+          tax_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_status?: Database["public"]["Enums"]["account_status"]
+          created_at?: string
+          date_of_birth?: string | null
+          first_name?: string | null
+          id?: string
+          is_email_verified?: boolean | null
+          is_phone_verified?: boolean | null
+          kyc_status?: Database["public"]["Enums"]["kyc_status"]
+          last_name?: string | null
+          phone_number?: string | null
+          role?: Database["public"]["Enums"]["account_role"]
+          tax_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       analyst_ratings: {
         Row: {
           analyst_firm: string
@@ -612,7 +660,9 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      account_role: "basic" | "premium" | "admin"
+      account_status: "pending" | "active" | "restricted" | "suspended"
+      kyc_status: "not_started" | "pending" | "approved" | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never

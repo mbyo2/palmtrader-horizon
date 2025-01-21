@@ -1,31 +1,60 @@
 import { Link, useNavigate } from "react-router-dom";
 import { ThemeToggle } from "./ThemeToggle";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Menu, LogOut } from "lucide-react";
+import { Menu, LogOut, Crown } from "lucide-react";
 import { Button } from "./ui/button";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { toast } from "./ui/use-toast";
 import CurrencySelector from "./CurrencySelector";
+import { Badge } from "./ui/badge";
+
+interface AccountDetails {
+  role: 'basic' | 'premium' | 'admin';
+  account_status: 'pending' | 'active' | 'restricted' | 'suspended';
+}
 
 const Navbar = () => {
   const isMobile = useIsMobile();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [accountDetails, setAccountDetails] = useState<AccountDetails | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
+    const fetchAccountDetails = async (userId: string) => {
+      const { data, error } = await supabase
+        .from('account_details')
+        .select('role, account_status')
+        .eq('id', userId)
+        .single();
+      
+      if (error) {
+        console.error('Error fetching account details:', error);
+      } else {
+        setAccountDetails(data);
+      }
+    };
+
     // Check current session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
+      if (session?.user) {
+        fetchAccountDetails(session.user.id);
+      }
     });
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null);
-      if (event === 'SIGNED_OUT') {
-        navigate('/auth');
+      if (session?.user) {
+        fetchAccountDetails(session.user.id);
+      } else {
+        setAccountDetails(null);
+        if (event === 'SIGNED_OUT') {
+          navigate('/auth');
+        }
       }
     });
 
@@ -49,6 +78,29 @@ const Navbar = () => {
     }
   };
 
+  const renderAccountBadge = () => {
+    if (!accountDetails) return null;
+
+    if (accountDetails.role === 'premium') {
+      return (
+        <Badge variant="premium" className="ml-2">
+          <Crown className="w-3 h-3 mr-1" />
+          Premium
+        </Badge>
+      );
+    }
+
+    if (accountDetails.account_status === 'pending') {
+      return (
+        <Badge variant="secondary" className="ml-2">
+          Pending
+        </Badge>
+      );
+    }
+
+    return null;
+  };
+
   return (
     <nav className="bg-background/80 border-b border-border/40 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 w-full">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -58,6 +110,7 @@ const Navbar = () => {
               <span className="text-2xl font-bold text-foreground">
                 PalmCacia
               </span>
+              {renderAccountBadge()}
             </Link>
           </div>
           
@@ -70,7 +123,7 @@ const Navbar = () => {
                 >
                   Markets
                 </Link>
-                {user && (
+                {user && accountDetails?.account_status === 'active' && (
                   <>
                     <Link 
                       to="/watchlist" 
@@ -84,6 +137,14 @@ const Navbar = () => {
                     >
                       Portfolio
                     </Link>
+                    {accountDetails.role === 'premium' && (
+                      <Link 
+                        to="/premium" 
+                        className="text-foreground hover:text-primary transition-colors duration-200 font-medium"
+                      >
+                        Premium
+                      </Link>
+                    )}
                     <CurrencySelector />
                   </>
                 )}
@@ -129,7 +190,7 @@ const Navbar = () => {
             >
               Markets
             </Link>
-            {user && (
+            {user && accountDetails?.account_status === 'active' && (
               <>
                 <Link 
                   to="/watchlist" 
@@ -143,6 +204,14 @@ const Navbar = () => {
                 >
                   Portfolio
                 </Link>
+                {accountDetails.role === 'premium' && (
+                  <Link 
+                    to="/premium" 
+                    className="block px-3 py-2 rounded-md text-foreground hover:text-primary transition-colors duration-200"
+                  >
+                    Premium
+                  </Link>
+                )}
                 <div className="px-3 py-2">
                   <CurrencySelector />
                 </div>
