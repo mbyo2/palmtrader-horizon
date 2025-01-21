@@ -47,17 +47,15 @@
     --input: 217.2 32.6% 17.5%;
     --ring: 270 89% 56%;
   }
-}
 
-@layer base {
   * {
     @apply border-border;
   }
   
   html {
-    scroll-behavior: auto !important; /* Disable smooth scroll for better performance */
+    scroll-behavior: auto !important;
     height: 100%;
-    overscroll-behavior: none; /* Prevent bounce effects */
+    overscroll-behavior: none;
   }
   
   body {
@@ -67,34 +65,29 @@
     overscroll-behavior: none;
   }
 
-  /* Use GPU acceleration for fixed elements */
   .fixed, .sticky {
     transform: translateZ(0);
     will-change: transform;
     backface-visibility: hidden;
   }
   
-  /* Optimize paint operations */
   * {
     backface-visibility: hidden;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
-  /* Reduce layout shifts */
   img, video {
     @apply h-auto max-w-full;
     content-visibility: auto;
   }
 
-  /* Optimize large lists */
   .virtual-list {
     content-visibility: auto;
     contain: style layout paint;
   }
 }
 
-/* Optimize gradients */
 .gradient-text {
   @apply bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent;
   background-size: 100%;
@@ -106,7 +99,6 @@
   background-attachment: local;
 }
 
-/* Optimize animations */
 @media (prefers-reduced-motion: reduce) {
   * {
     animation-duration: 0.01ms !important;
@@ -116,7 +108,6 @@
   }
 }
 
-/* Add content-visibility for better performance */
 .defer-paint {
   content-visibility: auto;
   contain: style layout paint;

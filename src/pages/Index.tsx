@@ -1,19 +1,26 @@
 import { useAuth } from "@/hooks/useAuth";
-import UserManagement from "@/components/Admin/UserManagement";
+import { lazy, Suspense } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+
+// Lazy load the admin component since it's only needed for admins
+const UserManagement = lazy(() => import("@/components/Admin/UserManagement"));
 
 const Index = () => {
   const { isAdmin, user } = useAuth();
   const navigate = useNavigate();
 
   return (
-    <div className="container py-6 space-y-6">
+    <div className="container py-6 space-y-6 defer-paint">
       <h1 className="text-3xl font-bold">Welcome to PalmCacia</h1>
       
-      {isAdmin() && <UserManagement />}
+      {isAdmin() && (
+        <Suspense fallback={<Card className="p-6 animate-pulse" />}>
+          <UserManagement />
+        </Suspense>
+      )}
       
       {!user ? (
         <Card className="p-6">
@@ -26,7 +33,7 @@ const Index = () => {
           </Button>
         </Card>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-2 content-visibility-auto">
           <Card className="p-6">
             <h2 className="text-2xl font-bold mb-4">Markets</h2>
             <p className="text-muted-foreground mb-4">
