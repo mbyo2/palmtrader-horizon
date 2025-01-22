@@ -1,14 +1,41 @@
 import { useAuth } from "@/hooks/useAuth";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, memo } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, TrendingUp, DollarSign } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import MarketOverview from "@/components/MarketOverview";
 import StockList from "@/components/StockList";
+import ResearchTools from "@/components/Research/ResearchTools";
+import TradingView from "@/components/Trading/TradingView";
+import OptionsTrading from "@/components/Trading/OptionsTrading";
 
 // Lazy load the admin component since it's only needed for admins
 const UserManagement = lazy(() => import("@/components/Admin/UserManagement"));
+
+const QuickActionCard = memo(({ title, description, icon: Icon, onClick }: {
+  title: string;
+  description: string;
+  icon: typeof TrendingUp;
+  onClick: () => void;
+}) => (
+  <Card className="p-6 card-gradient hover:shadow-lg transition-all duration-200">
+    <div className="flex items-start space-x-4">
+      <div className="p-2 bg-primary/10 rounded-lg">
+        <Icon className="h-6 w-6 text-primary" />
+      </div>
+      <div className="flex-1">
+        <h3 className="text-xl font-semibold mb-2">{title}</h3>
+        <p className="text-muted-foreground mb-4">{description}</p>
+        <Button onClick={onClick} className="w-full">
+          View <ArrowRight className="ml-2 h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  </Card>
+));
+
+QuickActionCard.displayName = 'QuickActionCard';
 
 const Index = () => {
   const { isAdmin, user } = useAuth();
@@ -37,27 +64,43 @@ const Index = () => {
           </Button>
         </Card>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2 content-visibility-auto">
-          <Card className="p-6 card-gradient">
-            <h2 className="text-2xl font-bold mb-4">Markets</h2>
-            <p className="text-muted-foreground mb-4">
-              View real-time market data and trade your favorite stocks.
-            </p>
-            <Button onClick={() => navigate('/markets')}>
-              View Markets <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </Card>
-          
-          <Card className="p-6 card-gradient">
-            <h2 className="text-2xl font-bold mb-4">Portfolio</h2>
-            <p className="text-muted-foreground mb-4">
-              Track your investments and manage your trading positions.
-            </p>
-            <Button onClick={() => navigate('/portfolio')}>
-              View Portfolio <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </Card>
-        </div>
+        <>
+          <div className="grid gap-6 md:grid-cols-2 content-visibility-auto">
+            <QuickActionCard
+              title="Markets"
+              description="View real-time market data and trade your favorite stocks."
+              icon={TrendingUp}
+              onClick={() => navigate('/markets')}
+            />
+            <QuickActionCard
+              title="Portfolio"
+              description="Track your investments and manage your trading positions."
+              icon={DollarSign}
+              onClick={() => navigate('/portfolio')}
+            />
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-2 content-visibility-auto">
+            <div className="space-y-6">
+              <Card className="p-6 card-gradient">
+                <h2 className="text-2xl font-bold mb-4">Quick Trade</h2>
+                <TradingView />
+              </Card>
+              
+              <Card className="p-6 card-gradient">
+                <h2 className="text-2xl font-bold mb-4">Options Trading</h2>
+                <OptionsTrading />
+              </Card>
+            </div>
+            
+            <div className="space-y-6">
+              <Card className="p-6 card-gradient">
+                <h2 className="text-2xl font-bold mb-4">Research & Analysis</h2>
+                <ResearchTools />
+              </Card>
+            </div>
+          </div>
+        </>
       )}
       
       <div className="space-y-6 content-visibility-auto">
@@ -68,4 +111,4 @@ const Index = () => {
   );
 };
 
-export default Index;
+export default memo(Index);
