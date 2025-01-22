@@ -115,11 +115,13 @@ const StockList = () => {
       stock.name.toLowerCase().includes(search.toLowerCase())
   );
 
-  const Row = ({ index, style }: { index: number; style: React.CSSProperties }) => (
+  const Row = memo(({ index, style }: { index: number; style: React.CSSProperties }) => (
     <div style={style}>
       <StockCard stock={filteredStocks[index]} />
     </div>
-  );
+  ));
+
+  Row.displayName = 'Row';
 
   return (
     <div className="space-y-4">
@@ -136,6 +138,7 @@ const StockList = () => {
           itemCount={filteredStocks.length}
           itemSize={100}
           width="100%"
+          overscanCount={2}
         >
           {Row}
         </List>
