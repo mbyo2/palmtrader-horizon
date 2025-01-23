@@ -174,8 +174,8 @@ const Index = () => {
                     </Card>
                   </div>
                   <div className="lg:col-span-2 grid gap-6 md:grid-cols-2">
-                    <UserFollowing />
-                    <SocialShare />
+                    <UserFollowing userId={user?.id || ''} username="User" />
+                    <SocialShare symbol="AAPL" title="Check out this stock on PalmCacia!" />
                   </div>
                 </div>
               </section>
