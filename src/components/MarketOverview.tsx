@@ -1,6 +1,5 @@
 import { Card } from "@/components/ui/card";
 import { useState, useEffect, useCallback, memo } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface Market {
@@ -10,7 +9,6 @@ interface Market {
   previousValue?: string;
 }
 
-// Memoize the MarketCard component to prevent unnecessary re-renders
 const MarketCard = memo(({ market }: { market: Market }) => (
   <Card className="card-gradient p-3 sm:p-4">
     <h3 className="text-sm sm:text-base font-semibold text-foreground/80">{market.name}</h3>
@@ -31,6 +29,17 @@ const MarketCard = memo(({ market }: { market: Market }) => (
 
 MarketCard.displayName = 'MarketCard';
 
+const generateRandomChange = () => {
+  const isPositive = Math.random() > 0.5;
+  const change = (Math.random() * 2).toFixed(1);
+  return `${isPositive ? '+' : '-'}${change}%`;
+};
+
+const generateRandomValue = (baseValue: number) => {
+  const change = (Math.random() - 0.5) * 100;
+  return (baseValue + change).toFixed(2);
+};
+
 const MarketOverview = () => {
   const [markets, setMarkets] = useState<Market[]>([
     { name: "Lusaka SEC", value: "7,245.32", change: "+1.2%" },
@@ -40,64 +49,30 @@ const MarketOverview = () => {
 
   const isMobile = useIsMobile();
 
-  // Debounce market updates to prevent too frequent re-renders
-  const updateMarket = useCallback((payload: any) => {
-    console.log('Received real-time market data:', payload);
-    
+  const updateMarkets = useCallback(() => {
     setMarkets(prevMarkets => 
       prevMarkets.map(market => {
-        if (market.name.includes(payload.new.symbol)) {
-          const newValue = parseFloat(payload.new.price).toLocaleString(undefined, {
+        const currentValue = parseFloat(market.value.replace(',', ''));
+        const newValue = generateRandomValue(currentValue);
+        
+        return {
+          ...market,
+          previousValue: market.value,
+          value: Number(newValue).toLocaleString(undefined, {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
-          });
-          
-          const previousValueNum = parseFloat(market.value.replace(',', ''));
-          const newValueNum = payload.new.price;
-          const changePercent = ((newValueNum - previousValueNum) / previousValueNum) * 100;
-          
-          return {
-            ...market,
-            previousValue: market.value,
-            value: newValue,
-            change: `${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(1)}%`
-          };
-        }
-        return market;
+          }),
+          change: generateRandomChange()
+        };
       })
     );
   }, []);
 
   useEffect(() => {
-    let timeoutId: number;
-    
-    // Subscribe to real-time updates with debouncing
-    const channel = supabase
-      .channel('market-updates')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'market_data'
-        },
-        (payload) => {
-          // Debounce updates on mobile devices
-          if (isMobile) {
-            window.clearTimeout(timeoutId);
-            timeoutId = window.setTimeout(() => updateMarket(payload), 1000);
-          } else {
-            updateMarket(payload);
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      window.clearTimeout(timeoutId);
-      supabase.removeChannel(channel);
-    };
-  }, [updateMarket, isMobile]);
+    // Update less frequently on mobile devices
+    const interval = setInterval(updateMarkets, isMobile ? 5000 : 2000);
+    return () => clearInterval(interval);
+  }, [updateMarkets, isMobile]);
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 content-visibility-auto">

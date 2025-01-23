@@ -1,7 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useState, useEffect, useCallback, memo } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import WatchlistButton from "./WatchlistButton";
 import { FixedSizeList as List } from "react-window";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -14,7 +13,6 @@ interface Stock {
   previousPrice?: string;
 }
 
-// Memoize the StockCard component to prevent unnecessary re-renders
 const StockCard = memo(({ stock }: { stock: Stock }) => (
   <Card className="card-gradient p-4 hover:shadow-lg transition-all duration-200 m-1">
     <div className="flex justify-between items-center">
@@ -45,69 +43,53 @@ const StockCard = memo(({ stock }: { stock: Stock }) => (
 
 StockCard.displayName = 'StockCard';
 
+const generateRandomChange = () => {
+  const isPositive = Math.random() > 0.5;
+  const change = (Math.random() * 2).toFixed(1);
+  return `${isPositive ? '+' : '-'}${change}%`;
+};
+
+const generateRandomPrice = (basePrice: number) => {
+  const change = (Math.random() - 0.5) * 2;
+  return (basePrice + change).toFixed(2);
+};
+
 const StockList = () => {
   const [search, setSearch] = useState("");
   const [stocks, setStocks] = useState<Stock[]>([
     { symbol: "ZCCM", name: "ZCCM Investments Holdings", price: "24.50", change: "+2.3%" },
     { symbol: "CEC", name: "Copperbelt Energy Corporation", price: "12.75", change: "-0.8%" },
     { symbol: "ZSUG", name: "Zambia Sugar", price: "8.90", change: "+1.5%" },
+    { symbol: "PUMA", name: "Puma Energy Zambia", price: "15.30", change: "-0.4%" },
+    { symbol: "REIZ", name: "Real Estate Investments Zambia", price: "5.45", change: "+1.2%" },
+    { symbol: "PRIMA", name: "Prima Reinsurance", price: "2.80", change: "-0.6%" },
+    { symbol: "BATZ", name: "British American Tobacco Zambia", price: "22.15", change: "+0.9%" },
+    { symbol: "ZNCO", name: "Zambia National Commercial Bank", price: "1.95", change: "-0.3%" },
   ]);
 
   const isMobile = useIsMobile();
 
-  // Debounce stock updates to prevent too frequent re-renders
-  const updateStock = useCallback((payload: any) => {
-    console.log('Received real-time stock data:', payload);
-    
+  const updateStocks = useCallback(() => {
     setStocks(prevStocks => 
       prevStocks.map(stock => {
-        if (stock.symbol === payload.new.symbol) {
-          const newPrice = parseFloat(payload.new.price).toFixed(2);
-          const previousPrice = parseFloat(stock.price);
-          const priceChange = ((parseFloat(newPrice) - previousPrice) / previousPrice) * 100;
-          
-          return {
-            ...stock,
-            previousPrice: stock.price,
-            price: newPrice,
-            change: `${priceChange >= 0 ? '+' : ''}${priceChange.toFixed(1)}%`
-          };
-        }
-        return stock;
+        const currentPrice = parseFloat(stock.price);
+        const newPrice = generateRandomPrice(currentPrice);
+        
+        return {
+          ...stock,
+          previousPrice: stock.price,
+          price: newPrice,
+          change: generateRandomChange()
+        };
       })
     );
   }, []);
 
   useEffect(() => {
-    let timeoutId: number;
-    
-    // Subscribe to real-time updates with debouncing
-    const channel = supabase
-      .channel('stock-updates')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'market_data'
-        },
-        (payload) => {
-          // Debounce updates on mobile devices
-          if (isMobile) {
-            window.clearTimeout(timeoutId);
-            timeoutId = window.setTimeout(() => updateStock(payload), 1000);
-          } else {
-            updateStock(payload);
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      window.clearTimeout(timeoutId);
-      supabase.removeChannel(channel);
-    };
-  }, [updateStock, isMobile]);
+    // Update less frequently on mobile devices
+    const interval = setInterval(updateStocks, isMobile ? 5000 : 2000);
+    return () => clearInterval(interval);
+  }, [updateStocks, isMobile]);
 
   const filteredStocks = stocks.filter(
     (stock) =>
