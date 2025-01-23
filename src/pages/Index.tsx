@@ -2,13 +2,24 @@ import { useAuth } from "@/hooks/useAuth";
 import { lazy, Suspense, memo } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, TrendingUp, DollarSign } from "lucide-react";
+import { ArrowRight, TrendingUp, DollarSign, LineChart, Building2, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import MarketOverview from "@/components/MarketOverview";
 import StockList from "@/components/StockList";
 import ResearchTools from "@/components/Research/ResearchTools";
 import TradingView from "@/components/Trading/TradingView";
 import OptionsTrading from "@/components/Trading/OptionsTrading";
+import RecurringInvestments from "@/components/Trading/RecurringInvestments";
+import BankAccountManagement from "@/components/Banking/BankAccountManagement";
+import FundTransfers from "@/components/Banking/FundTransfers";
+import PortfolioAnalytics from "@/components/Trading/PortfolioAnalytics";
+import CompanyFundamentals from "@/components/Research/CompanyFundamentals";
+import AnalystRatings from "@/components/Research/AnalystRatings";
+import MarketNews from "@/components/Research/MarketNews";
+import PopularStocks from "@/components/Social/PopularStocks";
+import Comments from "@/components/Social/Comments";
+import UserFollowing from "@/components/Social/UserFollowing";
+import SocialShare from "@/components/Social/SocialShare";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
@@ -50,7 +61,11 @@ const Index = () => {
         <div className="container py-6 space-y-6 defer-paint">
           <h1 className="text-3xl font-bold gradient-text">Welcome to PalmCacia</h1>
           
-          <MarketOverview />
+          {/* Market Data Section */}
+          <section className="space-y-4">
+            <h2 className="text-2xl font-semibold">Market Overview</h2>
+            <MarketOverview />
+          </section>
           
           {isAdmin() && (
             <Suspense fallback={<Card className="p-6 animate-pulse" />}>
@@ -70,7 +85,8 @@ const Index = () => {
             </Card>
           ) : (
             <>
-              <div className="grid gap-6 md:grid-cols-2 content-visibility-auto">
+              {/* Quick Actions */}
+              <div className="grid gap-6 md:grid-cols-3 content-visibility-auto">
                 <QuickActionCard
                   title="Markets"
                   description="View real-time market data and trade your favorite stocks."
@@ -83,35 +99,94 @@ const Index = () => {
                   icon={DollarSign}
                   onClick={() => navigate('/portfolio')}
                 />
+                <QuickActionCard
+                  title="Research"
+                  description="Access market research, analysis, and company fundamentals."
+                  icon={LineChart}
+                  onClick={() => navigate('/research')}
+                />
               </div>
 
+              {/* Trading & Portfolio Section */}
               <div className="grid gap-6 lg:grid-cols-2 content-visibility-auto">
                 <div className="space-y-6">
-                  <Card className="p-6 card-gradient">
-                    <h2 className="text-2xl font-bold mb-4">Quick Trade</h2>
+                  <section>
+                    <h2 className="text-2xl font-semibold mb-4">Quick Trade</h2>
                     <TradingView />
-                  </Card>
+                  </section>
                   
-                  <Card className="p-6 card-gradient">
-                    <h2 className="text-2xl font-bold mb-4">Options Trading</h2>
+                  <section>
+                    <h2 className="text-2xl font-semibold mb-4">Options Trading</h2>
                     <OptionsTrading />
-                  </Card>
+                  </section>
+
+                  <section>
+                    <h2 className="text-2xl font-semibold mb-4">Recurring Investments</h2>
+                    <RecurringInvestments />
+                  </section>
                 </div>
                 
                 <div className="space-y-6">
-                  <Card className="p-6 card-gradient">
-                    <h2 className="text-2xl font-bold mb-4">Research & Analysis</h2>
-                    <ResearchTools />
-                  </Card>
+                  <section>
+                    <h2 className="text-2xl font-semibold mb-4">Portfolio Analytics</h2>
+                    <PortfolioAnalytics />
+                  </section>
+
+                  <section>
+                    <h2 className="text-2xl font-semibold mb-4">Banking</h2>
+                    <BankAccountManagement />
+                    <div className="mt-4">
+                      <FundTransfers />
+                    </div>
+                  </section>
                 </div>
               </div>
+
+              {/* Research & Analysis Section */}
+              <section className="space-y-6">
+                <h2 className="text-2xl font-semibold">Research & Analysis</h2>
+                <div className="grid gap-6 lg:grid-cols-2">
+                  <CompanyFundamentals symbol="AAPL" />
+                  <AnalystRatings symbol="AAPL" />
+                  <div className="lg:col-span-2">
+                    <MarketNews symbol="AAPL" />
+                  </div>
+                </div>
+              </section>
+
+              {/* Social Features Section */}
+              <section className="space-y-6">
+                <h2 className="text-2xl font-semibold">Community</h2>
+                <div className="grid gap-6 lg:grid-cols-2">
+                  <div>
+                    <Card className="p-6">
+                      <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                        <Users className="h-5 w-5" />
+                        Popular Stocks
+                      </h3>
+                      <PopularStocks />
+                    </Card>
+                  </div>
+                  <div>
+                    <Card className="p-6">
+                      <h3 className="text-xl font-semibold mb-4">Community Discussion</h3>
+                      <Comments symbol="AAPL" />
+                    </Card>
+                  </div>
+                  <div className="lg:col-span-2 grid gap-6 md:grid-cols-2">
+                    <UserFollowing />
+                    <SocialShare />
+                  </div>
+                </div>
+              </section>
             </>
           )}
           
-          <div className="space-y-6 content-visibility-auto">
-            <h2 className="text-2xl font-bold">Popular Stocks</h2>
+          {/* Stock List Section */}
+          <section className="space-y-4 content-visibility-auto">
+            <h2 className="text-2xl font-semibold">Popular Stocks</h2>
             <StockList />
-          </div>
+          </section>
         </div>
       </main>
 

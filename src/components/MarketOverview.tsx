@@ -31,20 +31,24 @@ MarketCard.displayName = 'MarketCard';
 
 const generateRandomChange = () => {
   const isPositive = Math.random() > 0.5;
-  const change = (Math.random() * 2).toFixed(1);
+  const change = (Math.random() * 1.5).toFixed(2); // More realistic daily change %
   return `${isPositive ? '+' : '-'}${change}%`;
 };
 
 const generateRandomValue = (baseValue: number) => {
-  const change = (Math.random() - 0.5) * 100;
+  const maxChange = baseValue * 0.002; // Max 0.2% change per update
+  const change = (Math.random() - 0.5) * maxChange;
   return (baseValue + change).toFixed(2);
 };
 
 const MarketOverview = () => {
   const [markets, setMarkets] = useState<Market[]>([
-    { name: "Lusaka SEC", value: "7,245.32", change: "+1.2%" },
-    { name: "NSE", value: "54,123.45", change: "-0.5%" },
-    { name: "JSE", value: "68,432.12", change: "+0.8%" },
+    { name: "Lusaka SEC All Share", value: "7,245.32", change: "+1.2%" },
+    { name: "NSE All Share", value: "54,123.45", change: "-0.5%" },
+    { name: "JSE Top 40", value: "68,432.12", change: "+0.8%" },
+    { name: "EGX 30", value: "24,567.89", change: "-0.3%" },
+    { name: "NSE Nigeria", value: "45,678.90", change: "+0.6%" },
+    { name: "GSE Composite", value: "3,456.78", change: "-0.4%" }
   ]);
 
   const isMobile = useIsMobile();

@@ -45,26 +45,31 @@ StockCard.displayName = 'StockCard';
 
 const generateRandomChange = () => {
   const isPositive = Math.random() > 0.5;
-  const change = (Math.random() * 2).toFixed(1);
+  const change = (Math.random() * 1.5).toFixed(2); // More realistic daily change %
   return `${isPositive ? '+' : '-'}${change}%`;
 };
 
 const generateRandomPrice = (basePrice: number) => {
-  const change = (Math.random() - 0.5) * 2;
+  const maxChange = basePrice * 0.002; // Max 0.2% change per update
+  const change = (Math.random() - 0.5) * maxChange;
   return (basePrice + change).toFixed(2);
 };
 
 const StockList = () => {
   const [search, setSearch] = useState("");
   const [stocks, setStocks] = useState<Stock[]>([
-    { symbol: "ZCCM", name: "ZCCM Investments Holdings", price: "24.50", change: "+2.3%" },
-    { symbol: "CEC", name: "Copperbelt Energy Corporation", price: "12.75", change: "-0.8%" },
-    { symbol: "ZSUG", name: "Zambia Sugar", price: "8.90", change: "+1.5%" },
-    { symbol: "PUMA", name: "Puma Energy Zambia", price: "15.30", change: "-0.4%" },
-    { symbol: "REIZ", name: "Real Estate Investments Zambia", price: "5.45", change: "+1.2%" },
-    { symbol: "PRIMA", name: "Prima Reinsurance", price: "2.80", change: "-0.6%" },
-    { symbol: "BATZ", name: "British American Tobacco Zambia", price: "22.15", change: "+0.9%" },
-    { symbol: "ZNCO", name: "Zambia National Commercial Bank", price: "1.95", change: "-0.3%" },
+    { symbol: "ZCCM", name: "ZCCM Investments Holdings Plc", price: "24.50", change: "+2.3%" },
+    { symbol: "CEC", name: "Copperbelt Energy Corporation Plc", price: "12.75", change: "-0.8%" },
+    { symbol: "ZSUG", name: "Zambia Sugar Plc", price: "8.90", change: "+1.5%" },
+    { symbol: "PUMA", name: "Puma Energy Zambia Plc", price: "15.30", change: "-0.4%" },
+    { symbol: "REIZ", name: "Real Estate Investments Zambia Plc", price: "5.45", change: "+1.2%" },
+    { symbol: "PRIMA", name: "Prima Reinsurance Plc", price: "2.80", change: "-0.6%" },
+    { symbol: "BATZ", name: "British American Tobacco Zambia Plc", price: "22.15", change: "+0.9%" },
+    { symbol: "ZNCO", name: "Zambia National Commercial Bank Plc", price: "1.95", change: "-0.3%" },
+    { symbol: "AECI", name: "AECI Mining Chemicals Limited", price: "18.40", change: "+1.1%" },
+    { symbol: "LAFZ", name: "Lafarge Zambia Plc", price: "4.75", change: "-0.2%" },
+    { symbol: "SHOP", name: "Shoprite Holdings Limited", price: "45.60", change: "+0.7%" },
+    { symbol: "MCEL", name: "Madison Financial Services Plc", price: "3.15", change: "-0.5%" }
   ]);
 
   const isMobile = useIsMobile();
