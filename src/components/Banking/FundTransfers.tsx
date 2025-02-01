@@ -17,10 +17,12 @@ const FundTransfers = () => {
   const [amount, setAmount] = useState("");
   const [direction, setDirection] = useState<"deposit" | "withdrawal">("deposit");
   const [bankAccountId, setBankAccountId] = useState("");
+  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
   const handleTransfer = async () => {
     try {
+      setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         toast({
@@ -31,21 +33,23 @@ const FundTransfers = () => {
         return;
       }
 
-      // TODO: Integrate with DPO Group API here
-      // For now, we'll just create a record in our database
-      const { error } = await supabase.from("fund_transfers").insert({
-        user_id: user.id,
-        bank_account_id: bankAccountId,
-        amount: parseFloat(amount),
-        direction,
-        status: "pending",
+      // Call the banking edge function
+      const { data, error } = await supabase.functions.invoke('banking', {
+        body: {
+          action: 'processTransfer',
+          data: {
+            amount: parseFloat(amount),
+            bankAccountId,
+            direction,
+          }
+        }
       });
 
       if (error) throw error;
 
       toast({
         title: "Transfer Initiated",
-        description: `Your ${direction} of $${amount} has been initiated`,
+        description: `Your ${direction} of $${amount} has been initiated. Reference: ${data.transfer.transaction_ref}`,
       });
 
       // Reset form
@@ -58,6 +62,8 @@ const FundTransfers = () => {
         description: "Failed to initiate transfer",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -116,9 +122,9 @@ const FundTransfers = () => {
         <Button
           onClick={handleTransfer}
           className="w-full bg-primary hover:bg-primary/90"
-          disabled={!amount || !bankAccountId}
+          disabled={!amount || !bankAccountId || loading}
         >
-          Initiate Transfer
+          {loading ? "Processing..." : "Initiate Transfer"}
         </Button>
       </div>
     </Card>

@@ -13,11 +13,13 @@ interface BankAccount {
   bank_name: string;
   branch_code: string | null;
   is_primary: boolean;
+  is_verified: boolean;
 }
 
 const BankAccountManagement = () => {
   const [accounts, setAccounts] = useState<BankAccount[]>([]);
   const [loading, setLoading] = useState(true);
+  const [verifying, setVerifying] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
     account_name: "",
@@ -57,6 +59,8 @@ const BankAccountManagement = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setVerifying(true);
+    
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -68,16 +72,32 @@ const BankAccountManagement = () => {
         return;
       }
 
+      // Verify account details first
+      const { data: verificationData, error: verificationError } = await supabase.functions.invoke('banking', {
+        body: {
+          action: 'verifyAccount',
+          data: {
+            accountNumber: formData.account_number,
+            bankName: formData.bank_name,
+            accountName: formData.account_name,
+          }
+        }
+      });
+
+      if (verificationError) throw verificationError;
+
+      // If verification successful, save the account
       const { error } = await supabase.from("bank_accounts").insert({
         ...formData,
         user_id: user.id,
+        is_verified: true,
       });
 
       if (error) throw error;
 
       toast({
         title: "Success",
-        description: "Bank account added successfully",
+        description: "Bank account verified and added successfully",
       });
 
       setFormData({
@@ -95,6 +115,8 @@ const BankAccountManagement = () => {
         description: "Failed to add bank account",
         variant: "destructive",
       });
+    } finally {
+      setVerifying(false);
     }
   };
 
@@ -143,8 +165,8 @@ const BankAccountManagement = () => {
               setFormData({ ...formData, branch_code: e.target.value })
             }
           />
-          <Button type="submit" className="w-full">
-            Add Bank Account
+          <Button type="submit" className="w-full" disabled={verifying}>
+            {verifying ? "Verifying..." : "Add Bank Account"}
           </Button>
         </form>
       )}
@@ -170,11 +192,18 @@ const BankAccountManagement = () => {
                   </p>
                 </div>
               </div>
-              {account.is_primary && (
-                <span className="text-sm bg-primary/20 text-primary px-2 py-1 rounded">
-                  Primary
-                </span>
-              )}
+              <div className="flex items-center gap-2">
+                {account.is_verified && (
+                  <span className="text-sm bg-green-500/20 text-green-500 px-2 py-1 rounded">
+                    Verified
+                  </span>
+                )}
+                {account.is_primary && (
+                  <span className="text-sm bg-primary/20 text-primary px-2 py-1 rounded">
+                    Primary
+                  </span>
+                )}
+              </div>
             </div>
           ))
         )}
