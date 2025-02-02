@@ -18,8 +18,9 @@ import {
   PieChart,
   Pie,
   Cell,
+  Legend,
 } from "recharts";
-import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
+import { ChartContainer, ChartTooltip, ChartLegend } from "@/components/ui/chart";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -27,6 +28,10 @@ const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8"];
 
 const PortfolioAnalytics = () => {
   const [timeRange, setTimeRange] = useState<"1d" | "1w" | "1m" | "3m" | "1y">("1m");
+  const [visibleSeries, setVisibleSeries] = useState({
+    portfolioValue: true,
+    returns: true,
+  });
 
   // Fetch portfolio data
   const { data: portfolioData } = useQuery({
@@ -76,11 +81,18 @@ const PortfolioAnalytics = () => {
 
   // Mock performance data (in a real app, this would come from historical price data)
   const performanceData = [
-    { date: "2024-01", value: 10000 },
-    { date: "2024-02", value: 12000 },
-    { date: "2024-03", value: 11500 },
-    { date: "2024-04", value: 13000 },
+    { date: "2024-01", value: 10000, returns: 0 },
+    { date: "2024-02", value: 12000, returns: 20 },
+    { date: "2024-03", value: 11500, returns: 15 },
+    { date: "2024-04", value: 13000, returns: 30 },
   ];
+
+  const handleLegendClick = (dataKey: keyof typeof visibleSeries) => {
+    setVisibleSeries(prev => ({
+      ...prev,
+      [dataKey]: !prev[dataKey]
+    }));
+  };
 
   return (
     <div className="space-y-6">
@@ -111,12 +123,27 @@ const PortfolioAnalytics = () => {
                 <XAxis dataKey="date" />
                 <YAxis />
                 <ChartTooltip />
-                <Line
-                  type="monotone"
-                  dataKey="value"
-                  stroke="#8884d8"
-                  strokeWidth={2}
+                <Legend 
+                  onClick={(e) => handleLegendClick(e.dataKey as keyof typeof visibleSeries)}
                 />
+                {visibleSeries.portfolioValue && (
+                  <Line
+                    type="monotone"
+                    dataKey="value"
+                    name="Portfolio Value"
+                    stroke="#8884d8"
+                    strokeWidth={2}
+                  />
+                )}
+                {visibleSeries.returns && (
+                  <Line
+                    type="monotone"
+                    dataKey="returns"
+                    name="Returns %"
+                    stroke="#82ca9d"
+                    strokeWidth={2}
+                  />
+                )}
               </LineChart>
             </ChartContainer>
           </div>
@@ -143,6 +170,7 @@ const PortfolioAnalytics = () => {
                   ))}
                 </Pie>
                 <Tooltip />
+                <Legend />
               </PieChart>
             </ResponsiveContainer>
           </div>
