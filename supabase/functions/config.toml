@@ -1,0 +1,4 @@
+project_id = "hvrcchjbqumlknaboczh"
+
+[functions.alpha-vantage]
+verify_jwt = false

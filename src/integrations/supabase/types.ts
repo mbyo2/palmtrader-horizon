@@ -509,6 +509,36 @@ export type Database = {
         }
         Relationships: []
       }
+      technical_indicators: {
+        Row: {
+          created_at: string
+          id: string
+          indicator_type: string
+          period: number | null
+          symbol: string
+          timestamp: string
+          value: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          indicator_type: string
+          period?: number | null
+          symbol: string
+          timestamp?: string
+          value: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          indicator_type?: string
+          period?: number | null
+          symbol?: string
+          timestamp?: string
+          value?: number
+        }
+        Relationships: []
+      }
       trades: {
         Row: {
           created_at: string
