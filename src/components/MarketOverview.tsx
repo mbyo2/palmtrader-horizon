@@ -1,12 +1,14 @@
 import { Card } from "@/components/ui/card";
 import { useState, useEffect, useCallback, memo } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { finnhubSocket } from "@/utils/finnhubSocket";
 
 interface Market {
   name: string;
   value: string;
   change: string;
   previousValue?: string;
+  symbol: string;
 }
 
 const MarketCard = memo(({ market }: { market: Market }) => (
@@ -29,59 +31,66 @@ const MarketCard = memo(({ market }: { market: Market }) => (
 
 MarketCard.displayName = 'MarketCard';
 
-const generateRandomChange = () => {
-  const isPositive = Math.random() > 0.5;
-  const change = (Math.random() * 1.5).toFixed(2); // More realistic daily change %
-  return `${isPositive ? '+' : '-'}${change}%`;
-};
-
-const generateRandomValue = (baseValue: number) => {
-  const maxChange = baseValue * 0.002; // Max 0.2% change per update
-  const change = (Math.random() - 0.5) * maxChange;
-  return (baseValue + change).toFixed(2);
-};
-
 const MarketOverview = () => {
   const [markets, setMarkets] = useState<Market[]>([
-    { name: "Lusaka SEC All Share", value: "7,245.32", change: "+1.2%" },
-    { name: "NSE All Share", value: "54,123.45", change: "-0.5%" },
-    { name: "JSE Top 40", value: "68,432.12", change: "+0.8%" },
-    { name: "EGX 30", value: "24,567.89", change: "-0.3%" },
-    { name: "NSE Nigeria", value: "45,678.90", change: "+0.6%" },
-    { name: "GSE Composite", value: "3,456.78", change: "-0.4%" }
+    { name: "Lusaka SEC All Share", value: "7,245.32", change: "+1.2%", symbol: "LUSE.ZM" },
+    { name: "NSE All Share", value: "54,123.45", change: "-0.5%", symbol: "NSE.KE" },
+    { name: "JSE Top 40", value: "68,432.12", change: "+0.8%", symbol: "TOP40.JO" },
+    { name: "EGX 30", value: "24,567.89", change: "-0.3%", symbol: "EGX30.EG" },
+    { name: "NSE Nigeria", value: "45,678.90", change: "+0.6%", symbol: "NGSE.NG" },
+    { name: "GSE Composite", value: "3,456.78", change: "-0.4%", symbol: "GSE.GH" }
   ]);
 
   const isMobile = useIsMobile();
 
-  const updateMarkets = useCallback(() => {
-    setMarkets(prevMarkets => 
-      prevMarkets.map(market => {
-        const currentValue = parseFloat(market.value.replace(',', ''));
-        const newValue = generateRandomValue(currentValue);
-        
-        return {
-          ...market,
-          previousValue: market.value,
-          value: Number(newValue).toLocaleString(undefined, {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-          }),
-          change: generateRandomChange()
-        };
-      })
-    );
-  }, []);
-
   useEffect(() => {
-    // Update less frequently on mobile devices
-    const interval = setInterval(updateMarkets, isMobile ? 5000 : 2000);
-    return () => clearInterval(interval);
-  }, [updateMarkets, isMobile]);
+    console.log("Setting up market data subscriptions");
+    
+    // Subscribe to all market symbols
+    markets.forEach(market => {
+      finnhubSocket.subscribe(market.symbol);
+    });
+
+    // Set up data handler
+    const unsubscribe = finnhubSocket.onMarketData(({ symbol, price }) => {
+      console.log("Received market data:", { symbol, price });
+      
+      setMarkets(prevMarkets => 
+        prevMarkets.map(market => {
+          if (market.symbol === symbol) {
+            const prevValue = parseFloat(market.value.replace(',', ''));
+            const newValue = price;
+            const percentChange = ((newValue - prevValue) / prevValue * 100).toFixed(2);
+            
+            return {
+              ...market,
+              previousValue: market.value,
+              value: newValue.toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+              }),
+              change: `${percentChange.startsWith('-') ? '' : '+'}${percentChange}%`
+            };
+          }
+          return market;
+        })
+      );
+    });
+
+    // Cleanup subscriptions
+    return () => {
+      console.log("Cleaning up market data subscriptions");
+      markets.forEach(market => {
+        finnhubSocket.unsubscribe(market.symbol);
+      });
+      unsubscribe();
+    };
+  }, [markets]);
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 content-visibility-auto">
       {markets.map((market) => (
-        <MarketCard key={market.name} market={market} />
+        <MarketCard key={market.symbol} market={market} />
       ))}
     </div>
   );

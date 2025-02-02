@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, memo } from "react";
 import WatchlistButton from "./WatchlistButton";
 import { FixedSizeList as List } from "react-window";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { finnhubSocket } from "@/utils/finnhubSocket";
 
 interface Stock {
   symbol: string;
@@ -43,58 +44,64 @@ const StockCard = memo(({ stock }: { stock: Stock }) => (
 
 StockCard.displayName = 'StockCard';
 
-const generateRandomChange = () => {
-  const isPositive = Math.random() > 0.5;
-  const change = (Math.random() * 1.5).toFixed(2); // More realistic daily change %
-  return `${isPositive ? '+' : '-'}${change}%`;
-};
-
-const generateRandomPrice = (basePrice: number) => {
-  const maxChange = basePrice * 0.002; // Max 0.2% change per update
-  const change = (Math.random() - 0.5) * maxChange;
-  return (basePrice + change).toFixed(2);
-};
-
 const StockList = () => {
   const [search, setSearch] = useState("");
   const [stocks, setStocks] = useState<Stock[]>([
-    { symbol: "ZCCM", name: "ZCCM Investments Holdings Plc", price: "24.50", change: "+2.3%" },
-    { symbol: "CEC", name: "Copperbelt Energy Corporation Plc", price: "12.75", change: "-0.8%" },
-    { symbol: "ZSUG", name: "Zambia Sugar Plc", price: "8.90", change: "+1.5%" },
-    { symbol: "PUMA", name: "Puma Energy Zambia Plc", price: "15.30", change: "-0.4%" },
-    { symbol: "REIZ", name: "Real Estate Investments Zambia Plc", price: "5.45", change: "+1.2%" },
-    { symbol: "PRIMA", name: "Prima Reinsurance Plc", price: "2.80", change: "-0.6%" },
-    { symbol: "BATZ", name: "British American Tobacco Zambia Plc", price: "22.15", change: "+0.9%" },
-    { symbol: "ZNCO", name: "Zambia National Commercial Bank Plc", price: "1.95", change: "-0.3%" },
-    { symbol: "AECI", name: "AECI Mining Chemicals Limited", price: "18.40", change: "+1.1%" },
-    { symbol: "LAFZ", name: "Lafarge Zambia Plc", price: "4.75", change: "-0.2%" },
-    { symbol: "SHOP", name: "Shoprite Holdings Limited", price: "45.60", change: "+0.7%" },
-    { symbol: "MCEL", name: "Madison Financial Services Plc", price: "3.15", change: "-0.5%" }
+    { symbol: "ZCCM.ZM", name: "ZCCM Investments Holdings Plc", price: "24.50", change: "+2.3%" },
+    { symbol: "CEC.ZM", name: "Copperbelt Energy Corporation Plc", price: "12.75", change: "-0.8%" },
+    { symbol: "ZSUG.ZM", name: "Zambia Sugar Plc", price: "8.90", change: "+1.5%" },
+    { symbol: "PUMA.ZM", name: "Puma Energy Zambia Plc", price: "15.30", change: "-0.4%" },
+    { symbol: "REIZ.ZM", name: "Real Estate Investments Zambia Plc", price: "5.45", change: "+1.2%" },
+    { symbol: "PRIMA.ZM", name: "Prima Reinsurance Plc", price: "2.80", change: "-0.6%" },
+    { symbol: "BATZ.ZM", name: "British American Tobacco Zambia Plc", price: "22.15", change: "+0.9%" },
+    { symbol: "ZNCO.ZM", name: "Zambia National Commercial Bank Plc", price: "1.95", change: "-0.3%" },
+    { symbol: "AECI.ZM", name: "AECI Mining Chemicals Limited", price: "18.40", change: "+1.1%" },
+    { symbol: "LAFZ.ZM", name: "Lafarge Zambia Plc", price: "4.75", change: "-0.2%" },
+    { symbol: "SHOP.ZM", name: "Shoprite Holdings Limited", price: "45.60", change: "+0.7%" },
+    { symbol: "MCEL.ZM", name: "Madison Financial Services Plc", price: "3.15", change: "-0.5%" }
   ]);
 
   const isMobile = useIsMobile();
 
-  const updateStocks = useCallback(() => {
-    setStocks(prevStocks => 
-      prevStocks.map(stock => {
-        const currentPrice = parseFloat(stock.price);
-        const newPrice = generateRandomPrice(currentPrice);
-        
-        return {
-          ...stock,
-          previousPrice: stock.price,
-          price: newPrice,
-          change: generateRandomChange()
-        };
-      })
-    );
-  }, []);
-
   useEffect(() => {
-    // Update less frequently on mobile devices
-    const interval = setInterval(updateStocks, isMobile ? 5000 : 2000);
-    return () => clearInterval(interval);
-  }, [updateStocks, isMobile]);
+    console.log("Setting up stock data subscriptions");
+    
+    // Subscribe to all stock symbols
+    stocks.forEach(stock => {
+      finnhubSocket.subscribe(stock.symbol);
+    });
+
+    // Set up data handler
+    const unsubscribe = finnhubSocket.onMarketData(({ symbol, price }) => {
+      console.log("Received stock data:", { symbol, price });
+      
+      setStocks(prevStocks => 
+        prevStocks.map(stock => {
+          if (stock.symbol === symbol) {
+            const prevPrice = parseFloat(stock.price);
+            const percentChange = ((price - prevPrice) / prevPrice * 100).toFixed(2);
+            
+            return {
+              ...stock,
+              previousPrice: stock.price,
+              price: price.toFixed(2),
+              change: `${percentChange.startsWith('-') ? '' : '+'}${percentChange}%`
+            };
+          }
+          return stock;
+        })
+      );
+    });
+
+    // Cleanup subscriptions
+    return () => {
+      console.log("Cleaning up stock data subscriptions");
+      stocks.forEach(stock => {
+        finnhubSocket.unsubscribe(stock.symbol);
+      });
+      unsubscribe();
+    };
+  }, [stocks]);
 
   const filteredStocks = stocks.filter(
     (stock) =>
