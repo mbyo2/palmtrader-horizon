@@ -22,6 +22,7 @@ import UserFollowing from "@/components/Social/UserFollowing";
 import SocialShare from "@/components/Social/SocialShare";
 
 const UserManagement = lazy(() => import("@/components/Admin/UserManagement"));
+const LocalBusinessManagement = lazy(() => import("@/components/Admin/LocalBusinessManagement"));
 
 const QuickActionCard = memo(({ title, description, icon: Icon, onClick }: {
   title: string;
@@ -64,6 +65,9 @@ const Index = () => {
       {isAdmin() && (
         <Suspense fallback={<Card className="p-6 animate-pulse" />}>
           <UserManagement />
+          <div className="mt-6">
+            <LocalBusinessManagement />
+          </div>
         </Suspense>
       )}
       

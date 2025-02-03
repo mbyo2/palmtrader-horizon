@@ -272,6 +272,57 @@ export type Database = {
           },
         ]
       }
+      local_businesses: {
+        Row: {
+          admin_notes: string | null
+          company_name: string
+          created_at: string | null
+          description: string | null
+          documents_submitted: boolean | null
+          id: string
+          reviewed_by: string | null
+          sector: string | null
+          submitted_by: string | null
+          symbol: string
+          updated_at: string | null
+          verification_status:
+            | Database["public"]["Enums"]["business_verification_status"]
+            | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          company_name: string
+          created_at?: string | null
+          description?: string | null
+          documents_submitted?: boolean | null
+          id?: string
+          reviewed_by?: string | null
+          sector?: string | null
+          submitted_by?: string | null
+          symbol: string
+          updated_at?: string | null
+          verification_status?:
+            | Database["public"]["Enums"]["business_verification_status"]
+            | null
+        }
+        Update: {
+          admin_notes?: string | null
+          company_name?: string
+          created_at?: string | null
+          description?: string | null
+          documents_submitted?: boolean | null
+          id?: string
+          reviewed_by?: string | null
+          sector?: string | null
+          submitted_by?: string | null
+          symbol?: string
+          updated_at?: string | null
+          verification_status?:
+            | Database["public"]["Enums"]["business_verification_status"]
+            | null
+        }
+        Relationships: []
+      }
       market_data: {
         Row: {
           created_at: string
@@ -688,6 +739,7 @@ export type Database = {
     Enums: {
       account_role: "basic" | "premium" | "admin"
       account_status: "pending" | "active" | "restricted" | "suspended"
+      business_verification_status: "pending" | "approved" | "rejected"
       kyc_status: "not_started" | "pending" | "approved" | "rejected"
     }
     CompositeTypes: {
