@@ -1,21 +1,12 @@
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { useProtectedRoute } from "@/hooks/useProtectedRoute";
 import StockList from "@/components/StockList";
 
 const Watchlist = () => {
-  const navigate = useNavigate();
+  const { isLoading } = useProtectedRoute();
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        navigate('/auth');
-      }
-    };
-    
-    checkAuth();
-  }, [navigate]);
+  if (isLoading) {
+    return <div className="container py-6">Loading...</div>;
+  }
 
   return (
     <div className="container py-6">

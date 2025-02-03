@@ -1,23 +1,14 @@
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { useProtectedRoute } from "@/hooks/useProtectedRoute";
 import PortfolioAnalytics from "@/components/Trading/PortfolioAnalytics";
 import OrderHistory from "@/components/Trading/OrderHistory";
 import RecurringInvestments from "@/components/Trading/RecurringInvestments";
 
 const Portfolio = () => {
-  const navigate = useNavigate();
+  const { isLoading } = useProtectedRoute();
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        navigate('/auth');
-      }
-    };
-    
-    checkAuth();
-  }, [navigate]);
+  if (isLoading) {
+    return <div className="container py-6">Loading...</div>;
+  }
 
   return (
     <div className="container py-6 space-y-6">

@@ -17,7 +17,7 @@ const Auth = () => {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        navigate("/");
+        handleSuccessfulAuth();
       }
     };
     checkUser();
@@ -60,12 +60,21 @@ const Auth = () => {
           });
         }
 
-        navigate("/");
+        handleSuccessfulAuth();
       }
     });
 
     return () => subscription.unsubscribe();
   }, [navigate, toast]);
+
+  const handleSuccessfulAuth = () => {
+    // Check for redirect path in localStorage
+    const redirectPath = localStorage.getItem('redirectAfterLogin');
+    localStorage.removeItem('redirectAfterLogin'); // Clear the stored path
+    
+    // Navigate to the stored path or default to home
+    navigate(redirectPath || '/');
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 bg-background">
