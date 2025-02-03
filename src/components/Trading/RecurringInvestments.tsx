@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -11,30 +10,30 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useAuthRedirect } from "@/hooks/useAuthRedirect";
 
 const RecurringInvestments = () => {
   const [symbol, setSymbol] = useState("");
   const [amount, setAmount] = useState("");
   const [frequency, setFrequency] = useState<string>("weekly");
   const { toast } = useToast();
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  const handleAuthRequired = () => {
-    localStorage.setItem('redirectAfterLogin', location.pathname);
-    navigate('/auth');
-    toast({
-      title: "Authentication required",
-      description: "Please sign in to set up recurring investments",
-    });
-  };
+  const { handleAuthRequired } = useAuthRedirect();
 
   const handleSetupRecurring = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        handleAuthRequired();
+        handleAuthRequired("Please sign in to set up recurring investments");
+        return;
+      }
+
+      // Validate inputs
+      if (!symbol || !amount || !frequency) {
+        toast({
+          title: "Error",
+          description: "Please fill in all fields",
+          variant: "destructive",
+        });
         return;
       }
 
@@ -52,6 +51,7 @@ const RecurringInvestments = () => {
           break;
       }
 
+      // Insert recurring investment
       const { error } = await supabase.from("recurring_investments").insert({
         user_id: user.id,
         symbol: symbol.toUpperCase(),
@@ -63,8 +63,8 @@ const RecurringInvestments = () => {
       if (error) throw error;
 
       toast({
-        title: "Recurring Investment Set Up",
-        description: `${frequency} investment of $${amount} in ${symbol} set up successfully`,
+        title: "Success",
+        description: "Recurring investment set up successfully",
       });
 
       // Reset form
@@ -82,53 +82,32 @@ const RecurringInvestments = () => {
   };
 
   return (
-    <Card className="p-6 card-gradient">
-      <h2 className="text-xl font-semibold mb-4">Recurring Investments</h2>
-      <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium mb-1">Symbol</label>
-          <Input
-            value={symbol}
-            onChange={(e) => setSymbol(e.target.value)}
-            placeholder="Enter stock symbol"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-1">Amount ($)</label>
-          <Input
-            type="number"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            placeholder="Enter investment amount"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-1">Frequency</label>
-          <Select
-            value={frequency}
-            onValueChange={(value: string) => setFrequency(value)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select frequency" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="daily">Daily</SelectItem>
-              <SelectItem value="weekly">Weekly</SelectItem>
-              <SelectItem value="monthly">Monthly</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <Button
-          onClick={handleSetupRecurring}
-          className="w-full bg-primary hover:bg-primary/90"
-        >
-          Set Up Recurring Investment
-        </Button>
-      </div>
-    </Card>
+    <div className="space-y-4">
+      <Input
+        placeholder="Stock symbol (e.g., AAPL)"
+        value={symbol}
+        onChange={(e) => setSymbol(e.target.value)}
+      />
+      <Input
+        type="number"
+        placeholder="Amount"
+        value={amount}
+        onChange={(e) => setAmount(e.target.value)}
+      />
+      <Select value={frequency} onValueChange={setFrequency}>
+        <SelectTrigger>
+          <SelectValue placeholder="Select frequency" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="daily">Daily</SelectItem>
+          <SelectItem value="weekly">Weekly</SelectItem>
+          <SelectItem value="monthly">Monthly</SelectItem>
+        </SelectContent>
+      </Select>
+      <Button onClick={handleSetupRecurring} className="w-full">
+        Set Up Recurring Investment
+      </Button>
+    </div>
   );
 };
 

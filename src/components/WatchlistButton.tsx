@@ -1,9 +1,8 @@
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
+import { useEffect, useState } from "react";
 import { Star } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useAuthRedirect } from "@/hooks/useAuthRedirect";
 
 interface WatchlistButtonProps {
   symbol: string;
@@ -13,8 +12,7 @@ const WatchlistButton = ({ symbol }: WatchlistButtonProps) => {
   const [isInWatchlist, setIsInWatchlist] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-  const navigate = useNavigate();
-  const location = useLocation();
+  const { handleAuthRequired } = useAuthRedirect();
 
   useEffect(() => {
     checkWatchlistStatus();
@@ -30,7 +28,8 @@ const WatchlistButton = ({ symbol }: WatchlistButtonProps) => {
 
       const { data } = await supabase
         .from("watchlists")
-        .select("*")
+        .select()
+        .eq("user_id", session.session.user.id)
         .eq("symbol", symbol)
         .single();
 
@@ -42,20 +41,11 @@ const WatchlistButton = ({ symbol }: WatchlistButtonProps) => {
     }
   };
 
-  const handleAuthRequired = () => {
-    localStorage.setItem('redirectAfterLogin', location.pathname);
-    navigate('/auth');
-    toast({
-      title: "Authentication required",
-      description: "Please sign in to use the watchlist feature",
-    });
-  };
-
   const toggleWatchlist = async () => {
     try {
       const { data: session } = await supabase.auth.getSession();
       if (!session.session) {
-        handleAuthRequired();
+        handleAuthRequired("Please sign in to use the watchlist feature");
         return;
       }
 
@@ -63,27 +53,26 @@ const WatchlistButton = ({ symbol }: WatchlistButtonProps) => {
         await supabase
           .from("watchlists")
           .delete()
+          .eq("user_id", session.session.user.id)
           .eq("symbol", symbol);
-        
+
+        setIsInWatchlist(false);
         toast({
           title: "Removed from watchlist",
           description: `${symbol} has been removed from your watchlist`,
         });
       } else {
-        await supabase
-          .from("watchlists")
-          .insert([{ 
-            symbol,
-            user_id: session.session.user.id 
-          }]);
-        
+        await supabase.from("watchlists").insert({
+          user_id: session.session.user.id,
+          symbol,
+        });
+
+        setIsInWatchlist(true);
         toast({
           title: "Added to watchlist",
           description: `${symbol} has been added to your watchlist`,
         });
       }
-
-      setIsInWatchlist(!isInWatchlist);
     } catch (error) {
       console.error("Error toggling watchlist:", error);
       toast({
@@ -95,22 +84,20 @@ const WatchlistButton = ({ symbol }: WatchlistButtonProps) => {
   };
 
   if (isLoading) {
-    return null;
+    return <div>Loading...</div>;
   }
 
   return (
-    <Button
-      variant="ghost"
-      size="sm"
+    <button
       onClick={toggleWatchlist}
-      className="hover:bg-background/50"
+      className={`p-2 rounded-full transition-colors ${
+        isInWatchlist
+          ? "text-yellow-500 hover:text-yellow-600"
+          : "text-gray-400 hover:text-gray-500"
+      }`}
     >
-      <Star
-        className={`h-5 w-5 ${
-          isInWatchlist ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"
-        }`}
-      />
-    </Button>
+      <Star className="h-6 w-6" fill={isInWatchlist ? "currentColor" : "none"} />
+    </button>
   );
 };
 
