@@ -676,10 +676,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      check_price_alerts: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
       get_popular_stocks: {
         Args: Record<PropertyKey, never>
         Returns: {
