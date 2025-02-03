@@ -11,22 +11,30 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const RecurringInvestments = () => {
   const [symbol, setSymbol] = useState("");
   const [amount, setAmount] = useState("");
   const [frequency, setFrequency] = useState<string>("weekly");
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleAuthRequired = () => {
+    localStorage.setItem('redirectAfterLogin', location.pathname);
+    navigate('/auth');
+    toast({
+      title: "Authentication required",
+      description: "Please sign in to set up recurring investments",
+    });
+  };
 
   const handleSetupRecurring = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        toast({
-          title: "Error",
-          description: "You must be logged in to set up recurring investments",
-          variant: "destructive",
-        });
+        handleAuthRequired();
         return;
       }
 

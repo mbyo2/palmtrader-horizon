@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Star } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigate, useLocation } from "react-router-dom";
 
 interface WatchlistButtonProps {
   symbol: string;
@@ -12,6 +13,8 @@ const WatchlistButton = ({ symbol }: WatchlistButtonProps) => {
   const [isInWatchlist, setIsInWatchlist] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     checkWatchlistStatus();
@@ -39,15 +42,20 @@ const WatchlistButton = ({ symbol }: WatchlistButtonProps) => {
     }
   };
 
+  const handleAuthRequired = () => {
+    localStorage.setItem('redirectAfterLogin', location.pathname);
+    navigate('/auth');
+    toast({
+      title: "Authentication required",
+      description: "Please sign in to use the watchlist feature",
+    });
+  };
+
   const toggleWatchlist = async () => {
     try {
       const { data: session } = await supabase.auth.getSession();
       if (!session.session) {
-        toast({
-          title: "Authentication required",
-          description: "Please sign in to use the watchlist feature",
-          variant: "destructive",
-        });
+        handleAuthRequired();
         return;
       }
 
