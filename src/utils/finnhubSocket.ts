@@ -1,3 +1,4 @@
+
 import { toast } from "sonner";
 
 type MarketDataCallback = (data: {
@@ -27,22 +28,26 @@ class FinnhubSocket {
     }
 
     const apiKey = import.meta.env.VITE_FINNHUB_API_KEY;
+    console.log("Attempting to connect with API key present:", !!apiKey);
+    
     if (!apiKey) {
       console.error("Finnhub API key not found");
-      toast.error("Market data configuration error");
+      toast.error("Market data configuration error - API key missing");
       return;
     }
 
     try {
+      console.log("Creating WebSocket connection to Finnhub...");
       this.socket = new WebSocket(`wss://ws.finnhub.io?token=${apiKey}`);
 
       this.socket.onopen = () => {
         console.log("Finnhub WebSocket connected successfully");
-        this.reconnectAttempts = 0; // Reset attempts on successful connection
+        this.reconnectAttempts = 0;
         toast.success("Market data connection established");
         
         // Resubscribe to existing symbols
         this.subscriptions.forEach(symbol => {
+          console.log("Resubscribing to symbol:", symbol);
           this.subscribe(symbol);
         });
       };
@@ -50,12 +55,15 @@ class FinnhubSocket {
       this.socket.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
+          console.log("Received market data:", data);
+          
           if (data.type === 'trade' && Array.isArray(data.data) && data.data.length > 0) {
             const trade = {
               symbol: data.data[0].s,
               price: data.data[0].p,
               timestamp: data.data[0].t,
             };
+            console.log("Processing trade data:", trade);
             this.onDataCallbacks.forEach(callback => callback(trade));
           }
         } catch (error) {
@@ -68,14 +76,12 @@ class FinnhubSocket {
         this.reconnectAttempts++;
         
         if (this.reconnectAttempts === 1) {
-          // Only show the error toast on first attempt to avoid spam
           toast.error("Market data connection error. Retrying...");
         }
       };
 
       this.socket.onclose = () => {
         console.log("Finnhub WebSocket closed. Attempting to reconnect...");
-        // Only attempt to reconnect if we haven't reached max attempts
         if (this.reconnectAttempts < this.maxReconnectAttempts) {
           setTimeout(() => this.connect(), this.reconnectDelay);
         }
@@ -108,13 +114,16 @@ class FinnhubSocket {
   }
 
   onMarketData(callback: MarketDataCallback) {
+    console.log("Adding market data callback");
     this.onDataCallbacks.push(callback);
     return () => {
+      console.log("Removing market data callback");
       this.onDataCallbacks = this.onDataCallbacks.filter(cb => cb !== callback);
     };
   }
 
   disconnect() {
+    console.log("Disconnecting Finnhub WebSocket");
     if (this.socket) {
       this.socket.close();
       this.socket = null;
