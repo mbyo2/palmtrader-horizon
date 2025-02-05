@@ -8,6 +8,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  TableCell,
 } from "@/components/ui/table";
 import {
   Select,
@@ -232,3 +233,4 @@ const LocalBusinessManagement = () => {
 };
 
 export default LocalBusinessManagement;
+
