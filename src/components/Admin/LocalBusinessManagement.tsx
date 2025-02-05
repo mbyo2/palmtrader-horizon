@@ -5,7 +5,6 @@ import { Card } from "@/components/ui/card";
 import {
   Table,
   TableBody,
-  TableCell,
   TableHead,
   TableHeader,
   TableRow,
@@ -17,12 +16,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Check, X, Eye, FileText, Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import BusinessDetails from "./BusinessDetails";
+import FinancialRequirements from "./FinancialRequirements";
+import DocumentStatus from "./DocumentStatus";
+import BusinessActions from "./BusinessActions";
 
 interface LocalBusiness {
   id: string;
@@ -132,31 +132,6 @@ const LocalBusinessManagement = () => {
     }
   };
 
-  const renderDocumentStatus = (businessId: string, documentType: string) => {
-    const businessDocs = documents[businessId] || [];
-    const doc = businessDocs.find(d => d.document_type === documentType);
-    
-    if (doc) {
-      return (
-        <Badge className={doc.verified ? "bg-green-500" : "bg-yellow-500"}>
-          {doc.verified ? (
-            <Check className="h-4 w-4 mr-1" />
-          ) : (
-            <Eye className="h-4 w-4 mr-1" />
-          )}
-          {doc.verified ? "Verified" : "Pending Review"}
-        </Badge>
-      );
-    }
-
-    return (
-      <Badge variant="destructive">
-        <X className="h-4 w-4 mr-1" />
-        Missing
-      </Badge>
-    );
-  };
-
   const updateAdminNotes = async (businessId: string, notes: string) => {
     try {
       const { error } = await supabase
@@ -207,47 +182,22 @@ const LocalBusinessManagement = () => {
           <TableBody>
             {businesses.map((business) => (
               <TableRow key={business.id}>
-                <TableCell>
-                  <div className="space-y-2">
-                    <div className="font-medium">{business.company_name}</div>
-                    <div className="text-sm text-muted-foreground">
-                      Symbol: {business.symbol}
-                    </div>
-                    {business.sector && (
-                      <div className="text-sm text-muted-foreground">
-                        Sector: {business.sector}
-                      </div>
-                    )}
-                    <div className="text-sm text-muted-foreground">
-                      Share Capital: K{business.share_capital.toLocaleString()}
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      Total Shares: {business.total_shares.toLocaleString()}
-                    </div>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="space-y-2">
-                    <div>Public Shares: {business.public_shares_percentage}%</div>
-                    <div>Shareholders: {business.total_shareholders}</div>
-                    <div>
-                      Financial Statements: 
-                      <Badge className={business.financial_statements_submitted ? "bg-green-500 ml-2" : "bg-red-500 ml-2"}>
-                        {business.financial_statements_submitted ? "Submitted" : "Missing"}
-                      </Badge>
-                    </div>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="space-y-2">
-                    {['prospectus', 'accountant_report', 'underwriting_agreement', 'listing_application'].map(docType => (
-                      <div key={docType} className="flex items-center justify-between">
-                        <span className="capitalize">{docType.replace('_', ' ')}:</span>
-                        {renderDocumentStatus(business.id, docType)}
-                      </div>
-                    ))}
-                  </div>
-                </TableCell>
+                <BusinessDetails
+                  company_name={business.company_name}
+                  symbol={business.symbol}
+                  sector={business.sector}
+                  share_capital={business.share_capital}
+                  total_shares={business.total_shares}
+                />
+                <FinancialRequirements
+                  public_shares_percentage={business.public_shares_percentage}
+                  total_shareholders={business.total_shareholders}
+                  financial_statements_submitted={business.financial_statements_submitted}
+                />
+                <DocumentStatus
+                  businessId={business.id}
+                  documents={documents[business.id] || []}
+                />
                 <TableCell>
                   <Select
                     defaultValue={business.verification_status}
@@ -271,18 +221,7 @@ const LocalBusinessManagement = () => {
                     placeholder="Add admin notes..."
                   />
                 </TableCell>
-                <TableCell>
-                  <div className="space-y-2">
-                    <Button variant="outline" size="sm" className="w-full">
-                      <Eye className="h-4 w-4 mr-2" />
-                      View Details
-                    </Button>
-                    <Button variant="outline" size="sm" className="w-full">
-                      <FileText className="h-4 w-4 mr-2" />
-                      View Documents
-                    </Button>
-                  </div>
-                </TableCell>
+                <BusinessActions />
               </TableRow>
             ))}
           </TableBody>
