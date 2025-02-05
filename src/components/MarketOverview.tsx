@@ -1,5 +1,6 @@
+
 import { Card } from "@/components/ui/card";
-import { useState, useEffect, useCallback, memo } from "react";
+import { useState, useEffect, useCallback, memo, useRef } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { finnhubSocket } from "@/utils/finnhubSocket";
 
@@ -42,40 +43,61 @@ const MarketOverview = () => {
   ]);
 
   const isMobile = useIsMobile();
+  const reconnectAttempts = useRef(0);
+  const maxReconnectAttempts = 5;
+  const reconnectDelay = 5000;
+  const marketDataCache = useRef(new Map<string, { value: string; timestamp: number }>());
+  const cacheExpiration = 5000; // 5 seconds
+
+  const handleMarketData = useCallback(({ symbol, price }) => {
+    const now = Date.now();
+    const cachedData = marketDataCache.current.get(symbol);
+    
+    // Check cache to prevent too frequent updates
+    if (cachedData && now - cachedData.timestamp < cacheExpiration) {
+      return;
+    }
+
+    marketDataCache.current.set(symbol, { value: price.toString(), timestamp: now });
+    
+    setMarkets(prevMarkets => 
+      prevMarkets.map(market => {
+        if (market.symbol === symbol) {
+          const prevValue = parseFloat(market.value.replace(',', ''));
+          const newValue = price;
+          const percentChange = ((newValue - prevValue) / prevValue * 100).toFixed(2);
+          
+          return {
+            ...market,
+            previousValue: market.value,
+            value: newValue.toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2
+            }),
+            change: `${percentChange.startsWith('-') ? '' : '+'}${percentChange}%`
+          };
+        }
+        return market;
+      })
+    );
+  }, []);
 
   useEffect(() => {
     console.log("Setting up market data subscriptions");
     
-    // Subscribe to all market symbols
-    markets.forEach(market => {
-      finnhubSocket.subscribe(market.symbol);
-    });
+    const setupWebSocket = () => {
+      // Subscribe to all market symbols
+      markets.forEach(market => {
+        finnhubSocket.subscribe(market.symbol);
+      });
 
-    // Set up data handler
-    const unsubscribe = finnhubSocket.onMarketData(({ symbol, price }) => {
-      console.log("Received market data:", { symbol, price });
-      
-      setMarkets(prevMarkets => 
-        prevMarkets.map(market => {
-          if (market.symbol === symbol) {
-            const prevValue = parseFloat(market.value.replace(',', ''));
-            const newValue = price;
-            const percentChange = ((newValue - prevValue) / prevValue * 100).toFixed(2);
-            
-            return {
-              ...market,
-              previousValue: market.value,
-              value: newValue.toLocaleString(undefined, {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-              }),
-              change: `${percentChange.startsWith('-') ? '' : '+'}${percentChange}%`
-            };
-          }
-          return market;
-        })
-      );
-    });
+      // Set up data handler
+      const unsubscribe = finnhubSocket.onMarketData(handleMarketData);
+
+      return unsubscribe;
+    };
+
+    const cleanup = setupWebSocket();
 
     // Cleanup subscriptions
     return () => {
@@ -83,9 +105,24 @@ const MarketOverview = () => {
       markets.forEach(market => {
         finnhubSocket.unsubscribe(market.symbol);
       });
-      unsubscribe();
+      cleanup();
+      marketDataCache.current.clear();
     };
-  }, [markets]);
+  }, [markets, handleMarketData]);
+
+  // Clear cache periodically
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = Date.now();
+      marketDataCache.current.forEach((value, key) => {
+        if (now - value.timestamp > cacheExpiration) {
+          marketDataCache.current.delete(key);
+        }
+      });
+    }, cacheExpiration);
+
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 content-visibility-auto">
