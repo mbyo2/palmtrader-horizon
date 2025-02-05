@@ -1,5 +1,6 @@
 
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 type MarketDataCallback = (data: {
   symbol: string;
@@ -14,31 +15,55 @@ class FinnhubSocket {
   private reconnectAttempts: number = 0;
   private maxReconnectAttempts: number = 5;
   private reconnectDelay: number = 5000;
+  private apiKey: string | null = null;
 
   constructor() {
     console.log("Initializing Finnhub WebSocket");
-    this.connect();
+    this.initialize();
+  }
+
+  private async initialize() {
+    try {
+      // Get the API key from our Edge Function
+      const { data, error } = await supabase.functions.invoke('finnhub-websocket', {
+        method: 'POST'
+      });
+
+      if (error) {
+        console.error('Error fetching Finnhub API key:', error);
+        toast.error('Failed to initialize market data connection');
+        return;
+      }
+
+      if (!data?.apiKey) {
+        console.error('No API key returned from Edge Function');
+        toast.error('Market data configuration error');
+        return;
+      }
+
+      this.apiKey = data.apiKey;
+      this.connect();
+    } catch (error) {
+      console.error('Error initializing Finnhub socket:', error);
+      toast.error('Failed to initialize market data connection');
+    }
   }
 
   private connect() {
+    if (!this.apiKey) {
+      console.error('Cannot connect without API key');
+      return;
+    }
+
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
       console.error("Max reconnection attempts reached");
       toast.error("Unable to connect to market data. Please refresh the page.");
       return;
     }
 
-    const apiKey = import.meta.env.VITE_FINNHUB_API_KEY;
-    console.log("Attempting to connect with API key present:", !!apiKey);
-    
-    if (!apiKey) {
-      console.error("Finnhub API key not found");
-      toast.error("Market data configuration error - API key missing");
-      return;
-    }
-
     try {
       console.log("Creating WebSocket connection to Finnhub...");
-      this.socket = new WebSocket(`wss://ws.finnhub.io?token=${apiKey}`);
+      this.socket = new WebSocket(`wss://ws.finnhub.io?token=${this.apiKey}`);
 
       this.socket.onopen = () => {
         console.log("Finnhub WebSocket connected successfully");

@@ -1,4 +1,8 @@
+
 project_id = "hvrcchjbqumlknaboczh"
+
+[functions.finnhub-websocket]
+verify_jwt = false
 
 [functions.alpha-vantage]
 verify_jwt = false
