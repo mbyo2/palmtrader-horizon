@@ -132,6 +132,50 @@ export type Database = {
         }
         Relationships: []
       }
+      business_documents: {
+        Row: {
+          business_id: string | null
+          document_type: Database["public"]["Enums"]["document_type"]
+          file_path: string
+          id: string
+          notes: string | null
+          submitted_at: string | null
+          verified: boolean | null
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          business_id?: string | null
+          document_type: Database["public"]["Enums"]["document_type"]
+          file_path: string
+          id?: string
+          notes?: string | null
+          submitted_at?: string | null
+          verified?: boolean | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          business_id?: string | null
+          document_type?: Database["public"]["Enums"]["document_type"]
+          file_path?: string
+          id?: string
+          notes?: string | null
+          submitted_at?: string | null
+          verified?: boolean | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_documents_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "local_businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       comments: {
         Row: {
           content: string
@@ -275,15 +319,26 @@ export type Database = {
       local_businesses: {
         Row: {
           admin_notes: string | null
+          business_operations_details: string | null
           company_name: string
+          corporate_governance_details: string | null
           created_at: string | null
           description: string | null
           documents_submitted: boolean | null
+          financial_statements_submitted: boolean | null
           id: string
+          management_experience_details: string | null
+          profit_history: Json | null
+          public_shares_percentage: number | null
           reviewed_by: string | null
           sector: string | null
+          share_capital: number | null
+          sponsoring_broker: string | null
           submitted_by: string | null
           symbol: string
+          total_shareholders: number | null
+          total_shares: number | null
+          underwriter: string | null
           updated_at: string | null
           verification_status:
             | Database["public"]["Enums"]["business_verification_status"]
@@ -291,15 +346,26 @@ export type Database = {
         }
         Insert: {
           admin_notes?: string | null
+          business_operations_details?: string | null
           company_name: string
+          corporate_governance_details?: string | null
           created_at?: string | null
           description?: string | null
           documents_submitted?: boolean | null
+          financial_statements_submitted?: boolean | null
           id?: string
+          management_experience_details?: string | null
+          profit_history?: Json | null
+          public_shares_percentage?: number | null
           reviewed_by?: string | null
           sector?: string | null
+          share_capital?: number | null
+          sponsoring_broker?: string | null
           submitted_by?: string | null
           symbol: string
+          total_shareholders?: number | null
+          total_shares?: number | null
+          underwriter?: string | null
           updated_at?: string | null
           verification_status?:
             | Database["public"]["Enums"]["business_verification_status"]
@@ -307,15 +373,26 @@ export type Database = {
         }
         Update: {
           admin_notes?: string | null
+          business_operations_details?: string | null
           company_name?: string
+          corporate_governance_details?: string | null
           created_at?: string | null
           description?: string | null
           documents_submitted?: boolean | null
+          financial_statements_submitted?: boolean | null
           id?: string
+          management_experience_details?: string | null
+          profit_history?: Json | null
+          public_shares_percentage?: number | null
           reviewed_by?: string | null
           sector?: string | null
+          share_capital?: number | null
+          sponsoring_broker?: string | null
           submitted_by?: string | null
           symbol?: string
+          total_shareholders?: number | null
+          total_shares?: number | null
+          underwriter?: string | null
           updated_at?: string | null
           verification_status?:
             | Database["public"]["Enums"]["business_verification_status"]
@@ -740,6 +817,15 @@ export type Database = {
       account_role: "basic" | "premium" | "admin"
       account_status: "pending" | "active" | "restricted" | "suspended"
       business_verification_status: "pending" | "approved" | "rejected"
+      document_type:
+        | "prospectus"
+        | "accountant_report"
+        | "underwriting_agreement"
+        | "listing_application"
+        | "expert_consents"
+        | "director_declarations"
+        | "valuation_report"
+        | "financial_statements"
       kyc_status: "not_started" | "pending" | "approved" | "rejected"
     }
     CompositeTypes: {
