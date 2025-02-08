@@ -18,10 +18,10 @@ import IPODetails from "./pages/IPODetails";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <React.StrictMode>
-    <BrowserRouter>
-      <QueryClientProvider client={queryClient}>
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <TooltipProvider>
             <div className="min-h-screen flex flex-col">
@@ -43,9 +43,9 @@ const App = () => (
             </div>
           </TooltipProvider>
         </ThemeProvider>
-      </QueryClientProvider>
-    </BrowserRouter>
-  </React.StrictMode>
-);
+      </BrowserRouter>
+    </QueryClientProvider>
+  );
+}
 
 export default App;
