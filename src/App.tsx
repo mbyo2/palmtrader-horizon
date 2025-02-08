@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -11,6 +12,7 @@ import Auth from "./pages/Auth";
 import Markets from "./pages/Markets";
 import Watchlist from "./pages/Watchlist";
 import Portfolio from "./pages/Portfolio";
+import IPO from "./pages/IPO";
 
 const queryClient = new QueryClient();
 
@@ -30,6 +32,7 @@ const App = () => (
                 <Route path="/markets" element={<Markets />} />
                 <Route path="/watchlist" element={<Watchlist />} />
                 <Route path="/portfolio" element={<Portfolio />} />
+                <Route path="/ipo" element={<IPO />} />
               </Routes>
             </main>
             <Footer />

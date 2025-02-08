@@ -316,6 +316,148 @@ export type Database = {
           },
         ]
       }
+      ipo_allocations: {
+        Row: {
+          allocation_price: number
+          application_id: string
+          created_at: string | null
+          id: string
+          shares_allocated: number
+          total_amount: number
+          updated_at: string | null
+        }
+        Insert: {
+          allocation_price: number
+          application_id: string
+          created_at?: string | null
+          id?: string
+          shares_allocated: number
+          total_amount: number
+          updated_at?: string | null
+        }
+        Update: {
+          allocation_price?: number
+          application_id?: string
+          created_at?: string | null
+          id?: string
+          shares_allocated?: number
+          total_amount?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ipo_allocations_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "ipo_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ipo_applications: {
+        Row: {
+          created_at: string | null
+          id: string
+          ipo_id: string
+          payment_status: string
+          price_per_share: number
+          shares_applied: number
+          status: string
+          total_amount: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          ipo_id: string
+          payment_status?: string
+          price_per_share: number
+          shares_applied: number
+          status?: string
+          total_amount: number
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          ipo_id?: string
+          payment_status?: string
+          price_per_share?: number
+          shares_applied?: number
+          status?: string
+          total_amount?: number
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ipo_applications_ipo_id_fkey"
+            columns: ["ipo_id"]
+            isOneToOne: false
+            referencedRelation: "ipo_listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ipo_listings: {
+        Row: {
+          company_name: string
+          created_at: string | null
+          description: string | null
+          id: string
+          issue_price_max: number
+          issue_price_min: number
+          listing_date: string | null
+          minimum_lot_size: number
+          retail_allocation_percentage: number
+          sector: string | null
+          status: string
+          subscription_end_date: string
+          subscription_start_date: string
+          symbol: string
+          total_shares: number
+          updated_at: string | null
+        }
+        Insert: {
+          company_name: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          issue_price_max: number
+          issue_price_min: number
+          listing_date?: string | null
+          minimum_lot_size?: number
+          retail_allocation_percentage: number
+          sector?: string | null
+          status?: string
+          subscription_end_date: string
+          subscription_start_date: string
+          symbol: string
+          total_shares: number
+          updated_at?: string | null
+        }
+        Update: {
+          company_name?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          issue_price_max?: number
+          issue_price_min?: number
+          listing_date?: string | null
+          minimum_lot_size?: number
+          retail_allocation_percentage?: number
+          sector?: string | null
+          status?: string
+          subscription_end_date?: string
+          subscription_start_date?: string
+          symbol?: string
+          total_shares?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       local_businesses: {
         Row: {
           admin_notes: string | null
