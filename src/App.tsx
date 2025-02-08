@@ -13,6 +13,7 @@ import Markets from "./pages/Markets";
 import Watchlist from "./pages/Watchlist";
 import Portfolio from "./pages/Portfolio";
 import IPO from "./pages/IPO";
+import IPODetails from "./pages/IPODetails";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +34,7 @@ const App = () => (
                 <Route path="/watchlist" element={<Watchlist />} />
                 <Route path="/portfolio" element={<Portfolio />} />
                 <Route path="/ipo" element={<IPO />} />
+                <Route path="/ipo/:id" element={<IPODetails />} />
               </Routes>
             </main>
             <Footer />

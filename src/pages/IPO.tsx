@@ -49,7 +49,14 @@ const IPO = () => {
           .order('subscription_start_date', { ascending: true });
 
         if (error) throw error;
-        setIpoListings(data || []);
+        
+        // Ensure the status is of the correct type
+        const typedData = data?.map(item => ({
+          ...item,
+          status: item.status as IPOListing['status']
+        })) || [];
+        
+        setIpoListings(typedData);
       } catch (error) {
         console.error('Error fetching IPO listings:', error);
         toast({
