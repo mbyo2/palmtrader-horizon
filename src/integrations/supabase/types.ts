@@ -544,24 +544,36 @@ export type Database = {
       }
       market_data: {
         Row: {
+          close: number | null
           created_at: string
+          high: number | null
           id: string
+          low: number | null
+          open: number | null
           price: number
           symbol: string
           timestamp: number
           type: string
         }
         Insert: {
+          close?: number | null
           created_at?: string
+          high?: number | null
           id?: string
+          low?: number | null
+          open?: number | null
           price: number
           symbol: string
           timestamp: number
           type: string
         }
         Update: {
+          close?: number | null
           created_at?: string
+          high?: number | null
           id?: string
+          low?: number | null
+          open?: number | null
           price?: number
           symbol?: string
           timestamp?: number

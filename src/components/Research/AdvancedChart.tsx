@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card } from "@/components/ui/card";
 import {
@@ -45,10 +44,10 @@ interface ChartType {
 interface MarketDataPoint {
   timestamp: string;
   price: number;
-  open: number;
-  high: number;
-  low: number;
-  close: number;
+  open: number | null;
+  high: number | null;
+  low: number | null;
+  close: number | null;
   volume: number;
   symbol: string;
   type: string;
@@ -89,7 +88,7 @@ const technicalIndicators = [
   { label: "Bollinger Bands", value: "bollinger" },
 ];
 
-const CustomCandlestick = ({ x, y, width, height, open, close, high, low }: CandlestickProps) => {
+const CustomCandlestick: React.FC<CandlestickProps> = ({ x, y, width, height, open, close, high, low }) => {
   const isGreen = close > open;
   const color = isGreen ? "#22c55e" : "#ef4444";
   const bodyHeight = Math.abs(close - open);
@@ -152,6 +151,7 @@ const AdvancedChart = ({ symbol = "AAPL" }) => {
         high: d.high || d.price,
         low: d.low || d.price,
         close: d.close || d.price,
+        volume: 0, // Add a default volume since it's not in our database yet
       })) as MarketDataPoint[];
     },
   });
@@ -183,7 +183,7 @@ const AdvancedChart = ({ symbol = "AAPL" }) => {
     );
   };
 
-  if (isLoadingMarketData || isLoadingIndicators) {
+  if (isLoadingMarketData) {
     return (
       <Card className="p-4">
         <div className="h-[500px] flex items-center justify-center">
@@ -265,10 +265,10 @@ const AdvancedChart = ({ symbol = "AAPL" }) => {
                     y={0}
                     width={10}
                     height={300}
-                    open={entry.open}
-                    close={entry.close}
-                    high={entry.high}
-                    low={entry.low}
+                    open={entry.open || entry.price}
+                    close={entry.close || entry.price}
+                    high={entry.high || entry.price}
+                    low={entry.low || entry.price}
                   />
                 ))}
               </ComposedChart>
