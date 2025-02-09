@@ -42,6 +42,31 @@ interface ChartType {
   icon: React.ComponentType;
 }
 
+interface MarketDataPoint {
+  timestamp: string;
+  price: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+  symbol: string;
+  type: string;
+  id: string;
+  created_at: string;
+}
+
+interface CandlestickProps {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  open: number;
+  close: number;
+  high: number;
+  low: number;
+}
+
 const timeframes: TimeframeOption[] = [
   { label: "1D", value: "1d", days: 1 },
   { label: "1W", value: "1w", days: 7 },
@@ -64,8 +89,7 @@ const technicalIndicators = [
   { label: "Bollinger Bands", value: "bollinger" },
 ];
 
-const CustomCandlestick = (props: any) => {
-  const { x, y, width, height, open, close, high, low } = props;
+const CustomCandlestick = ({ x, y, width, height, open, close, high, low }: CandlestickProps) => {
   const isGreen = close > open;
   const color = isGreen ? "#22c55e" : "#ef4444";
   const bodyHeight = Math.abs(close - open);
@@ -124,7 +148,11 @@ const AdvancedChart = ({ symbol = "AAPL" }) => {
       return data?.map(d => ({
         ...d,
         timestamp: format(new Date(d.timestamp), "MMM dd HH:mm"),
-      }));
+        open: d.open || d.price,
+        high: d.high || d.price,
+        low: d.low || d.price,
+        close: d.close || d.price,
+      })) as MarketDataPoint[];
     },
   });
 
@@ -234,6 +262,9 @@ const AdvancedChart = ({ symbol = "AAPL" }) => {
                   <CustomCandlestick
                     key={`candle-${index}`}
                     x={index * 20}
+                    y={0}
+                    width={10}
+                    height={300}
                     open={entry.open}
                     close={entry.close}
                     high={entry.high}
