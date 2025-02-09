@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback } from "react";
+import React, { useState } from "react";
 import { Card } from "@/components/ui/card";
 import {
   Select,
@@ -19,13 +19,12 @@ import {
   AreaChart,
   Legend,
   ResponsiveContainer,
-  CandlestickChart,
-  Candlestick,
+  ComposedChart,
+  ReferenceLine,
 } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { BarChart, ChevronDown, TrendingUp, Layers } from "lucide-react";
@@ -64,6 +63,42 @@ const technicalIndicators = [
   { label: "MACD", value: "macd" },
   { label: "Bollinger Bands", value: "bollinger" },
 ];
+
+const CustomCandlestick = (props: any) => {
+  const { x, y, width, height, open, close, high, low } = props;
+  const isGreen = close > open;
+  const color = isGreen ? "#22c55e" : "#ef4444";
+  const bodyHeight = Math.abs(close - open);
+  const bodyY = isGreen ? close : open;
+
+  return (
+    <g>
+      <line
+        x1={x + width / 2}
+        y1={y + height - Math.max(open, close)}
+        x2={x + width / 2}
+        y2={y + height - high}
+        stroke={color}
+        strokeWidth={1}
+      />
+      <line
+        x1={x + width / 2}
+        y1={y + height - Math.min(open, close)}
+        x2={x + width / 2}
+        y2={y + height - low}
+        stroke={color}
+        strokeWidth={1}
+      />
+      <rect
+        x={x}
+        y={y + height - bodyY}
+        width={width}
+        height={bodyHeight}
+        fill={color}
+      />
+    </g>
+  );
+};
 
 const AdvancedChart = ({ symbol = "AAPL" }) => {
   const [timeframe, setTimeframe] = useState<string>("1m");
@@ -189,17 +224,23 @@ const AdvancedChart = ({ symbol = "AAPL" }) => {
         <div className="h-[500px]">
           <ResponsiveContainer width="100%" height="100%">
             {chartType === "candlestick" ? (
-              <CandlestickChart data={marketData}>
+              <ComposedChart data={marketData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="timestamp" />
                 <YAxis domain={['auto', 'auto']} />
                 <Tooltip />
                 <Legend />
-                <Candlestick
-                  yAccessor={(d) => [d.open, d.high, d.low, d.close]}
-                  name="Price"
-                />
-              </CandlestickChart>
+                {marketData?.map((entry, index) => (
+                  <CustomCandlestick
+                    key={`candle-${index}`}
+                    x={index * 20}
+                    open={entry.open}
+                    close={entry.close}
+                    high={entry.high}
+                    low={entry.low}
+                  />
+                ))}
+              </ComposedChart>
             ) : chartType === "area" ? (
               <AreaChart data={marketData}>
                 <CartesianGrid strokeDasharray="3 3" />
