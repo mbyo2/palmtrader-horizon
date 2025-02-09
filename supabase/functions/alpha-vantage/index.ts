@@ -20,16 +20,25 @@ interface MarketData {
 }
 
 serve(async (req) => {
+  console.log('Alpha Vantage function called');
+
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
+    console.log('Handling CORS preflight request');
     return new Response(null, { headers: corsHeaders })
   }
 
   try {
-    const { symbol, dataType = 'TIME_SERIES_DAILY', market = 'stock' } = await req.json()
-    const apiKey = Deno.env.get('ALPHAVANTAGE_API_KEY')
+    const requestData = await req.json();
+    console.log('Request data:', requestData);
+    
+    const { symbol, dataType = 'TIME_SERIES_DAILY', market = 'stock' } = requestData;
+    const apiKey = Deno.env.get('ALPHAVANTAGE_API_KEY');
+    
+    console.log('Processing request for:', { symbol, dataType, market });
     
     if (!apiKey) {
+      console.error('Alpha Vantage API key not configured');
       throw new Error('Alpha Vantage API key not configured')
     }
 
@@ -47,11 +56,21 @@ serve(async (req) => {
         endpoint = `${endpoint}&function=${dataType}`;
     }
 
-    console.log('Fetching data from Alpha Vantage:', endpoint);
+    console.log('Fetching data from Alpha Vantage:', endpoint.replace(apiKey, '[REDACTED]'));
     
-    const response = await fetch(endpoint)
-    const data = await response.json()
-    console.log('Alpha Vantage response:', data)
+    const response = await fetch(endpoint);
+    const data = await response.json();
+    console.log('Alpha Vantage response:', JSON.stringify(data));
+
+    // Check for API errors
+    if (data['Error Message']) {
+      console.error('Alpha Vantage error:', data['Error Message']);
+      throw new Error(data['Error Message']);
+    }
+
+    if (data['Note']) {
+      console.warn('Alpha Vantage API limit warning:', data['Note']);
+    }
 
     // Initialize Supabase client
     const supabaseClient = createClient(
@@ -102,6 +121,8 @@ serve(async (req) => {
       }));
     }
 
+    console.log(`Parsed ${marketData.length} data points`);
+
     if (marketData.length > 0) {
       // Store the data in Supabase
       const { error: insertError } = await supabaseClient
@@ -116,15 +137,18 @@ serve(async (req) => {
         throw insertError
       }
 
+      console.log(`Successfully stored ${marketData.length} records in database`);
+
       return new Response(
         JSON.stringify({ success: true, count: marketData.length }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
+    console.error('No valid data found in Alpha Vantage response');
     throw new Error('No valid data found in Alpha Vantage response')
   } catch (error) {
-    console.error('Error:', error)
+    console.error('Error in alpha-vantage function:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       { 
@@ -134,3 +158,4 @@ serve(async (req) => {
     )
   }
 })
+
