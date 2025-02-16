@@ -15,23 +15,49 @@ export interface MarketData {
 
 export const MarketDataService = {
   async fetchHistoricalData(symbol: string, days: number = 30): Promise<MarketData[]> {
+    // First try to get cached data from Supabase
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
-    const { data, error } = await supabase
+    const { data: cachedData, error: cacheError } = await supabase
       .from('market_data')
       .select('*')
       .eq('symbol', symbol)
       .gte('timestamp', startDate.toISOString())
       .order('timestamp', { ascending: true });
 
-    if (error) {
-      console.error('Error fetching historical data:', error);
-      throw error;
+    // If we have recent data, return it
+    if (cachedData && cachedData.length > 0) {
+      const latestDataPoint = new Date(cachedData[cachedData.length - 1].timestamp);
+      const now = new Date();
+      const hoursSinceLastUpdate = (now.getTime() - latestDataPoint.getTime()) / (1000 * 60 * 60);
+
+      if (hoursSinceLastUpdate < 24) {
+        return cachedData.map(item => ({
+          ...item,
+          timestamp: new Date(item.timestamp).toISOString(),
+          type: item.type as 'stock' | 'crypto' | 'forex'
+        }));
+      }
     }
 
-    // Convert timestamp to string format
-    return (data || []).map(item => ({
+    // If no recent data, fetch from Alpha Vantage
+    await this.refreshMarketData(symbol);
+
+    // Get the updated data from Supabase
+    const { data: updatedData, error: updateError } = await supabase
+      .from('market_data')
+      .select('*')
+      .eq('symbol', symbol)
+      .gte('timestamp', startDate.toISOString())
+      .order('timestamp', { ascending: true });
+
+    if (updateError) {
+      console.error('Error fetching updated market data:', updateError);
+      throw updateError;
+    }
+
+    return (updatedData || []).map(item => ({
       ...item,
       timestamp: new Date(item.timestamp).toISOString(),
       type: item.type as 'stock' | 'crypto' | 'forex'
@@ -39,7 +65,8 @@ export const MarketDataService = {
   },
 
   async fetchLatestPrice(symbol: string): Promise<MarketData | null> {
-    const { data, error } = await supabase
+    // First try to get cached data from Supabase
+    const { data: cachedData, error: cacheError } = await supabase
       .from('market_data')
       .select('*')
       .eq('symbol', symbol)
@@ -47,15 +74,41 @@ export const MarketDataService = {
       .limit(1)
       .maybeSingle();
 
-    if (error) {
-      console.error('Error fetching latest price:', error);
+    if (cachedData) {
+      const latestDataPoint = new Date(cachedData.timestamp);
+      const now = new Date();
+      const hoursSinceLastUpdate = (now.getTime() - latestDataPoint.getTime()) / (1000 * 60 * 60);
+
+      if (hoursSinceLastUpdate < 24) {
+        return {
+          ...cachedData,
+          timestamp: new Date(cachedData.timestamp).toISOString(),
+          type: cachedData.type as 'stock' | 'crypto' | 'forex'
+        };
+      }
+    }
+
+    // If no recent data, fetch from Alpha Vantage
+    await this.refreshMarketData(symbol);
+
+    // Get the updated data from Supabase
+    const { data: updatedData, error: updateError } = await supabase
+      .from('market_data')
+      .select('*')
+      .eq('symbol', symbol)
+      .order('timestamp', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (updateError) {
+      console.error('Error fetching latest price:', updateError);
       return null;
     }
 
-    return data ? {
-      ...data,
-      timestamp: new Date(data.timestamp).toISOString(),
-      type: data.type as 'stock' | 'crypto' | 'forex'
+    return updatedData ? {
+      ...updatedData,
+      timestamp: new Date(updatedData.timestamp).toISOString(),
+      type: updatedData.type as 'stock' | 'crypto' | 'forex'
     } : null;
   },
 
