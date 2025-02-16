@@ -45,7 +45,7 @@ export const MarketDataService = {
       .eq('symbol', symbol)
       .order('timestamp', { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error('Error fetching latest price:', error);

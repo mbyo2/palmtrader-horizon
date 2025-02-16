@@ -53,12 +53,31 @@ const MarketOverview = () => {
     const fetchInitialData = async () => {
       for (const market of markets) {
         try {
+          // First try to fetch from cache
           const data = await MarketDataService.fetchLatestPrice(market.symbol);
-          if (data) {
+          
+          // If no data is found, try to refresh it from Alpha Vantage
+          if (!data) {
+            console.log(`No data found for ${market.symbol}, fetching from Alpha Vantage...`);
+            const success = await MarketDataService.refreshMarketData(market.symbol, 'stock');
+            
+            if (success) {
+              // Try fetching again after refresh
+              const refreshedData = await MarketDataService.fetchLatestPrice(market.symbol);
+              if (refreshedData) {
+                handleMarketUpdate(market.symbol, refreshedData.price);
+              }
+            }
+          } else {
             handleMarketUpdate(market.symbol, data.price);
           }
         } catch (error) {
           console.error(`Error fetching data for ${market.symbol}:`, error);
+          toast({
+            title: "Error",
+            description: `Could not fetch data for ${market.symbol}`,
+            variant: "destructive",
+          });
         }
       }
     };
