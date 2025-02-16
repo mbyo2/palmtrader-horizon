@@ -30,7 +30,12 @@ export const MarketDataService = {
       throw error;
     }
 
-    return data || [];
+    // Convert timestamp to string format
+    return (data || []).map(item => ({
+      ...item,
+      timestamp: new Date(item.timestamp).toISOString(),
+      type: item.type as 'stock' | 'crypto' | 'forex'
+    }));
   },
 
   async fetchLatestPrice(symbol: string): Promise<MarketData | null> {
@@ -47,7 +52,11 @@ export const MarketDataService = {
       return null;
     }
 
-    return data;
+    return data ? {
+      ...data,
+      timestamp: new Date(data.timestamp).toISOString(),
+      type: data.type as 'stock' | 'crypto' | 'forex'
+    } : null;
   },
 
   async refreshMarketData(symbol: string, market: 'stock' | 'crypto' | 'forex' = 'stock'): Promise<boolean> {

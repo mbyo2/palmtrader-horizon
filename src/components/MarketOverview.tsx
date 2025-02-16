@@ -2,7 +2,9 @@
 import { Card } from "@/components/ui/card";
 import { useState, useEffect, useCallback, memo, useRef } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { finnhubSocket } from "@/utils/finnhubSocket";
+import { MarketDataService, MarketData } from "@/services/MarketDataService";
+import { useToast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
 
 interface Market {
   name: string;
@@ -42,14 +44,42 @@ const MarketOverview = () => {
     { name: "GSE Composite", value: "3,456.78", change: "-0.4%", symbol: "GSE.GH" }
   ]);
 
-  const isMobile = useIsMobile();
-  const reconnectAttempts = useRef(0);
-  const maxReconnectAttempts = 5;
-  const reconnectDelay = 5000;
+  const { toast } = useToast();
   const marketDataCache = useRef(new Map<string, { value: string; timestamp: number }>());
   const cacheExpiration = 5000; // 5 seconds
 
-  const handleMarketData = useCallback(({ symbol, price }) => {
+  // Fetch initial market data for each symbol
+  useEffect(() => {
+    const fetchInitialData = async () => {
+      for (const market of markets) {
+        try {
+          const data = await MarketDataService.fetchLatestPrice(market.symbol);
+          if (data) {
+            handleMarketUpdate(market.symbol, data.price);
+          }
+        } catch (error) {
+          console.error(`Error fetching data for ${market.symbol}:`, error);
+        }
+      }
+    };
+
+    fetchInitialData();
+  }, []);
+
+  // Subscribe to real-time updates
+  useEffect(() => {
+    const subscriptions = markets.map(market => {
+      return MarketDataService.subscribeToUpdates(market.symbol, (data) => {
+        handleMarketUpdate(market.symbol, data.price);
+      });
+    });
+
+    return () => {
+      subscriptions.forEach(subscription => subscription.unsubscribe());
+    };
+  }, [markets]);
+
+  const handleMarketUpdate = useCallback((symbol: string, price: number) => {
     const now = Date.now();
     const cachedData = marketDataCache.current.get(symbol);
     
@@ -81,34 +111,6 @@ const MarketOverview = () => {
       })
     );
   }, []);
-
-  useEffect(() => {
-    console.log("Setting up market data subscriptions");
-    
-    const setupWebSocket = () => {
-      // Subscribe to all market symbols
-      markets.forEach(market => {
-        finnhubSocket.subscribe(market.symbol);
-      });
-
-      // Set up data handler
-      const unsubscribe = finnhubSocket.onMarketData(handleMarketData);
-
-      return unsubscribe;
-    };
-
-    const cleanup = setupWebSocket();
-
-    // Cleanup subscriptions
-    return () => {
-      console.log("Cleaning up market data subscriptions");
-      markets.forEach(market => {
-        finnhubSocket.unsubscribe(market.symbol);
-      });
-      cleanup();
-      marketDataCache.current.clear();
-    };
-  }, [markets, handleMarketData]);
 
   // Clear cache periodically
   useEffect(() => {
