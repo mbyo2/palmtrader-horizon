@@ -5,6 +5,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { MarketDataService, MarketData } from "@/services/MarketDataService";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
+import { finnhubSocket } from "@/utils/finnhubSocket";
 
 interface Market {
   name: string;
@@ -14,13 +15,23 @@ interface Market {
   symbol: string;
 }
 
+const formatCurrency = (value: number | string): string => {
+  const numValue = typeof value === 'string' ? parseFloat(value.replace(/,/g, '')) : value;
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(numValue);
+};
+
 const MarketCard = memo(({ market }: { market: Market }) => (
   <Card className="card-gradient p-3 sm:p-4">
     <h3 className="text-sm sm:text-base font-semibold text-foreground/80">{market.name}</h3>
     <p className={`text-lg sm:text-2xl font-bold text-foreground transition-colors duration-300 ${
-      market.previousValue && parseFloat(market.value.replace(',', '')) > parseFloat(market.previousValue.replace(',', ''))
+      market.previousValue && parseFloat(market.value.replace(/[$,]/g, '')) > parseFloat(market.previousValue.replace(/[$,]/g, ''))
         ? 'text-green-500'
-        : market.previousValue && parseFloat(market.value.replace(',', '')) < parseFloat(market.previousValue.replace(',', ''))
+        : market.previousValue && parseFloat(market.value.replace(/[$,]/g, '')) < parseFloat(market.previousValue.replace(/[$,]/g, ''))
         ? 'text-red-500'
         : ''
     }`}>
@@ -36,40 +47,51 @@ MarketCard.displayName = 'MarketCard';
 
 const MarketOverview = () => {
   const [markets, setMarkets] = useState<Market[]>([
-    { name: "Apple Inc.", value: "180.00", change: "+0.0%", symbol: "AAPL" },
-    { name: "Microsoft Corp.", value: "350.00", change: "+0.0%", symbol: "MSFT" },
-    { name: "Amazon.com Inc.", value: "145.00", change: "+0.0%", symbol: "AMZN" },
-    { name: "Alphabet Inc.", value: "140.00", change: "+0.0%", symbol: "GOOGL" },
-    { name: "NVIDIA Corp.", value: "450.00", change: "+0.0%", symbol: "NVDA" },
-    { name: "Meta Platforms Inc.", value: "330.00", change: "+0.0%", symbol: "META" }
+    { name: "Apple Inc.", value: formatCurrency(180.00), change: "+0.0%", symbol: "AAPL" },
+    { name: "Microsoft Corp.", value: formatCurrency(350.00), change: "+0.0%", symbol: "MSFT" },
+    { name: "Amazon.com Inc.", value: formatCurrency(145.00), change: "+0.0%", symbol: "AMZN" },
+    { name: "Alphabet Inc.", value: formatCurrency(140.00), change: "+0.0%", symbol: "GOOGL" },
+    { name: "NVIDIA Corp.", value: formatCurrency(450.00), change: "+0.0%", symbol: "NVDA" },
+    { name: "Meta Platforms Inc.", value: formatCurrency(330.00), change: "+0.0%", symbol: "META" }
   ]);
 
   const { toast } = useToast();
   const marketDataCache = useRef(new Map<string, { value: string; timestamp: number }>());
-  const cacheExpiration = 5000; // 5 seconds
+  const cacheExpiration = 1000; // Reduced to 1 second for more frequent updates
+
+  // Subscribe to Finnhub WebSocket updates
+  useEffect(() => {
+    // Subscribe to real-time updates for each market
+    markets.forEach(market => {
+      finnhubSocket.subscribe(market.symbol);
+    });
+
+    // Handle real-time market data updates
+    const unsubscribe = finnhubSocket.onMarketData((data) => {
+      if (data.price) {
+        handleMarketUpdate(data.symbol, data.price);
+      }
+    });
+
+    return () => {
+      // Cleanup: unsubscribe from all symbols and WebSocket updates
+      markets.forEach(market => {
+        finnhubSocket.unsubscribe(market.symbol);
+      });
+      unsubscribe();
+    };
+  }, []);
 
   // Fetch initial market data for each symbol
   useEffect(() => {
     const fetchInitialData = async () => {
       for (const market of markets) {
         try {
-          // First try to fetch from cache
           const data = await MarketDataService.fetchLatestPrice(market.symbol);
-          
-          // If no data is found, try to refresh it from Alpha Vantage
-          if (!data) {
-            console.log(`No data found for ${market.symbol}, fetching from Alpha Vantage...`);
-            const success = await MarketDataService.refreshMarketData(market.symbol, 'stock');
-            
-            if (success) {
-              // Try fetching again after refresh
-              const refreshedData = await MarketDataService.fetchLatestPrice(market.symbol);
-              if (refreshedData) {
-                handleMarketUpdate(market.symbol, refreshedData.price);
-              }
-            }
-          } else {
+          if (data) {
             handleMarketUpdate(market.symbol, data.price);
+          } else {
+            console.log(`No cached data found for ${market.symbol}, waiting for real-time updates...`);
           }
         } catch (error) {
           console.error(`Error fetching data for ${market.symbol}:`, error);
@@ -85,19 +107,6 @@ const MarketOverview = () => {
     fetchInitialData();
   }, []);
 
-  // Subscribe to real-time updates
-  useEffect(() => {
-    const subscriptions = markets.map(market => {
-      return MarketDataService.subscribeToUpdates(market.symbol, (data) => {
-        handleMarketUpdate(market.symbol, data.price);
-      });
-    });
-
-    return () => {
-      subscriptions.forEach(subscription => subscription.unsubscribe());
-    };
-  }, [markets]);
-
   const handleMarketUpdate = useCallback((symbol: string, price: number) => {
     const now = Date.now();
     const cachedData = marketDataCache.current.get(symbol);
@@ -112,17 +121,14 @@ const MarketOverview = () => {
     setMarkets(prevMarkets => 
       prevMarkets.map(market => {
         if (market.symbol === symbol) {
-          const prevValue = parseFloat(market.value.replace(',', ''));
+          const prevValue = parseFloat(market.value.replace(/[$,]/g, ''));
           const newValue = price;
           const percentChange = ((newValue - prevValue) / prevValue * 100).toFixed(2);
           
           return {
             ...market,
             previousValue: market.value,
-            value: newValue.toLocaleString(undefined, {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2
-            }),
+            value: formatCurrency(newValue),
             change: `${percentChange.startsWith('-') ? '' : '+'}${percentChange}%`
           };
         }
