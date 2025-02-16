@@ -36,12 +36,12 @@ MarketCard.displayName = 'MarketCard';
 
 const MarketOverview = () => {
   const [markets, setMarkets] = useState<Market[]>([
-    { name: "Lusaka SEC All Share", value: "7,245.32", change: "+1.2%", symbol: "LUSE.ZM" },
-    { name: "NSE All Share", value: "54,123.45", change: "-0.5%", symbol: "NSE.KE" },
-    { name: "JSE Top 40", value: "68,432.12", change: "+0.8%", symbol: "TOP40.JO" },
-    { name: "EGX 30", value: "24,567.89", change: "-0.3%", symbol: "EGX30.EG" },
-    { name: "NSE Nigeria", value: "45,678.90", change: "+0.6%", symbol: "NGSE.NG" },
-    { name: "GSE Composite", value: "3,456.78", change: "-0.4%", symbol: "GSE.GH" }
+    { name: "Apple Inc.", value: "180.00", change: "+0.0%", symbol: "AAPL" },
+    { name: "Microsoft Corp.", value: "350.00", change: "+0.0%", symbol: "MSFT" },
+    { name: "Amazon.com Inc.", value: "145.00", change: "+0.0%", symbol: "AMZN" },
+    { name: "Alphabet Inc.", value: "140.00", change: "+0.0%", symbol: "GOOGL" },
+    { name: "NVIDIA Corp.", value: "450.00", change: "+0.0%", symbol: "NVDA" },
+    { name: "Meta Platforms Inc.", value: "330.00", change: "+0.0%", symbol: "META" }
   ]);
 
   const { toast } = useToast();
