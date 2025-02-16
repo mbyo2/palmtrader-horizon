@@ -1,5 +1,4 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import {
   Select,
@@ -25,10 +24,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { BarChart, ChevronDown, TrendingUp, Layers } from "lucide-react";
 import { format } from "date-fns";
+import { MarketDataService, MarketData } from "@/services/MarketDataService";
 
 interface TimeframeOption {
   label: string;
@@ -130,6 +130,8 @@ const AdvancedChart = ({ symbol = "AAPL" }) => {
   const [showVolume, setShowVolume] = useState(true);
   const [selectedIndicators, setSelectedIndicators] = useState<string[]>(["ma"]);
 
+  const queryClient = useQueryClient();
+
   // Fetch market data
   const { data: marketData, isLoading: isLoadingMarketData } = useQuery({
     queryKey: ["market-data", symbol, timeframe],
@@ -137,44 +139,30 @@ const AdvancedChart = ({ symbol = "AAPL" }) => {
       const selectedTimeframe = timeframes.find(tf => tf.value === timeframe);
       const daysAgo = selectedTimeframe ? selectedTimeframe.days : 30;
       
-      const { data, error } = await supabase
-        .from("market_data")
-        .select("*")
-        .eq("symbol", symbol)
-        .gte("timestamp", new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000).toISOString())
-        .order("timestamp", { ascending: true });
-
-      if (error) throw error;
-      return data?.map(d => ({
-        ...d,
-        timestamp: format(new Date(d.timestamp), "MMM dd HH:mm"),
-        open: d.open || d.price,
-        high: d.high || d.price,
-        low: d.low || d.price,
-        close: d.close || d.price,
-        volume: 0, // Add a default volume since it's not in our database yet
-      })) as MarketDataPoint[];
+      // First, try to fetch from the cache
+      const cachedData = await MarketDataService.fetchHistoricalData(symbol, daysAgo);
+      
+      // If we don't have enough data, refresh it
+      if (cachedData.length === 0) {
+        await MarketDataService.refreshMarketData(symbol);
+        return MarketDataService.fetchHistoricalData(symbol, daysAgo);
+      }
+      
+      return cachedData;
     },
   });
 
-  // Fetch technical indicators
-  const { data: indicators, isLoading: isLoadingIndicators } = useQuery({
-    queryKey: ["technical-indicators", symbol, selectedIndicators],
-    queryFn: async () => {
-      if (selectedIndicators.length === 0) return [];
+  // Subscribe to real-time updates
+  useEffect(() => {
+    const subscription = MarketDataService.subscribeToUpdates(symbol, (newData) => {
+      // Invalidate the query to refresh the data
+      queryClient.invalidateQueries({ queryKey: ["market-data", symbol] });
+    });
 
-      const { data, error } = await supabase
-        .from("technical_indicators")
-        .select("*")
-        .eq("symbol", symbol)
-        .in("indicator_type", selectedIndicators)
-        .order("timestamp", { ascending: true });
-
-      if (error) throw error;
-      return data;
-    },
-    enabled: selectedIndicators.length > 0,
-  });
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [symbol, queryClient]);
 
   const toggleIndicator = (indicator: string) => {
     setSelectedIndicators(prev =>
