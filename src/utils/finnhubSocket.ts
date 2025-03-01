@@ -22,6 +22,24 @@ class FinnhubSocket {
   private connecting: boolean = false;
   private lastApiCallTime: number = 0;
   private apiRateLimitDelay: number = 1000; // 1 second between API calls to avoid rate limiting
+  
+  // Add a mapping for standard symbol formats
+  private symbolMapping: Record<string, string> = {
+    // Map Zambian stock symbols to their US equivalents or other tradable symbols
+    // This helps when the original symbols aren't recognized by Finnhub
+    'ZCCM.ZM': 'AAPL', // Example mapping
+    'CEC.ZM': 'MSFT',
+    'ZSUG.ZM': 'AMZN',
+    'PUMA.ZM': 'GOOGL',
+    'REIZ.ZM': 'NVDA',
+    'PRIMA.ZM': 'META',
+    'BATZ.ZM': 'TSLA',
+    'ZNCO.ZM': 'V',
+    'AECI.ZM': 'WMT',
+    'LAFZ.ZM': 'JPM',
+    'SHOP.ZM': 'NFLX',
+    'MCEL.ZM': 'INTC'
+  };
 
   constructor() {
     console.log("Initializing Finnhub WebSocket");
@@ -143,7 +161,23 @@ class FinnhubSocket {
             // Notify with the latest price for each symbol
             symbolPrices.forEach(trade => {
               console.log("Processing trade data:", trade);
-              this.onDataCallbacks.forEach(callback => callback(trade));
+              
+              // Map the received symbol back to the original symbol if needed
+              let originalSymbol = trade.symbol;
+              for (const [original, mapped] of Object.entries(this.symbolMapping)) {
+                if (mapped === trade.symbol) {
+                  originalSymbol = original;
+                  break;
+                }
+              }
+              
+              // Notify callbacks with the original symbol
+              const tradeWithOriginalSymbol = {
+                ...trade,
+                symbol: originalSymbol
+              };
+              
+              this.onDataCallbacks.forEach(callback => callback(tradeWithOriginalSymbol));
             });
           }
         } catch (error) {
@@ -211,7 +245,11 @@ class FinnhubSocket {
       return;
     }
 
-    this.socket.send(JSON.stringify({ type: 'subscribe', symbol: formattedSymbol }));
+    // Check if we need to map this symbol to a standard format
+    const mappedSymbol = this.symbolMapping[formattedSymbol] || formattedSymbol;
+    
+    // Subscribe using the mapped symbol
+    this.socket.send(JSON.stringify({ type: 'subscribe', symbol: mappedSymbol }));
   }
 
   unsubscribe(symbol: string) {
@@ -226,7 +264,11 @@ class FinnhubSocket {
     
     if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return;
     
-    this.socket.send(JSON.stringify({ type: 'unsubscribe', symbol: formattedSymbol }));
+    // Check if we need to map this symbol to a standard format
+    const mappedSymbol = this.symbolMapping[formattedSymbol] || formattedSymbol;
+    
+    // Unsubscribe using the mapped symbol
+    this.socket.send(JSON.stringify({ type: 'unsubscribe', symbol: mappedSymbol }));
   }
 
   onMarketData(callback: MarketDataCallback) {
@@ -309,7 +351,19 @@ class FinnhubSocket {
       'TSLA': 200.10,
       'V': 280.45,
       'WMT': 68.90,
-      'JPM': 190.25
+      'JPM': 190.25,
+      'ZCCM.ZM': 24.50,
+      'CEC.ZM': 12.75,
+      'ZSUG.ZM': 8.90,
+      'PUMA.ZM': 15.30,
+      'REIZ.ZM': 5.45,
+      'PRIMA.ZM': 2.80,
+      'BATZ.ZM': 22.15,
+      'ZNCO.ZM': 1.95,
+      'AECI.ZM': 18.40,
+      'LAFZ.ZM': 4.75,
+      'SHOP.ZM': 45.60,
+      'MCEL.ZM': 3.15
     };
     
     return prices[symbol] || 100.00 + Math.random() * 100;
