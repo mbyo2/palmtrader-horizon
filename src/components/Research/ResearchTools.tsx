@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,13 +9,24 @@ import MarketNews from "./MarketNews";
 import AnalystRatings from "./AnalystRatings";
 import Comments from "../Social/Comments";
 
-const ResearchTools = () => {
-  const [symbol, setSymbol] = useState("AAPL");
-  const [searchInput, setSearchInput] = useState("AAPL");
+interface ResearchToolsProps {
+  initialSymbol?: string;
+  onSymbolChange?: (symbol: string) => void;
+}
+
+const ResearchTools = ({ initialSymbol = "AAPL", onSymbolChange }: ResearchToolsProps) => {
+  const [symbol, setSymbol] = useState(initialSymbol);
+  const [searchInput, setSearchInput] = useState(initialSymbol);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    setSymbol(searchInput.toUpperCase());
+    const newSymbol = searchInput.toUpperCase();
+    setSymbol(newSymbol);
+    
+    // Notify parent component if callback is provided
+    if (onSymbolChange) {
+      onSymbolChange(newSymbol);
+    }
   };
 
   return (
