@@ -6,23 +6,26 @@ import ResearchTools from "@/components/Research/ResearchTools";
 import { MarketDataService, MarketData } from "@/services/MarketDataService";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { finnhubSocket } from "@/utils/finnhubSocket";
 import MarketOverview from "@/components/MarketOverview";
 
 const Markets = () => {
-  const { toast } = useToast();
   const [symbol, setSymbol] = useState("AAPL");
+  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   
   const { data: marketData = [], isLoading, error, refetch } = useQuery({
-    queryKey: ['marketData', symbol],
+    queryKey: ['marketData', symbol, lastUpdate],
     queryFn: () => MarketDataService.fetchHistoricalData(symbol, 30),
     retry: 2,
-    refetchOnWindowFocus: false
+    refetchOnWindowFocus: false,
+    staleTime: 60000 // Consider data stale after 1 minute
   });
 
   // Subscribe to real-time updates for the current symbol
   useEffect(() => {
+    console.log(`Setting up real-time updates for ${symbol}`);
+    
     // Subscribe to real-time updates
     finnhubSocket.subscribe(symbol);
     
@@ -30,36 +33,36 @@ const Markets = () => {
     const unsubscribe = finnhubSocket.onMarketData((data) => {
       if (data.symbol === symbol && data.price) {
         console.log(`Real-time update received for ${symbol}: ${data.price}`);
-        refetch(); // Refresh the data when we get a real-time update
+        
+        // Update the lastUpdate timestamp to trigger a refetch
+        setLastUpdate(new Date());
+        
+        // Show a toast notification
+        toast.success(`${symbol} updated: $${data.price.toFixed(2)}`);
       }
     });
     
     // Notify the user that real-time data is enabled
-    toast({
-      title: "Real-time Updates",
-      description: `Now receiving live market data for ${symbol}`,
-    });
+    toast.info(`Now receiving market data for ${symbol}`);
     
-    // Cleanup on unmount
+    // Cleanup on unmount or when symbol changes
     return () => {
+      console.log(`Cleaning up real-time updates for ${symbol}`);
       finnhubSocket.unsubscribe(symbol);
       unsubscribe();
     };
-  }, [symbol, toast, refetch]);
+  }, [symbol]);
 
   useEffect(() => {
     if (error) {
-      toast({
-        title: "Error fetching market data",
-        description: "There was a problem loading market data. Please try again later.",
-        variant: "destructive",
-      });
+      toast.error("Error fetching market data. Using demo data instead.");
       console.error("Market data error:", error);
     }
-  }, [error, toast]);
+  }, [error]);
 
   // Handle symbol change (will be triggered by the ResearchTools component)
   const handleSymbolChange = (newSymbol: string) => {
+    console.log(`Changing symbol from ${symbol} to ${newSymbol}`);
     setSymbol(newSymbol);
   };
 
@@ -83,7 +86,7 @@ const Markets = () => {
         ) : (
           <Card className="p-6 text-center">
             <p className="text-muted-foreground mb-2">No market data available for {symbol}</p>
-            <p className="text-sm">Our data provider might be experiencing issues. Please try again later.</p>
+            <p className="text-sm">Using demonstration data. Check your connection or try again later.</p>
           </Card>
         )}
         <ResearchTools onSymbolChange={handleSymbolChange} initialSymbol={symbol} />

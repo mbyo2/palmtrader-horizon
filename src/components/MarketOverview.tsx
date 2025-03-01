@@ -1,10 +1,8 @@
 
 import { Card } from "@/components/ui/card";
 import { useState, useEffect, useCallback, memo, useRef } from "react";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { MarketDataService, MarketData } from "@/services/MarketDataService";
-import { useToast } from "@/hooks/use-toast";
-import { useQuery } from "@tanstack/react-query";
+import { MarketDataService } from "@/services/MarketDataService";
+import { toast } from "sonner";
 import { finnhubSocket } from "@/utils/finnhubSocket";
 
 interface Market {
@@ -55,12 +53,13 @@ const MarketOverview = () => {
     { name: "Meta Platforms Inc.", value: formatCurrency(330.00), change: "+0.0%", symbol: "META" }
   ]);
 
-  const { toast } = useToast();
   const marketDataCache = useRef(new Map<string, { value: string; timestamp: number }>());
-  const cacheExpiration = 1000; // Reduced to 1 second for more frequent updates
+  const cacheExpiration = 1000; // 1 second for more frequent updates
 
   // Subscribe to Finnhub WebSocket updates
   useEffect(() => {
+    console.log("Setting up market overview real-time updates");
+    
     // Subscribe to real-time updates for each market
     markets.forEach(market => {
       finnhubSocket.subscribe(market.symbol);
@@ -90,16 +89,9 @@ const MarketOverview = () => {
           const data = await MarketDataService.fetchLatestPrice(market.symbol);
           if (data) {
             handleMarketUpdate(market.symbol, data.price);
-          } else {
-            console.log(`No cached data found for ${market.symbol}, waiting for real-time updates...`);
           }
         } catch (error) {
           console.error(`Error fetching data for ${market.symbol}:`, error);
-          toast({
-            title: "Error",
-            description: `Could not fetch data for ${market.symbol}`,
-            variant: "destructive",
-          });
         }
       }
     };
