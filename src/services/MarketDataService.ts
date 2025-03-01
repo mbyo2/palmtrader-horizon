@@ -15,15 +15,23 @@ export interface MarketData {
 
 export const MarketDataService = {
   async fetchHistoricalData(symbol: string, days: number = 30): Promise<MarketData[]> {
+    if (!symbol) {
+      console.error('Symbol is required for fetchHistoricalData');
+      return this.generateMockData('AAPL', days);
+    }
+    
+    const formattedSymbol = symbol.toUpperCase();
     // First try to get cached data from Supabase
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
     
     try {
+      console.log(`Fetching historical data for ${formattedSymbol} for the last ${days} days`);
+      
       const { data: cachedData, error: cacheError } = await supabase
         .from('market_data')
         .select('*')
-        .eq('symbol', symbol)
+        .eq('symbol', formattedSymbol)
         .gte('timestamp', startDate.toISOString())
         .order('timestamp', { ascending: true });
 
@@ -38,7 +46,7 @@ export const MarketDataService = {
         const hoursSinceLastUpdate = (now.getTime() - latestDataPoint.getTime()) / (1000 * 60 * 60);
 
         if (hoursSinceLastUpdate < 24) {
-          console.log(`Using cached data for ${symbol}, ${cachedData.length} records`);
+          console.log(`Using cached data for ${formattedSymbol}, ${cachedData.length} records`);
           return cachedData.map(item => ({
             ...item,
             timestamp: new Date(item.timestamp).toISOString(),
@@ -48,13 +56,14 @@ export const MarketDataService = {
       }
 
       // If no recent data, fetch from Alpha Vantage via Supabase function
-      console.log(`Refreshing market data for ${symbol}`);
-      const refreshSuccess = await this.refreshMarketData(symbol);
+      console.log(`Refreshing market data for ${formattedSymbol}`);
+      const refreshSuccess = await this.refreshMarketData(formattedSymbol);
       
       if (!refreshSuccess) {
-        console.warn(`Failed to refresh data for ${symbol}, returning any available cached data`);
+        console.warn(`Failed to refresh data for ${formattedSymbol}, returning any available cached data`);
         // Return whatever cached data we have, even if it's old
         if (cachedData && cachedData.length > 0) {
+          toast.info(`Using cached data for ${formattedSymbol}`);
           return cachedData.map(item => ({
             ...item,
             timestamp: new Date(item.timestamp).toISOString(),
@@ -63,14 +72,15 @@ export const MarketDataService = {
         }
         
         // If no cached data at all, return mock data for demonstration
-        return this.generateMockData(symbol, days);
+        toast.info(`Using simulated data for ${formattedSymbol}`);
+        return this.generateMockData(formattedSymbol, days);
       }
 
       // Get the updated data from Supabase
       const { data: updatedData, error: updateError } = await supabase
         .from('market_data')
         .select('*')
-        .eq('symbol', symbol)
+        .eq('symbol', formattedSymbol)
         .gte('timestamp', startDate.toISOString())
         .order('timestamp', { ascending: true });
 
@@ -79,24 +89,39 @@ export const MarketDataService = {
         throw updateError;
       }
 
-      return (updatedData || []).map(item => ({
-        ...item,
-        timestamp: new Date(item.timestamp).toISOString(),
-        type: item.type as 'stock' | 'crypto' | 'forex'
-      }));
+      if (updatedData && updatedData.length > 0) {
+        toast.success(`Loaded ${updatedData.length} data points for ${formattedSymbol}`);
+        return updatedData.map(item => ({
+          ...item,
+          timestamp: new Date(item.timestamp).toISOString(),
+          type: item.type as 'stock' | 'crypto' | 'forex'
+        }));
+      } else {
+        toast.info(`No data available for ${formattedSymbol}, using simulated data`);
+        return this.generateMockData(formattedSymbol, days);
+      }
     } catch (error) {
-      console.error(`Error in fetchHistoricalData for ${symbol}:`, error);
-      return this.generateMockData(symbol, days);
+      console.error(`Error in fetchHistoricalData for ${formattedSymbol}:`, error);
+      toast.error(`Error loading data for ${formattedSymbol}`);
+      return this.generateMockData(formattedSymbol, days);
     }
   },
 
   async fetchLatestPrice(symbol: string): Promise<MarketData | null> {
+    if (!symbol) {
+      console.error('Symbol is required for fetchLatestPrice');
+      return this.generateMockDataPoint('AAPL');
+    }
+
+    const formattedSymbol = symbol.toUpperCase();
     try {
+      console.log(`Fetching latest price for ${formattedSymbol}`);
+      
       // First try to get cached data from Supabase
       const { data: cachedData, error: cacheError } = await supabase
         .from('market_data')
         .select('*')
-        .eq('symbol', symbol)
+        .eq('symbol', formattedSymbol)
         .order('timestamp', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -111,7 +136,7 @@ export const MarketDataService = {
         const hoursSinceLastUpdate = (now.getTime() - latestDataPoint.getTime()) / (1000 * 60 * 60);
 
         if (hoursSinceLastUpdate < 24) {
-          console.log(`Using cached latest price for ${symbol}`);
+          console.log(`Using cached latest price for ${formattedSymbol}`);
           return {
             ...cachedData,
             timestamp: new Date(cachedData.timestamp).toISOString(),
@@ -121,13 +146,14 @@ export const MarketDataService = {
       }
 
       // If no recent data, fetch from Alpha Vantage
-      console.log(`Refreshing latest price for ${symbol}`);
-      const refreshSuccess = await this.refreshMarketData(symbol);
+      console.log(`Refreshing latest price for ${formattedSymbol}`);
+      const refreshSuccess = await this.refreshMarketData(formattedSymbol);
       
       if (!refreshSuccess) {
-        console.warn(`Failed to refresh price for ${symbol}, returning any available cached data`);
+        console.warn(`Failed to refresh price for ${formattedSymbol}, returning any available cached data`);
         // Return whatever cached data we have, even if it's old
         if (cachedData) {
+          toast.info(`Using cached data for ${formattedSymbol}`);
           return {
             ...cachedData,
             timestamp: new Date(cachedData.timestamp).toISOString(),
@@ -136,37 +162,48 @@ export const MarketDataService = {
         }
         
         // If no cached data, return a mock data point
-        return this.generateMockDataPoint(symbol);
+        toast.info(`Using simulated data for ${formattedSymbol}`);
+        return this.generateMockDataPoint(formattedSymbol);
       }
 
       // Get the updated data from Supabase
       const { data: updatedData, error: updateError } = await supabase
         .from('market_data')
         .select('*')
-        .eq('symbol', symbol)
+        .eq('symbol', formattedSymbol)
         .order('timestamp', { ascending: false })
         .limit(1)
         .maybeSingle();
 
       if (updateError) {
         console.error('Error fetching latest price after refresh:', updateError);
-        return this.generateMockDataPoint(symbol);
+        return this.generateMockDataPoint(formattedSymbol);
       }
 
-      return updatedData ? {
-        ...updatedData,
-        timestamp: new Date(updatedData.timestamp).toISOString(),
-        type: updatedData.type as 'stock' | 'crypto' | 'forex'
-      } : this.generateMockDataPoint(symbol);
+      if (updatedData) {
+        toast.success(`Updated price data for ${formattedSymbol}`);
+        return {
+          ...updatedData,
+          timestamp: new Date(updatedData.timestamp).toISOString(),
+          type: updatedData.type as 'stock' | 'crypto' | 'forex'
+        };
+      } else {
+        toast.info(`No data available for ${formattedSymbol}, using simulated data`);
+        return this.generateMockDataPoint(formattedSymbol);
+      }
     } catch (error) {
-      console.error(`Error in fetchLatestPrice for ${symbol}:`, error);
-      return this.generateMockDataPoint(symbol);
+      console.error(`Error in fetchLatestPrice for ${formattedSymbol}:`, error);
+      toast.error(`Error loading price for ${formattedSymbol}`);
+      return this.generateMockDataPoint(formattedSymbol);
     }
   },
 
   async refreshMarketData(symbol: string, market: 'stock' | 'crypto' | 'forex' = 'stock'): Promise<boolean> {
+    if (!symbol) return false;
+    
+    const formattedSymbol = symbol.toUpperCase();
     try {
-      console.log(`Attempting to fetch data from Alpha Vantage for ${symbol}`);
+      console.log(`Attempting to fetch data from Alpha Vantage for ${formattedSymbol}`);
       
       // Use the Supabase Edge Function with proper authorization
       const { data, error } = await supabase.functions.invoke('alpha-vantage', {
@@ -174,11 +211,11 @@ export const MarketDataService = {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: {
-          symbol,
+        body: JSON.stringify({
+          symbol: formattedSymbol,
           market,
           dataType: 'TIME_SERIES_DAILY'
-        },
+        }),
       });
 
       if (error) {
@@ -195,6 +232,9 @@ export const MarketDataService = {
   },
 
   subscribeToUpdates(symbol: string, callback: (payload: MarketData) => void) {
+    if (!symbol) return { unsubscribe: () => {} };
+    
+    const formattedSymbol = symbol.toUpperCase();
     return supabase
       .channel('market_data_updates')
       .on(
@@ -203,7 +243,7 @@ export const MarketDataService = {
           event: 'INSERT',
           schema: 'public',
           table: 'market_data',
-          filter: `symbol=eq.${symbol}`,
+          filter: `symbol=eq.${formattedSymbol}`,
         },
         (payload) => callback(payload.new as MarketData)
       )
@@ -212,6 +252,8 @@ export const MarketDataService = {
 
   // Helper method to generate mock data when real data isn't available
   generateMockData(symbol: string, days: number): MarketData[] {
+    if (!symbol) symbol = 'UNKNOWN';
+    
     console.log(`Generating mock data for ${symbol} for demonstration purposes`);
     const mockData: MarketData[] = [];
     const basePrice = this.getBasePrice(symbol);
@@ -227,7 +269,7 @@ export const MarketDataService = {
       const price = prevPrice * randomFactor;
       
       mockData.push({
-        symbol,
+        symbol: symbol.toUpperCase(),
         timestamp: date.toISOString(),
         price: parseFloat(price.toFixed(2)),
         open: parseFloat((price * 0.99).toFixed(2)),
@@ -243,11 +285,13 @@ export const MarketDataService = {
   },
   
   generateMockDataPoint(symbol: string): MarketData {
+    if (!symbol) symbol = 'UNKNOWN';
+    
     console.log(`Generating mock data point for ${symbol} for demonstration purposes`);
     const basePrice = this.getBasePrice(symbol);
     
     return {
-      symbol,
+      symbol: symbol.toUpperCase(),
       timestamp: new Date().toISOString(),
       price: basePrice,
       open: parseFloat((basePrice * 0.99).toFixed(2)),
@@ -260,6 +304,8 @@ export const MarketDataService = {
   },
   
   getBasePrice(symbol: string): number {
+    if (!symbol) return 100.00;
+    
     // Return realistic baseline prices for common stocks
     const prices: Record<string, number> = {
       'AAPL': 180.25,
@@ -274,6 +320,9 @@ export const MarketDataService = {
       'JPM': 190.25
     };
     
-    return prices[symbol] || 100.00 + Math.random() * 100;
+    return prices[symbol.toUpperCase()] || 100.00 + Math.random() * 100;
   }
 };
+
+// Helper import for toast
+import { toast } from "sonner";

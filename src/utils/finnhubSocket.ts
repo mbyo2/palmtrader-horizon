@@ -18,6 +18,10 @@ class FinnhubSocket {
   private apiKey: string | null = null;
   private mockDataInterval: ReturnType<typeof setInterval> | null = null;
   private useMockData: boolean = false;
+  private invalidSymbols: Set<string> = new Set();
+  private connecting: boolean = false;
+  private lastApiCallTime: number = 0;
+  private apiRateLimitDelay: number = 1000; // 1 second between API calls to avoid rate limiting
 
   constructor() {
     console.log("Initializing Finnhub WebSocket");
@@ -26,6 +30,9 @@ class FinnhubSocket {
 
   private async initialize() {
     try {
+      if (this.connecting) return;
+      this.connecting = true;
+      
       // Get the API key from our Edge Function
       const { data, error } = await supabase.functions.invoke('finnhub-websocket', {
         method: 'POST'
@@ -36,6 +43,7 @@ class FinnhubSocket {
         toast.error('Failed to initialize market data connection');
         this.useMockData = true;
         this.setupMockDataSimulation();
+        this.connecting = false;
         return;
       }
 
@@ -44,16 +52,19 @@ class FinnhubSocket {
         toast.error('Market data configuration error');
         this.useMockData = true;
         this.setupMockDataSimulation();
+        this.connecting = false;
         return;
       }
 
       this.apiKey = data.apiKey;
       this.connect();
+      this.connecting = false;
     } catch (error) {
       console.error('Error initializing Finnhub socket:', error);
       toast.error('Failed to initialize market data connection');
       this.useMockData = true;
       this.setupMockDataSimulation();
+      this.connecting = false;
     }
   }
 
@@ -84,8 +95,10 @@ class FinnhubSocket {
         
         // Resubscribe to existing symbols
         this.subscriptions.forEach(symbol => {
-          console.log("Resubscribing to symbol:", symbol);
-          this.subscribe(symbol);
+          if (!this.invalidSymbols.has(symbol)) {
+            console.log("Resubscribing to symbol:", symbol);
+            this.subscribe(symbol);
+          }
         });
       };
 
@@ -96,23 +109,42 @@ class FinnhubSocket {
           if (data.type === 'error') {
             console.error("Finnhub error:", data.msg);
             if (data.msg?.includes("Invalid symbol")) {
-              // If symbol is invalid, use mock data for that symbol
-              const symbol = data.msg.split(" ")[2];
-              this.simulateMockDataForSymbol(symbol);
+              // If symbol is invalid, mark it and use mock data for that symbol
+              const symbolMatch = data.msg.match(/Invalid symbol (\w+)/);
+              const symbol = symbolMatch ? symbolMatch[1] : null;
+              
+              if (symbol) {
+                console.log(`Marking symbol as invalid: ${symbol}`);
+                this.invalidSymbols.add(symbol);
+                this.simulateMockDataForSymbol(symbol);
+              }
             }
             return;
           }
           
-          console.log("Received market data:", data);
-          
           if (data.type === 'trade' && Array.isArray(data.data) && data.data.length > 0) {
-            const trade = {
-              symbol: data.data[0].s,
-              price: data.data[0].p,
-              timestamp: data.data[0].t,
-            };
-            console.log("Processing trade data:", trade);
-            this.onDataCallbacks.forEach(callback => callback(trade));
+            const trades = data.data.map(item => ({
+              symbol: item.s,
+              price: item.p,
+              timestamp: item.t,
+            }));
+            
+            // Process the most recent trade for each symbol
+            const symbolPrices = new Map();
+            
+            for (const trade of trades) {
+              const currentTrade = symbolPrices.get(trade.symbol);
+              
+              if (!currentTrade || trade.timestamp > currentTrade.timestamp) {
+                symbolPrices.set(trade.symbol, trade);
+              }
+            }
+            
+            // Notify with the latest price for each symbol
+            symbolPrices.forEach(trade => {
+              console.log("Processing trade data:", trade);
+              this.onDataCallbacks.forEach(callback => callback(trade));
+            });
           }
         } catch (error) {
           console.error("Error processing market data:", error);
@@ -156,31 +188,45 @@ class FinnhubSocket {
   }
 
   subscribe(symbol: string) {
-    console.log("Subscribing to symbol:", symbol);
-    this.subscriptions.add(symbol);
+    if (!symbol) return;
+    
+    const formattedSymbol = symbol.toUpperCase();
+    console.log("Subscribing to symbol:", formattedSymbol);
+    this.subscriptions.add(formattedSymbol);
+    
+    // If known invalid symbol, use mock data immediately
+    if (this.invalidSymbols.has(formattedSymbol)) {
+      console.log(`${formattedSymbol} is a known invalid symbol, using mock data`);
+      this.simulateMockDataForSymbol(formattedSymbol);
+      return;
+    }
     
     if (this.useMockData) {
-      this.simulateMockDataForSymbol(symbol);
+      this.simulateMockDataForSymbol(formattedSymbol);
       return;
     }
     
     if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
-      console.log("Socket not ready, queuing subscription:", symbol);
+      console.log("Socket not ready, queuing subscription:", formattedSymbol);
       return;
     }
 
-    this.socket.send(JSON.stringify({ type: 'subscribe', symbol }));
+    this.socket.send(JSON.stringify({ type: 'subscribe', symbol: formattedSymbol }));
   }
 
   unsubscribe(symbol: string) {
-    console.log("Unsubscribing from symbol:", symbol);
-    this.subscriptions.delete(symbol);
+    if (!symbol) return;
+    
+    const formattedSymbol = symbol.toUpperCase();
+    console.log("Unsubscribing from symbol:", formattedSymbol);
+    this.subscriptions.delete(formattedSymbol);
+    this.invalidSymbols.delete(formattedSymbol);
     
     if (this.useMockData) return;
     
     if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return;
     
-    this.socket.send(JSON.stringify({ type: 'unsubscribe', symbol }));
+    this.socket.send(JSON.stringify({ type: 'unsubscribe', symbol: formattedSymbol }));
   }
 
   onMarketData(callback: MarketDataCallback) {
@@ -190,6 +236,11 @@ class FinnhubSocket {
       console.log("Removing market data callback");
       this.onDataCallbacks = this.onDataCallbacks.filter(cb => cb !== callback);
     };
+  }
+
+  resetInvalidSymbols() {
+    console.log("Resetting invalid symbols list");
+    this.invalidSymbols.clear();
   }
 
   disconnect() {
@@ -209,6 +260,7 @@ class FinnhubSocket {
     this.subscriptions.clear();
     this.onDataCallbacks = [];
     this.useMockData = false;
+    this.invalidSymbols.clear();
   }
   
   private setupMockDataSimulation() {
@@ -226,7 +278,9 @@ class FinnhubSocket {
   }
   
   private simulateMockDataForSymbol(symbol: string) {
-    // Get a base price for the symbol (can be refined to use more realistic data)
+    if (!symbol) return;
+    
+    // Get a base price for the symbol
     const basePrice = this.getBasePrice(symbol);
     
     // Simulate a small price movement (-1% to +1%)
