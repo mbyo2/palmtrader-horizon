@@ -1,9 +1,9 @@
 
-import { MarketOverview } from "@/components/MarketOverview";
-import { StockList } from "@/components/StockList";
+import MarketOverview from "@/components/MarketOverview";
+import StockList from "@/components/StockList";
 import PortfolioPerformance from "@/components/Dashboard/PortfolioPerformance";
-import { MarketNews } from "@/components/Research/MarketNews";
-import { PopularStocks } from "@/components/Social/PopularStocks";
+import MarketNews from "@/components/Research/MarketNews";
+import PopularStocks from "@/components/Social/PopularStocks";
 
 export default function Index() {
   return (

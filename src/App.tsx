@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -15,6 +14,7 @@ import Watchlist from "./pages/Watchlist";
 import Portfolio from "./pages/Portfolio";
 import IPO from "./pages/IPO";
 import IPODetails from "./pages/IPODetails";
+import Crypto from "./pages/Crypto";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +37,7 @@ function App() {
                   <Route path="/portfolio" element={<Portfolio />} />
                   <Route path="/ipo" element={<IPO />} />
                   <Route path="/ipo/:id" element={<IPODetails />} />
+                  <Route path="/crypto" element={<Crypto />} />
                 </Routes>
               </main>
               <Footer />

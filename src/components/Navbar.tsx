@@ -123,6 +123,12 @@ const Navbar = () => {
                 >
                   Markets
                 </Link>
+                <Link 
+                  to="/crypto" 
+                  className="text-foreground hover:text-primary transition-colors duration-200 font-medium"
+                >
+                  Crypto
+                </Link>
                 {user && accountDetails?.account_status === 'active' && (
                   <>
                     <Link 
@@ -189,6 +195,12 @@ const Navbar = () => {
               className="block px-3 py-2 rounded-md text-foreground hover:text-primary transition-colors duration-200"
             >
               Markets
+            </Link>
+            <Link 
+              to="/crypto" 
+              className="block px-3 py-2 rounded-md text-foreground hover:text-primary transition-colors duration-200"
+            >
+              Crypto
             </Link>
             {user && accountDetails?.account_status === 'active' && (
               <>
