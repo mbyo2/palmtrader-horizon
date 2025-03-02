@@ -97,32 +97,35 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
             event: 'UPDATE',
             schema: 'public',
             table: 'price_alerts',
-            filter: `user_id=eq.${session.session.user.id} AND is_triggered=eq.true AND is_notified=eq.false`,
+            filter: `user_id=eq.${session.session.user.id} AND is_triggered=eq.true`,
           },
           (payload) => {
             console.log('Price alert triggered:', payload);
             const alert = payload.new;
             
-            // Add notification for the triggered alert
-            addNotification({
-              type: 'price-alert',
-              title: `Price Alert: ${alert.symbol}`,
-              message: `${alert.symbol} has reached your target price of $${alert.target_price}`,
-              data: {
-                symbol: alert.symbol,
-                price: alert.target_price,
-                direction: alert.condition,
-              },
-            });
-
-            // Mark alert as notified
-            supabase
-              .from('price_alerts')
-              .update({ is_notified: true })
-              .eq('id', alert.id)
-              .then(({ error }) => {
-                if (error) console.error('Error updating price alert:', error);
+            // Only notify for alerts that haven't been notified yet
+            if (!alert.is_notified) {
+              // Add notification for the triggered alert
+              addNotification({
+                type: 'price-alert',
+                title: `Price Alert: ${alert.symbol}`,
+                message: `${alert.symbol} has reached your target price of $${alert.target_price}`,
+                data: {
+                  symbol: alert.symbol,
+                  price: alert.target_price,
+                  direction: alert.condition,
+                },
               });
+
+              // Mark alert as notified
+              supabase
+                .from('price_alerts')
+                .update({ is_triggered: true })
+                .eq('id', alert.id)
+                .then(({ error }) => {
+                  if (error) console.error('Error updating price alert:', error);
+                });
+            }
           }
         )
         .subscribe();

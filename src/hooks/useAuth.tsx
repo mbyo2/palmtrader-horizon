@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -65,6 +66,15 @@ export const useAuth = () => {
     return () => subscription.unsubscribe();
   }, []);
 
+  const signOut = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error('Error signing out:', error);
+    } else {
+      navigate('/auth');
+    }
+  };
+
   const isPremium = () => accountDetails?.role === 'premium';
   const isAdmin = () => accountDetails?.role === 'admin';
   const isActive = () => accountDetails?.account_status === 'active';
@@ -109,5 +119,6 @@ export const useAuth = () => {
     requireAuth,
     requirePremium,
     requireActive,
+    signOut,
   };
 };

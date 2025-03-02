@@ -1,7 +1,53 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { MarketData } from "./types";
-import { generateMockHistoricalData, generateMockLatestPrice } from "@/services/market/mockDataHelper";
+
+// Function to generate mock historical data for a symbol
+function generateMockHistoricalData(symbol: string, days: number): MarketData[] {
+  console.log(`Generating mock historical data for ${symbol}`);
+  const data: MarketData[] = [];
+  const endDate = new Date();
+  let currentDate = new Date();
+  currentDate.setDate(currentDate.getDate() - days);
+  
+  // Generate a random starting price between $10 and $500
+  let price = Math.random() * 490 + 10;
+  
+  while (currentDate <= endDate) {
+    // Generate random price movement (-5% to +5%)
+    const priceChange = price * (Math.random() * 0.1 - 0.05);
+    price += priceChange;
+    price = Math.max(1, price); // Ensure price doesn't go below $1
+    
+    const open = price - (Math.random() * 2);
+    const close = price + (Math.random() * 2);
+    const high = Math.max(open, close) + (Math.random() * 3);
+    const low = Math.min(open, close) - (Math.random() * 3);
+    
+    data.push({
+      symbol,
+      timestamp: String(currentDate.getTime()),
+      price,
+      open,
+      high,
+      low,
+      close,
+      type: 'stock',
+    });
+    
+    // Move to the next day
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+  
+  return data;
+}
+
+// Function to generate mock latest price for a symbol
+function generateMockLatestPrice(symbol: string): { symbol: string; price: number } {
+  // Generate a price between $10 and $500
+  const price = Math.round((Math.random() * 490 + 10) * 100) / 100;
+  return { symbol, price };
+}
 
 export async function fetchHistoricalData(symbol: string, days: number): Promise<MarketData[]> {
   console.log(`Fetching historical data for ${symbol} for last ${days} days`);
