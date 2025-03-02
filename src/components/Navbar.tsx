@@ -2,9 +2,10 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import ThemeToggle from "@/components/ThemeToggle";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import CurrencySelector from "@/components/CurrencySelector";
 import SearchBar from "@/components/Search/SearchBar";
+import NotificationsIndicator from "@/components/Notifications/NotificationsIndicator";
 
 const Navbar = () => {
   const { user, signOut } = useAuth();
@@ -54,6 +55,7 @@ const Navbar = () => {
           <div className="flex flex-1 items-center justify-end space-x-2">
             <SearchBar />
             <CurrencySelector />
+            {user && <NotificationsIndicator />}
             <ThemeToggle />
             {user ? (
               <Button variant="outline" size="sm" onClick={signOut}>

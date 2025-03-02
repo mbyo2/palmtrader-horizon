@@ -1,62 +1,101 @@
 
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Search } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import CompanyFundamentals from "./CompanyFundamentals";
-import MarketNews from "./MarketNews";
 import AnalystRatings from "./AnalystRatings";
-import Comments from "../Social/Comments";
+import MarketNews from "./MarketNews";
+import TechnicalIndicators from "@/components/TechnicalIndicators";
+import SocialShare from "@/components/Social/SocialShare";
+import Comments from "@/components/Social/Comments";
+import WatchlistButton from "@/components/WatchlistButton";
+import PriceAlertModal from "@/components/Alerts/PriceAlertModal";
+import { Button } from "@/components/ui/button";
+import { AlertCircle } from "lucide-react";
 
 interface ResearchToolsProps {
-  initialSymbol?: string;
   onSymbolChange?: (symbol: string) => void;
+  initialSymbol?: string;
 }
 
-const ResearchTools = ({ initialSymbol = "AAPL", onSymbolChange }: ResearchToolsProps) => {
+const ResearchTools = ({ onSymbolChange, initialSymbol = "AAPL" }: ResearchToolsProps) => {
   const [symbol, setSymbol] = useState(initialSymbol);
-  const [searchInput, setSearchInput] = useState(initialSymbol);
+  const [inputSymbol, setInputSymbol] = useState(initialSymbol);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    const newSymbol = searchInput.toUpperCase();
-    setSymbol(newSymbol);
-    
-    // Notify parent component if callback is provided
-    if (onSymbolChange) {
-      onSymbolChange(newSymbol);
+  // Mock current price - in a real app, you'd get this from your market data service
+  const currentPrice = 150.75;
+
+  const handleSymbolChange = () => {
+    const newSymbol = inputSymbol.trim().toUpperCase();
+    if (newSymbol && newSymbol !== symbol) {
+      setSymbol(newSymbol);
+      if (onSymbolChange) {
+        onSymbolChange(newSymbol);
+      }
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleSymbolChange();
     }
   };
 
   return (
-    <div className="space-y-6">
-      <Card className="p-4">
-        <form onSubmit={handleSearch} className="flex gap-2">
-          <Input
-            placeholder="Enter stock symbol..."
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
+    <Card className="p-4">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={inputSymbol}
+            onChange={(e) => setInputSymbol(e.target.value)}
+            onKeyDown={handleKeyDown}
+            className="border rounded px-2 py-1 text-sm"
+            placeholder="Enter symbol"
           />
-          <Button type="submit">
-            <Search className="h-4 w-4 mr-2" />
+          <Button size="sm" onClick={handleSymbolChange}>
             Search
           </Button>
-        </form>
-      </Card>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <CompanyFundamentals symbol={symbol} />
-        <AnalystRatings symbol={symbol} />
+        </div>
+        <div className="flex items-center gap-2">
+          <PriceAlertModal symbol={symbol} currentPrice={currentPrice}>
+            <Button size="sm" variant="outline" className="flex items-center gap-1">
+              <AlertCircle className="h-4 w-4" />
+              Set Alert
+            </Button>
+          </PriceAlertModal>
+          <WatchlistButton symbol={symbol} />
+        </div>
       </div>
-      
-      <MarketNews symbol={symbol} />
-      
-      <Card className="p-4">
-        <h3 className="text-lg font-semibold mb-4">Discussion</h3>
-        <Comments symbol={symbol} />
-      </Card>
-    </div>
+
+      <Tabs defaultValue="fundamentals">
+        <TabsList className="mb-4">
+          <TabsTrigger value="fundamentals">Fundamentals</TabsTrigger>
+          <TabsTrigger value="technical">Technical</TabsTrigger>
+          <TabsTrigger value="news">News</TabsTrigger>
+          <TabsTrigger value="analysts">Analysts</TabsTrigger>
+          <TabsTrigger value="social">Social</TabsTrigger>
+        </TabsList>
+        <TabsContent value="fundamentals">
+          <CompanyFundamentals symbol={symbol} />
+        </TabsContent>
+        <TabsContent value="technical">
+          <TechnicalIndicators symbol={symbol} />
+        </TabsContent>
+        <TabsContent value="news">
+          <MarketNews symbol={symbol} />
+        </TabsContent>
+        <TabsContent value="analysts">
+          <AnalystRatings symbol={symbol} />
+        </TabsContent>
+        <TabsContent value="social">
+          <div className="space-y-4">
+            <SocialShare symbol={symbol} />
+            <Comments symbol={symbol} />
+          </div>
+        </TabsContent>
+      </Tabs>
+    </Card>
   );
 };
 

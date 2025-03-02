@@ -1,6 +1,7 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { MarketData } from "./types";
-import { generateMockHistoricalData, generateMockLatestPrice } from "./mockDataHelper";
+import { generateMockHistoricalData, generateMockLatestPrice } from "@/services/market/mockDataHelper";
 
 export async function fetchHistoricalData(symbol: string, days: number): Promise<MarketData[]> {
   console.log(`Fetching historical data for ${symbol} for last ${days} days`);
