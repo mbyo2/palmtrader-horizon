@@ -4,6 +4,7 @@ import StockList from "@/components/StockList";
 import PortfolioPerformance from "@/components/Dashboard/PortfolioPerformance";
 import MarketNews from "@/components/Research/MarketNews";
 import PopularStocks from "@/components/Social/PopularStocks";
+import NewsFeed from "@/components/Research/NewsFeed";
 
 export default function Index() {
   return (
@@ -26,7 +27,7 @@ export default function Index() {
           <StockList />
         </div>
         <div className="md:col-span-2">
-          <MarketNews />
+          <NewsFeed defaultCategory="general" limit={5} />
         </div>
       </div>
     </div>
