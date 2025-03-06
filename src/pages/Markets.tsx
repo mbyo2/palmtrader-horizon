@@ -1,7 +1,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
-import AdvancedChart from "@/components/Research/AdvancedChart";
+import { AdvancedStockChart } from "@/components/Research/AdvancedStockChart";
 import ResearchTools from "@/components/Research/ResearchTools";
 import { MarketDataService, MarketData } from "@/services/MarketDataService";
 import { Card } from "@/components/ui/card";
@@ -9,6 +9,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { finnhubSocket } from "@/utils/finnhubSocket";
 import MarketOverview from "@/components/MarketOverview";
+import TradingInterface from "@/components/Trading/TradingInterface";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Markets = () => {
   const [symbol, setSymbol] = useState("AAPL");
@@ -76,21 +78,34 @@ const Markets = () => {
         <MarketOverview />
       </div>
       
-      <div className="space-y-6">
-        {isLoading ? (
-          <Card className="p-4">
-            <Skeleton className="h-[400px] w-full" />
-          </Card>
-        ) : marketData.length > 0 ? (
-          <AdvancedChart data={marketData} />
-        ) : (
-          <Card className="p-6 text-center">
-            <p className="text-muted-foreground mb-2">No market data available for {symbol}</p>
-            <p className="text-sm">Using demonstration data. Check your connection or try again later.</p>
-          </Card>
-        )}
-        <ResearchTools onSymbolChange={handleSymbolChange} initialSymbol={symbol} />
-      </div>
+      <Tabs defaultValue="chart" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="chart">Charts & Analysis</TabsTrigger>
+          <TabsTrigger value="trading">Trading</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="chart" className="space-y-6">
+          {isLoading ? (
+            <Card className="p-4">
+              <Skeleton className="h-[400px] w-full" />
+            </Card>
+          ) : marketData.length > 0 ? (
+            <Card className="p-4">
+              <AdvancedStockChart data={marketData} />
+            </Card>
+          ) : (
+            <Card className="p-6 text-center">
+              <p className="text-muted-foreground mb-2">No market data available for {symbol}</p>
+              <p className="text-sm">Using demonstration data. Check your connection or try again later.</p>
+            </Card>
+          )}
+          <ResearchTools onSymbolChange={handleSymbolChange} initialSymbol={symbol} />
+        </TabsContent>
+        
+        <TabsContent value="trading" className="space-y-6">
+          <TradingInterface />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
