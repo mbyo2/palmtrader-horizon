@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -20,7 +20,14 @@ import Onboarding from "./pages/Onboarding";
 import AccountSettings from "./pages/AccountSettings";
 import { NotificationsProvider } from "./components/Notifications/NotificationsProvider";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 function App() {
   return (
@@ -34,18 +41,20 @@ function App() {
                 <main className="flex-1">
                   <Toaster />
                   <Sonner />
-                  <Routes>
-                    <Route path="/" element={<Index />} />
-                    <Route path="/auth" element={<Auth />} />
-                    <Route path="/markets" element={<Markets />} />
-                    <Route path="/watchlist" element={<Watchlist />} />
-                    <Route path="/portfolio" element={<Portfolio />} />
-                    <Route path="/ipo" element={<IPO />} />
-                    <Route path="/ipo/:id" element={<IPODetails />} />
-                    <Route path="/crypto" element={<Crypto />} />
-                    <Route path="/onboarding" element={<Onboarding />} />
-                    <Route path="/settings" element={<AccountSettings />} />
-                  </Routes>
+                  <Suspense fallback={<div className="container py-6">Loading...</div>}>
+                    <Routes>
+                      <Route path="/" element={<Index />} />
+                      <Route path="/auth" element={<Auth />} />
+                      <Route path="/markets" element={<Markets />} />
+                      <Route path="/watchlist" element={<Watchlist />} />
+                      <Route path="/portfolio" element={<Portfolio />} />
+                      <Route path="/ipo" element={<IPO />} />
+                      <Route path="/ipo/:id" element={<IPODetails />} />
+                      <Route path="/crypto" element={<Crypto />} />
+                      <Route path="/onboarding" element={<Onboarding />} />
+                      <Route path="/settings" element={<AccountSettings />} />
+                    </Routes>
+                  </Suspense>
                 </main>
                 <Footer />
               </div>

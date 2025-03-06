@@ -31,7 +31,10 @@ const CurrencySelector = ({ value = "USD", onChange }: CurrencySelectorProps) =>
     const fetchUserPreferences = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
+        if (!user) {
+          setLoading(false);
+          return;
+        }
 
         const { data: preferences, error } = await supabase
           .from('user_preferences')
@@ -39,7 +42,7 @@ const CurrencySelector = ({ value = "USD", onChange }: CurrencySelectorProps) =>
           .eq('user_id', user.id)
           .single();
 
-        if (error) throw error;
+        if (error && error.code !== 'PGRST116') throw error;
 
         if (preferences) {
           setSelectedCurrency(preferences.currency);
@@ -62,7 +65,7 @@ const CurrencySelector = ({ value = "USD", onChange }: CurrencySelectorProps) =>
     };
 
     fetchUserPreferences();
-  }, []);
+  }, [onChange]);
 
   const handleCurrencyChange = async (value: string) => {
     try {
