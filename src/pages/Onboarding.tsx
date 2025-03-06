@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -42,7 +41,6 @@ const Onboarding = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // If the user already has completed onboarding, redirect to dashboard
   if (accountDetails?.onboarding_completed) {
     navigate("/portfolio");
     return null;
@@ -66,7 +64,6 @@ const Onboarding = () => {
   };
 
   const handleNext = () => {
-    // Basic validation
     if (currentStep === 0) {
       if (!formData.firstName || !formData.lastName) {
         toast({
@@ -95,14 +92,13 @@ const Onboarding = () => {
     setIsSubmitting(true);
 
     try {
-      // Update user profile with the form data
       const { error: profileError } = await supabase
-        .from("user_profiles")
+        .from("profiles")
         .upsert({
-          user_id: user.id,
+          id: user.id,
           first_name: formData.firstName,
           last_name: formData.lastName,
-          display_name: formData.displayName || `${formData.firstName} ${formData.lastName}`,
+          username: formData.displayName || `${formData.firstName} ${formData.lastName}`,
           bio: formData.bio,
           investment_experience: formData.experience,
           risk_tolerance: formData.riskTolerance,
@@ -113,7 +109,6 @@ const Onboarding = () => {
 
       if (profileError) throw profileError;
 
-      // Update user preferences
       const { error: preferencesError } = await supabase
         .from("user_preferences")
         .upsert({
@@ -126,7 +121,6 @@ const Onboarding = () => {
 
       if (preferencesError) throw preferencesError;
 
-      // Mark onboarding as completed in account_details
       const { error: accountError } = await supabase
         .from("account_details")
         .update({ onboarding_completed: true })
@@ -139,7 +133,6 @@ const Onboarding = () => {
         description: "Your profile has been set up successfully",
       });
 
-      // Navigate to the dashboard
       navigate("/portfolio");
     } catch (error) {
       console.error("Error completing onboarding:", error);
@@ -160,7 +153,6 @@ const Onboarding = () => {
         <p className="text-muted-foreground mt-2">Let's get your account set up</p>
       </div>
 
-      {/* Step progress */}
       <div className="mb-8">
         <div className="flex justify-between">
           {steps.map((step, index) => (
@@ -203,7 +195,6 @@ const Onboarding = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {/* Step 1: Personal Information */}
           {currentStep === 0 && (
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -251,7 +242,6 @@ const Onboarding = () => {
             </div>
           )}
 
-          {/* Step 2: Investment Experience */}
           {currentStep === 1 && (
             <div className="space-y-6">
               <div className="space-y-2">
@@ -336,7 +326,6 @@ const Onboarding = () => {
             </div>
           )}
 
-          {/* Step 3: Preferences */}
           {currentStep === 2 && (
             <div className="space-y-4">
               <div className="space-y-4">
@@ -391,7 +380,6 @@ const Onboarding = () => {
             </div>
           )}
 
-          {/* Step 4: Confirmation */}
           {currentStep === 3 && (
             <div className="space-y-6">
               <div>

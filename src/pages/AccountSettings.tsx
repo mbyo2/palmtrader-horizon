@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -67,18 +66,16 @@ const AccountSettings = () => {
       if (!user) return;
       
       try {
-        // Fetch user profile
         const { data: profileData, error: profileError } = await supabase
-          .from("user_profiles")
+          .from("profiles")
           .select("*")
-          .eq("user_id", user.id)
+          .eq("id", user.id)
           .single();
         
         if (profileError && profileError.code !== "PGRST116") {
           throw profileError;
         }
         
-        // Fetch user preferences
         const { data: preferencesData, error: preferencesError } = await supabase
           .from("user_preferences")
           .select("*")
@@ -89,12 +86,11 @@ const AccountSettings = () => {
           throw preferencesError;
         }
         
-        // Update profile data state
         if (profileData) {
           setProfileData({
             firstName: profileData.first_name || "",
             lastName: profileData.last_name || "",
-            displayName: profileData.display_name || "",
+            displayName: profileData.username || "",
             bio: profileData.bio || "",
             email: user.email || "",
             phone: profileData.phone || "",
@@ -103,14 +99,12 @@ const AccountSettings = () => {
             investmentGoals: profileData.investment_goals || ["retirement"],
           });
         } else {
-          // Set email from auth data
           setProfileData(prev => ({
             ...prev,
             email: user.email || "",
           }));
         }
         
-        // Update notification settings
         if (preferencesData) {
           setNotificationSettings({
             emailNotifications: preferencesData.email_notifications !== false,
@@ -155,21 +149,20 @@ const AccountSettings = () => {
     setIsSaving(true);
     
     try {
-      // Update user profile
       const { error: profileError } = await supabase
-        .from("user_profiles")
+        .from("profiles")
         .upsert({
-          user_id: user.id,
+          id: user.id,
+          username: profileData.displayName || `${profileData.firstName} ${profileData.lastName}`,
           first_name: profileData.firstName,
           last_name: profileData.lastName,
-          display_name: profileData.displayName || `${profileData.firstName} ${profileData.lastName}`,
           bio: profileData.bio,
           phone: profileData.phone,
           investment_experience: profileData.experience,
           risk_tolerance: profileData.riskTolerance,
           investment_goals: profileData.investmentGoals,
           updated_at: new Date().toISOString(),
-        }, { onConflict: "user_id" });
+        }, { onConflict: "id" });
       
       if (profileError) throw profileError;
       
@@ -197,7 +190,6 @@ const AccountSettings = () => {
     setIsSaving(true);
     
     try {
-      // Update user preferences
       const { error } = await supabase
         .from("user_preferences")
         .upsert({
@@ -238,7 +230,6 @@ const AccountSettings = () => {
     setIsSaving(true);
     
     try {
-      // Update user preferences with security settings
       const { error } = await supabase
         .from("user_preferences")
         .upsert({
@@ -290,11 +281,10 @@ const AccountSettings = () => {
     setIsDeleting(true);
     
     try {
-      // Delete user data from profile and preferences
       const { error: deleteProfileError } = await supabase
-        .from("user_profiles")
+        .from("profiles")
         .delete()
-        .eq("user_id", user.id);
+        .eq("id", user.id);
       
       if (deleteProfileError) throw deleteProfileError;
       
@@ -305,10 +295,8 @@ const AccountSettings = () => {
       
       if (deletePreferencesError) throw deletePreferencesError;
       
-      // Sign out the user
       await signOut();
       
-      // Redirect to home page
       navigate("/");
       
       toast({
@@ -396,7 +384,6 @@ const AccountSettings = () => {
         </div>
         
         <div className="md:w-3/4">
-          {/* Profile Tab */}
           {activeTab === "profile" && (
             <Card>
               <CardHeader>
@@ -572,7 +559,6 @@ const AccountSettings = () => {
             </Card>
           )}
           
-          {/* Notifications Tab */}
           {activeTab === "notifications" && (
             <Card>
               <CardHeader>
@@ -721,7 +707,6 @@ const AccountSettings = () => {
             </Card>
           )}
           
-          {/* Security Tab */}
           {activeTab === "security" && (
             <Card>
               <CardHeader>

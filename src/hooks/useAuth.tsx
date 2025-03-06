@@ -8,6 +8,7 @@ interface AccountDetails {
   role: 'basic' | 'premium' | 'admin';
   account_status: 'pending' | 'active' | 'restricted' | 'suspended';
   kyc_status: 'not_started' | 'pending' | 'approved' | 'rejected';
+  onboarding_completed?: boolean;
 }
 
 export const useAuth = () => {
