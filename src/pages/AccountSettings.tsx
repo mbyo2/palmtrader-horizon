@@ -104,6 +104,16 @@ const AccountSettings = () => {
   const fetchUserData = async () => {
     setLoadingProfile(true);
     try {
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('username, avatar_url')
+        .eq('id', user?.id)
+        .single();
+
+      if (profileError && profileError.code !== 'PGRST116') {
+        throw profileError;
+      }
+
       const { data: userProfileData, error: userProfileError } = await supabase
         .from('user_profiles')
         .select('*')
@@ -124,13 +134,19 @@ const AccountSettings = () => {
         throw preferencesError;
       }
 
+      setUserProfile(profileData || {});
+      
+      if (profileData?.avatar_url) {
+        setAvatarUrl(profileData.avatar_url);
+      }
+
       if (userProfileData) {
         const investmentExperience = (userProfileData.investment_experience || 'beginner') as 'beginner' | 'intermediate' | 'advanced';
         const riskTolerance = (userProfileData.risk_tolerance || 'moderate') as 'conservative' | 'moderate' | 'aggressive';
         const investmentGoals = (userProfileData.investment_goals?.[0] || 'retirement') as 'retirement' | 'growth' | 'income';
 
         profileForm.reset({
-          username: userProfileData.username || '',
+          username: profileData?.username || '',
           first_name: userProfileData.first_name || '',
           last_name: userProfileData.last_name || '',
           display_name: userProfileData.display_name || '',
@@ -174,8 +190,17 @@ const AccountSettings = () => {
 
   const onProfileSubmit = async (values: z.infer<typeof profileFormSchema>) => {
     try {
+      const { error: usernameError } = await supabase
+        .from('profiles')
+        .update({ 
+          username: values.username,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user?.id);
+
+      if (usernameError) throw usernameError;
+
       const profileData = {
-        username: values.username,
         first_name: values.first_name,
         last_name: values.last_name,
         display_name: values.display_name,
@@ -188,9 +213,11 @@ const AccountSettings = () => {
       };
       
       const { error: profileError } = await supabase
-        .from('profiles')
-        .update(profileData)
-        .eq('id', user?.id);
+        .from('user_profiles')
+        .upsert({ 
+          user_id: user?.id,
+          ...profileData
+        });
 
       if (profileError) throw profileError;
 
