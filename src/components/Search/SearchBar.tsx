@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -7,6 +6,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Loader2, Search, TrendingUp, Bitcoin } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 type SearchResult = {
   symbol: string;
@@ -20,6 +20,7 @@ const SearchBar = () => {
   const [searchValue, setSearchValue] = useState("");
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
+  const isMobile = useIsMobile();
 
   // Watch for keyboard shortcuts to focus search
   useEffect(() => {
@@ -119,19 +120,21 @@ const SearchBar = () => {
         <Button
           variant="outline"
           size="sm"
-          className="w-[200px] justify-between text-muted-foreground"
+          className={`${isMobile ? 'w-full' : 'w-[200px]'} justify-between text-muted-foreground`}
           onClick={() => setOpen(true)}
         >
           <div className="flex items-center gap-2">
             <Search className="h-4 w-4" />
             <span>Search...</span>
           </div>
-          <kbd className="hidden md:inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
-            <span className="text-xs">⌘</span>K
-          </kbd>
+          {!isMobile && (
+            <kbd className="hidden md:inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
+              <span className="text-xs">⌘</span>K
+            </kbd>
+          )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[300px] p-0" align="start">
+      <PopoverContent className={`${isMobile ? 'w-[calc(100vw-2rem)]' : 'w-[300px]'} p-0`} align="start">
         <Command>
           <CommandInput 
             placeholder="Search stocks & crypto..."
