@@ -1,845 +1,811 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
-import { useProtectedRoute } from "@/hooks/useProtectedRoute";
-import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { useToast } from "@/components/ui/use-toast";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Switch } from "@/components/ui/switch";
-import { Separator } from "@/components/ui/separator";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { 
-  AlertDialog, AlertDialogAction, AlertDialogCancel, 
-  AlertDialogContent, AlertDialogDescription, AlertDialogFooter, 
-  AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger 
-} from "@/components/ui/alert-dialog";
-import { Check, Loader2, SaveIcon, UserCog, User, Bell, Shield, LogOut } from "lucide-react";
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { toast } from '@/components/ui/use-toast';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { CurrencySelector } from '@/components/CurrencySelector';
+
+const profileFormSchema = z.object({
+  username: z.string().min(2, {
+    message: "Username must be at least 2 characters.",
+  }),
+  first_name: z.string().optional(),
+  last_name: z.string().optional(),
+  display_name: z.string().optional(),
+  bio: z.string().max(160).optional(),
+  phone: z.string().optional(),
+  investment_experience: z.enum(['beginner', 'intermediate', 'advanced']).default('beginner'),
+  risk_tolerance: z.enum(['conservative', 'moderate', 'aggressive']).default('moderate'),
+  investment_goals: z.enum(['retirement', 'growth', 'income']).default('retirement'),
+});
+
+const preferencesFormSchema = z.object({
+  currency: z.string().default('USD'),
+  email_notifications: z.boolean().default(true),
+  push_notifications: z.boolean().default(true),
+  market_updates: z.boolean().default(true),
+  price_alerts: z.boolean().default(true),
+  trade_confirmations: z.boolean().default(true),
+  account_activity: z.boolean().default(true),
+  marketing_communications: z.boolean().default(false),
+});
+
+const securityFormSchema = z.object({
+  two_factor_enabled: z.boolean().default(false),
+  login_notifications: z.boolean().default(true),
+  allow_data_collection: z.boolean().default(true),
+});
 
 const AccountSettings = () => {
-  const { user, accountDetails, signOut } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const { isLoading } = useProtectedRoute();
-  
-  const [activeTab, setActiveTab] = useState("profile");
-  const [isSaving, setIsSaving] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [hasChanges, setHasChanges] = useState(false);
-  
-  const [profileData, setProfileData] = useState({
-    firstName: "",
-    lastName: "",
-    displayName: "",
-    bio: "",
-    email: "",
-    phone: "",
-    experience: "beginner",
-    riskTolerance: "moderate",
-    investmentGoals: ["retirement"],
+  const { user, accountDetails, loading } = useAuth();
+  const [loadingProfile, setLoadingProfile] = useState(true);
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [userPreferences, setUserPreferences] = useState<any>(null);
+  const [uploading, setUploading] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  const profileForm = useForm<z.infer<typeof profileFormSchema>>({
+    resolver: zodResolver(profileFormSchema),
+    defaultValues: {
+      username: '',
+      first_name: '',
+      last_name: '',
+      display_name: '',
+      bio: '',
+      phone: '',
+      investment_experience: 'beginner',
+      risk_tolerance: 'moderate',
+      investment_goals: 'retirement',
+    },
   });
-  
-  const [notificationSettings, setNotificationSettings] = useState({
-    emailNotifications: true,
-    pushNotifications: true,
-    marketUpdates: true,
-    priceAlerts: true,
-    tradeConfirmations: true,
-    accountActivity: true,
-    marketingCommunications: false,
+
+  const preferencesForm = useForm<z.infer<typeof preferencesFormSchema>>({
+    resolver: zodResolver(preferencesFormSchema),
+    defaultValues: {
+      currency: 'USD',
+      email_notifications: true,
+      push_notifications: true,
+      market_updates: true,
+      price_alerts: true,
+      trade_confirmations: true,
+      account_activity: true,
+      marketing_communications: false,
+    },
   });
-  
-  const [securitySettings, setSecuritySettings] = useState({
-    twoFactorEnabled: false,
-    loginNotifications: true,
-    allowDataCollection: true,
+
+  const securityForm = useForm<z.infer<typeof securityFormSchema>>({
+    resolver: zodResolver(securityFormSchema),
+    defaultValues: {
+      two_factor_enabled: false,
+      login_notifications: true,
+      allow_data_collection: true,
+    },
   });
-  
+
   useEffect(() => {
-    const loadUserData = async () => {
-      if (!user) return;
-      
-      try {
-        const { data: profileData, error: profileError } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", user.id)
-          .single();
-        
-        if (profileError && profileError.code !== "PGRST116") {
-          throw profileError;
-        }
-        
-        const { data: preferencesData, error: preferencesError } = await supabase
-          .from("user_preferences")
-          .select("*")
-          .eq("user_id", user.id)
-          .single();
-        
-        if (preferencesError && preferencesError.code !== "PGRST116") {
-          throw preferencesError;
-        }
-        
-        if (profileData) {
-          setProfileData({
-            firstName: profileData.first_name || "",
-            lastName: profileData.last_name || "",
-            displayName: profileData.username || "",
-            bio: profileData.bio || "",
-            email: user.email || "",
-            phone: profileData.phone || "",
-            experience: profileData.investment_experience || "beginner",
-            riskTolerance: profileData.risk_tolerance || "moderate",
-            investmentGoals: profileData.investment_goals || ["retirement"],
-          });
-        } else {
-          setProfileData(prev => ({
-            ...prev,
-            email: user.email || "",
-          }));
-        }
-        
-        if (preferencesData) {
-          setNotificationSettings({
-            emailNotifications: preferencesData.email_notifications !== false,
-            pushNotifications: preferencesData.push_notifications !== false,
-            marketUpdates: preferencesData.market_updates !== false,
-            priceAlerts: preferencesData.price_alerts !== false,
-            tradeConfirmations: preferencesData.trade_confirmations !== false,
-            accountActivity: preferencesData.account_activity !== false,
-            marketingCommunications: preferencesData.marketing_communications === true,
-          });
-          
-          setSecuritySettings({
-            twoFactorEnabled: preferencesData.two_factor_enabled === true,
-            loginNotifications: preferencesData.login_notifications !== false,
-            allowDataCollection: preferencesData.allow_data_collection !== false,
-          });
-        }
-      } catch (error) {
-        console.error("Error loading user data:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load user settings",
-          variant: "destructive",
+    if (user) {
+      fetchUserData();
+    }
+  }, [user]);
+
+  const fetchUserData = async () => {
+    setLoadingProfile(true);
+    try {
+      // Fetch user profile data
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user?.id)
+        .single();
+
+      if (profileError) throw profileError;
+
+      // Fetch user profile details (additional fields)
+      const { data: userProfileData, error: userProfileError } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', user?.id)
+        .single();
+
+      // Fetch user preferences
+      const { data: preferencesData, error: preferencesError } = await supabase
+        .from('user_preferences')
+        .select('*')
+        .eq('user_id', user?.id)
+        .single();
+
+      if (preferencesError && preferencesError.code !== 'PGRST116') {
+        throw preferencesError;
+      }
+
+      // Combine profile data
+      const combinedProfile = {
+        ...profileData,
+        ...(userProfileData || {}),
+      };
+
+      setUserProfile(combinedProfile);
+      setUserPreferences(preferencesData);
+      setAvatarUrl(profileData?.avatar_url);
+
+      // Set form values
+      profileForm.reset({
+        username: profileData?.username || '',
+        first_name: userProfileData?.first_name || '',
+        last_name: userProfileData?.last_name || '',
+        display_name: userProfileData?.display_name || '',
+        bio: userProfileData?.bio || '',
+        phone: userProfileData?.phone || '',
+        investment_experience: userProfileData?.investment_experience || 'beginner',
+        risk_tolerance: userProfileData?.risk_tolerance || 'moderate',
+        investment_goals: userProfileData?.investment_goals?.[0] || 'retirement',
+      });
+
+      if (preferencesData) {
+        preferencesForm.reset({
+          currency: preferencesData.currency || 'USD',
+          email_notifications: preferencesData.email_notifications ?? true,
+          push_notifications: preferencesData.push_notifications ?? true,
+          market_updates: preferencesData.market_updates ?? true,
+          price_alerts: preferencesData.price_alerts ?? true,
+          trade_confirmations: preferencesData.trade_confirmations ?? true,
+          account_activity: preferencesData.account_activity ?? true,
+          marketing_communications: preferencesData.marketing_communications ?? false,
+        });
+
+        securityForm.reset({
+          two_factor_enabled: preferencesData.two_factor_enabled ?? false,
+          login_notifications: preferencesData.login_notifications ?? true,
+          allow_data_collection: preferencesData.allow_data_collection ?? true,
         });
       }
-    };
-    
-    loadUserData();
-  }, [user, toast]);
-  
-  useEffect(() => {
-    setHasChanges(true);
-  }, [profileData, notificationSettings, securitySettings]);
-  
-  if (isLoading) {
-    return <div className="container py-10">Loading...</div>;
-  }
-  
-  const handleSaveProfile = async () => {
-    if (!user) return;
-    
-    setIsSaving(true);
-    
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load user profile data',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoadingProfile(false);
+    }
+  };
+
+  const onProfileSubmit = async (values: z.infer<typeof profileFormSchema>) => {
     try {
+      // Update profiles table (basic user info)
       const { error: profileError } = await supabase
-        .from("profiles")
-        .upsert({
-          id: user.id,
-          username: profileData.displayName || `${profileData.firstName} ${profileData.lastName}`,
-          first_name: profileData.firstName,
-          last_name: profileData.lastName,
-          bio: profileData.bio,
-          phone: profileData.phone,
-          investment_experience: profileData.experience,
-          risk_tolerance: profileData.riskTolerance,
-          investment_goals: profileData.investmentGoals,
-          updated_at: new Date().toISOString(),
-        }, { onConflict: "id" });
-      
+        .from('profiles')
+        .update({
+          username: values.username,
+        })
+        .eq('id', user?.id);
+
       if (profileError) throw profileError;
-      
+
+      // Check if user_profile exists
+      const { data: existingProfile } = await supabase
+        .from('user_profiles')
+        .select('user_id')
+        .eq('user_id', user?.id)
+        .single();
+
+      // Update or insert user_profiles
+      const profileData = {
+        first_name: values.first_name,
+        last_name: values.last_name,
+        display_name: values.display_name,
+        bio: values.bio,
+        phone: values.phone,
+        investment_experience: values.investment_experience,
+        risk_tolerance: values.risk_tolerance,
+        investment_goals: [values.investment_goals],
+        updated_at: new Date().toISOString(),
+      };
+
+      let userProfileError;
+      if (existingProfile) {
+        const { error } = await supabase
+          .from('user_profiles')
+          .update(profileData)
+          .eq('user_id', user?.id);
+        userProfileError = error;
+      } else {
+        const { error } = await supabase
+          .from('user_profiles')
+          .insert({
+            user_id: user?.id,
+            ...profileData,
+          });
+        userProfileError = error;
+      }
+
+      if (userProfileError) throw userProfileError;
+
       toast({
-        title: "Profile updated",
-        description: "Your profile has been updated successfully",
+        title: 'Profile Updated',
+        description: 'Your profile information has been updated successfully.',
       });
-      
-      setHasChanges(false);
+
+      fetchUserData();
     } catch (error) {
-      console.error("Error updating profile:", error);
+      console.error('Error updating profile:', error);
       toast({
-        title: "Error",
-        description: "Failed to update profile",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to update profile information',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const onPreferencesSubmit = async (values: z.infer<typeof preferencesFormSchema>) => {
+    try {
+      // Check if user_preferences exists
+      const { data: existingPreferences } = await supabase
+        .from('user_preferences')
+        .select('user_id')
+        .eq('user_id', user?.id)
+        .single();
+
+      // Update or insert user_preferences
+      const preferencesData = {
+        currency: values.currency,
+        email_notifications: values.email_notifications,
+        push_notifications: values.push_notifications,
+        market_updates: values.market_updates,
+        price_alerts: values.price_alerts,
+        trade_confirmations: values.trade_confirmations,
+        account_activity: values.account_activity,
+        marketing_communications: values.marketing_communications,
+        updated_at: new Date().toISOString(),
+      };
+
+      let preferencesError;
+      if (existingPreferences) {
+        const { error } = await supabase
+          .from('user_preferences')
+          .update(preferencesData)
+          .eq('user_id', user?.id);
+        preferencesError = error;
+      } else {
+        const { error } = await supabase
+          .from('user_preferences')
+          .insert({
+            user_id: user?.id,
+            ...preferencesData,
+          });
+        preferencesError = error;
+      }
+
+      if (preferencesError) throw preferencesError;
+
+      toast({
+        title: 'Preferences Updated',
+        description: 'Your preferences have been updated successfully.',
+      });
+
+      fetchUserData();
+    } catch (error) {
+      console.error('Error updating preferences:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update preferences',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const onSecuritySubmit = async (values: z.infer<typeof securityFormSchema>) => {
+    try {
+      // Check if user_preferences exists
+      const { data: existingPreferences } = await supabase
+        .from('user_preferences')
+        .select('user_id')
+        .eq('user_id', user?.id)
+        .single();
+
+      // Update or insert security settings in user_preferences
+      const securityData = {
+        two_factor_enabled: values.two_factor_enabled,
+        login_notifications: values.login_notifications,
+        allow_data_collection: values.allow_data_collection,
+        updated_at: new Date().toISOString(),
+      };
+
+      let securityError;
+      if (existingPreferences) {
+        const { error } = await supabase
+          .from('user_preferences')
+          .update(securityData)
+          .eq('user_id', user?.id);
+        securityError = error;
+      } else {
+        const { error } = await supabase
+          .from('user_preferences')
+          .insert({
+            user_id: user?.id,
+            ...securityData,
+          });
+        securityError = error;
+      }
+
+      if (securityError) throw securityError;
+
+      toast({
+        title: 'Security Settings Updated',
+        description: 'Your security settings have been updated successfully.',
+      });
+
+      fetchUserData();
+    } catch (error) {
+      console.error('Error updating security settings:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update security settings',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      setUploading(true);
+
+      if (!event.target.files || event.target.files.length === 0) {
+        throw new Error('You must select an image to upload.');
+      }
+
+      const file = event.target.files[0];
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      const { data, error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      const { data: publicUrl } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl.publicUrl })
+        .eq('id', user?.id);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      setAvatarUrl(publicUrl.publicUrl);
+      toast({
+        title: 'Avatar Updated',
+        description: 'Your avatar has been updated successfully.',
+      });
+    } catch (error: any) {
+      console.error('Error uploading avatar:', error.message);
+      toast({
+        title: 'Error',
+        description: 'Failed to upload avatar',
+        variant: 'destructive',
       });
     } finally {
-      setIsSaving(false);
+      setUploading(false);
     }
   };
-  
-  const handleSaveNotifications = async () => {
-    if (!user) return;
-    
-    setIsSaving(true);
-    
-    try {
-      const { error } = await supabase
-        .from("user_preferences")
-        .upsert({
-          user_id: user.id,
-          email_notifications: notificationSettings.emailNotifications,
-          push_notifications: notificationSettings.pushNotifications,
-          market_updates: notificationSettings.marketUpdates,
-          price_alerts: notificationSettings.priceAlerts,
-          trade_confirmations: notificationSettings.tradeConfirmations,
-          account_activity: notificationSettings.accountActivity,
-          marketing_communications: notificationSettings.marketingCommunications,
-          updated_at: new Date().toISOString(),
-        }, { onConflict: "user_id" });
-      
-      if (error) throw error;
-      
-      toast({
-        title: "Notification settings updated",
-        description: "Your notification preferences have been saved",
-      });
-      
-      setHasChanges(false);
-    } catch (error) {
-      console.error("Error updating notification settings:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update notification settings",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-  
-  const handleSaveSecurity = async () => {
-    if (!user) return;
-    
-    setIsSaving(true);
-    
-    try {
-      const { error } = await supabase
-        .from("user_preferences")
-        .upsert({
-          user_id: user.id,
-          two_factor_enabled: securitySettings.twoFactorEnabled,
-          login_notifications: securitySettings.loginNotifications,
-          allow_data_collection: securitySettings.allowDataCollection,
-          updated_at: new Date().toISOString(),
-        }, { onConflict: "user_id" });
-      
-      if (error) throw error;
-      
-      toast({
-        title: "Security settings updated",
-        description: "Your security settings have been saved",
-      });
-      
-      setHasChanges(false);
-    } catch (error) {
-      console.error("Error updating security settings:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update security settings",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-  
-  const handleInvestmentGoalChange = (goal: string) => {
-    const currentGoals = [...profileData.investmentGoals];
-    if (currentGoals.includes(goal)) {
-      setProfileData({
-        ...profileData,
-        investmentGoals: currentGoals.filter(g => g !== goal)
-      });
-    } else {
-      setProfileData({
-        ...profileData,
-        investmentGoals: [...currentGoals, goal]
-      });
-    }
-  };
-  
-  const handleDeleteAccount = async () => {
-    if (!user) return;
-    
-    setIsDeleting(true);
-    
-    try {
-      const { error: deleteProfileError } = await supabase
-        .from("profiles")
-        .delete()
-        .eq("id", user.id);
-      
-      if (deleteProfileError) throw deleteProfileError;
-      
-      const { error: deletePreferencesError } = await supabase
-        .from("user_preferences")
-        .delete()
-        .eq("user_id", user.id);
-      
-      if (deletePreferencesError) throw deletePreferencesError;
-      
-      await signOut();
-      
-      navigate("/");
-      
-      toast({
-        title: "Account deleted",
-        description: "Your account has been deleted successfully",
-      });
-    } catch (error) {
-      console.error("Error deleting account:", error);
-      toast({
-        title: "Error",
-        description: "Failed to delete account",
-        variant: "destructive",
-      });
-      setIsDeleting(false);
-    }
-  };
-  
+
+  if (loading || loadingProfile) {
+    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+  }
+
+  if (!user) {
+    navigate('/auth');
+    return null;
+  }
+
   return (
-    <div className="container py-10">
-      <div className="flex flex-col md:flex-row gap-8">
-        <div className="md:w-1/4">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex flex-col items-center space-y-4">
-                <Avatar className="h-20 w-20">
-                  <AvatarImage src="" alt={profileData.displayName || user?.email || ""} />
-                  <AvatarFallback className="text-xl">
-                    {profileData.firstName && profileData.lastName 
-                      ? `${profileData.firstName[0]}${profileData.lastName[0]}`
-                      : user?.email?.[0]?.toUpperCase() || "U"}
-                  </AvatarFallback>
+    <div className="container mx-auto py-10">
+      <Card>
+        <CardHeader>
+          <CardTitle>Account Settings</CardTitle>
+          <CardDescription>Manage your account settings and preferences.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Tabs defaultValue="profile" className="space-y-4">
+            <TabsList>
+              <TabsTrigger value="profile">Profile</TabsTrigger>
+              <TabsTrigger value="preferences">Preferences</TabsTrigger>
+              <TabsTrigger value="security">Security</TabsTrigger>
+            </TabsList>
+            <TabsContent value="profile" className="space-y-4">
+              <div className="flex items-center space-x-4">
+                <Avatar>
+                  {avatarUrl ? (
+                    <AvatarImage src={avatarUrl} alt="Avatar" />
+                  ) : (
+                    <AvatarFallback>{userProfile?.username?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
+                  )}
                 </Avatar>
-                <div className="text-center">
-                  <h3 className="font-medium">
-                    {profileData.displayName || `${profileData.firstName} ${profileData.lastName}` || user?.email}
-                  </h3>
-                  <p className="text-sm text-muted-foreground">{profileData.email}</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {accountDetails?.role === "premium" ? "Premium Member" : "Basic Account"}
-                  </p>
+                <div>
+                  <FormLabel htmlFor="avatar">Update Avatar</FormLabel>
+                  <Input type="file" id="avatar" accept="image/*" onChange={handleAvatarUpload} disabled={uploading} />
+                  {uploading && <p>Uploading...</p>}
                 </div>
               </div>
-              
-              <Separator className="my-4" />
-              
-              <div className="space-y-1">
-                <Button 
-                  variant={activeTab === "profile" ? "secondary" : "ghost"} 
-                  className="w-full justify-start" 
-                  onClick={() => setActiveTab("profile")}
-                >
-                  <User className="mr-2 h-4 w-4" />
-                  Profile
-                </Button>
-                <Button 
-                  variant={activeTab === "notifications" ? "secondary" : "ghost"} 
-                  className="w-full justify-start" 
-                  onClick={() => setActiveTab("notifications")}
-                >
-                  <Bell className="mr-2 h-4 w-4" />
-                  Notifications
-                </Button>
-                <Button 
-                  variant={activeTab === "security" ? "secondary" : "ghost"} 
-                  className="w-full justify-start" 
-                  onClick={() => setActiveTab("security")}
-                >
-                  <Shield className="mr-2 h-4 w-4" />
-                  Security
-                </Button>
-              </div>
-              
-              <Separator className="my-4" />
-              
-              <Button 
-                variant="ghost" 
-                className="w-full justify-start text-destructive hover:text-destructive" 
-                onClick={signOut}
-              >
-                <LogOut className="mr-2 h-4 w-4" />
-                Sign Out
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-        
-        <div className="md:w-3/4">
-          {activeTab === "profile" && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Profile Settings</CardTitle>
-                <CardDescription>
-                  Manage your personal information and investment preferences
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  <h3 className="text-sm font-medium">Personal Information</h3>
+              <Form {...profileForm}>
+                <form onSubmit={profileForm.handleSubmit(onProfileSubmit)} className="space-y-4">
+                  <FormField
+                    control={profileForm.control}
+                    name="username"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Username</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Username" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="firstName">First Name</Label>
-                      <Input 
-                        id="firstName" 
-                        value={profileData.firstName} 
-                        onChange={(e) => setProfileData({...profileData, firstName: e.target.value})} 
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="lastName">Last Name</Label>
-                      <Input 
-                        id="lastName" 
-                        value={profileData.lastName} 
-                        onChange={(e) => setProfileData({...profileData, lastName: e.target.value})} 
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="displayName">Display Name</Label>
-                      <Input 
-                        id="displayName" 
-                        value={profileData.displayName} 
-                        onChange={(e) => setProfileData({...profileData, displayName: e.target.value})} 
-                        placeholder="How you want to be seen by others"
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Leave blank to use your full name
-                      </p>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
-                      <Input 
-                        id="email" 
-                        value={profileData.email} 
-                        disabled
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Contact support to change your email
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="bio">Bio</Label>
-                    <Textarea 
-                      id="bio" 
-                      value={profileData.bio} 
-                      onChange={(e) => setProfileData({...profileData, bio: e.target.value})} 
-                      placeholder="Tell us a bit about yourself as an investor"
-                      rows={3}
+                    <FormField
+                      control={profileForm.control}
+                      name="first_name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>First Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="First Name" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={profileForm.control}
+                      name="last_name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Last Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Last Name" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
                   </div>
-                </div>
-                
-                <Separator />
-                
-                <div className="space-y-4">
-                  <h3 className="text-sm font-medium">Investment Profile</h3>
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>Investment Experience</Label>
-                      <RadioGroup 
-                        value={profileData.experience} 
-                        onValueChange={(value) => setProfileData({...profileData, experience: value})}
-                      >
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="beginner" id="beginner" />
-                          <Label htmlFor="beginner">Beginner - New to investing</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="intermediate" id="intermediate" />
-                          <Label htmlFor="intermediate">Intermediate - Some experience</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="advanced" id="advanced" />
-                          <Label htmlFor="advanced">Advanced - Experienced investor</Label>
-                        </div>
-                      </RadioGroup>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label>Risk Tolerance</Label>
-                      <RadioGroup 
-                        value={profileData.riskTolerance} 
-                        onValueChange={(value) => setProfileData({...profileData, riskTolerance: value})}
-                      >
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="conservative" id="conservative" />
-                          <Label htmlFor="conservative">Conservative - Prioritize capital preservation</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="moderate" id="moderate" />
-                          <Label htmlFor="moderate">Moderate - Balance growth and risk</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="aggressive" id="aggressive" />
-                          <Label htmlFor="aggressive">Aggressive - Maximize growth potential</Label>
-                        </div>
-                      </RadioGroup>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label>Investment Goals (select all that apply)</Label>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                        <div className="flex items-center space-x-2">
-                          <Checkbox 
-                            id="retirement" 
-                            checked={profileData.investmentGoals.includes("retirement")}
-                            onCheckedChange={() => handleInvestmentGoalChange("retirement")} 
+                  <FormField
+                    control={profileForm.control}
+                    name="display_name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Display Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Display Name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={profileForm.control}
+                    name="bio"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Bio</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Write something about yourself."
+                            className="resize-none"
+                            {...field}
                           />
-                          <Label htmlFor="retirement">Retirement</Label>
+                        </FormControl>
+                        <FormDescription>
+                          Max 160 characters.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={profileForm.control}
+                    name="phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Phone Number</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Phone Number" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={profileForm.control}
+                    name="investment_experience"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Investment Experience</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="beginner">Beginner</SelectItem>
+                            <SelectItem value="intermediate">Intermediate</SelectItem>
+                            <SelectItem value="advanced">Advanced</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>
+                          Your level of investment experience.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={profileForm.control}
+                    name="risk_tolerance"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Risk Tolerance</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="conservative">Conservative</SelectItem>
+                            <SelectItem value="moderate">Moderate</SelectItem>
+                            <SelectItem value="aggressive">Aggressive</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>
+                          Your risk tolerance level.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={profileForm.control}
+                    name="investment_goals"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Investment Goals</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="retirement">Retirement</SelectItem>
+                            <SelectItem value="growth">Growth</SelectItem>
+                            <SelectItem value="income">Income</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>
+                          Your primary investment goal.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <Button type="submit">Update Profile</Button>
+                </form>
+              </Form>
+            </TabsContent>
+            <TabsContent value="preferences" className="space-y-4">
+              <Form {...preferencesForm}>
+                <form onSubmit={preferencesForm.handleSubmit(onPreferencesSubmit)} className="space-y-4">
+                  <FormField
+                    control={preferencesForm.control}
+                    name="currency"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Currency</FormLabel>
+                        <FormControl>
+                          <CurrencySelector {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={preferencesForm.control}
+                      name="email_notifications"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                          <div className="space-y-0.5">
+                            <FormLabel className="text-sm">Email Notifications</FormLabel>
+                            <FormDescription>Receive email notifications for important updates.</FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch checked={field.value} onCheckedChange={field.onChange} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={preferencesForm.control}
+                      name="push_notifications"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                          <div className="space-y-0.5">
+                            <FormLabel className="text-sm">Push Notifications</FormLabel>
+                            <FormDescription>Receive push notifications on your device.</FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch checked={field.value} onCheckedChange={field.onChange} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={preferencesForm.control}
+                      name="market_updates"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                          <div className="space-y-0.5">
+                            <FormLabel className="text-sm">Market Updates</FormLabel>
+                            <FormDescription>Receive updates on market trends and news.</FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch checked={field.value} onCheckedChange={field.onChange} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={preferencesForm.control}
+                      name="price_alerts"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                          <div className="space-y-0.5">
+                            <FormLabel className="text-sm">Price Alerts</FormLabel>
+                            <FormDescription>Get notified when stocks reach your target prices.</FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch checked={field.value} onCheckedChange={field.onChange} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={preferencesForm.control}
+                      name="trade_confirmations"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                          <div className="space-y-0.5">
+                            <FormLabel className="text-sm">Trade Confirmations</FormLabel>
+                            <FormDescription>Receive confirmations for your trades.</FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch checked={field.value} onCheckedChange={field.onChange} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={preferencesForm.control}
+                      name="account_activity"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                          <div className="space-y-0.5">
+                            <FormLabel className="text-sm">Account Activity</FormLabel>
+                            <FormDescription>Get notified about unusual account activity.</FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch checked={field.value} onCheckedChange={field.onChange} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <FormField
+                    control={preferencesForm.control}
+                    name="marketing_communications"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                        <div className="space-y-0.5">
+                          <FormLabel className="text-sm">Marketing Communications</FormLabel>
+                          <FormDescription>Receive marketing communications and promotional offers.</FormDescription>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <Checkbox 
-                            id="wealth" 
-                            checked={profileData.investmentGoals.includes("wealth")}
-                            onCheckedChange={() => handleInvestmentGoalChange("wealth")} 
-                          />
-                          <Label htmlFor="wealth">Wealth building</Label>
+                        <FormControl>
+                          <Switch checked={field.value} onCheckedChange={field.onChange} />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <Button type="submit">Update Preferences</Button>
+                </form>
+              </Form>
+            </TabsContent>
+            <TabsContent value="security" className="space-y-4">
+              <Form {...securityForm}>
+                <form onSubmit={securityForm.handleSubmit(onSecuritySubmit)} className="space-y-4">
+                  <FormField
+                    control={securityForm.control}
+                    name="two_factor_enabled"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                        <div className="space-y-0.5">
+                          <FormLabel className="text-sm">Two-Factor Authentication</FormLabel>
+                          <FormDescription>Enable two-factor authentication for added security.</FormDescription>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <Checkbox 
-                            id="income" 
-                            checked={profileData.investmentGoals.includes("income")}
-                            onCheckedChange={() => handleInvestmentGoalChange("income")} 
-                          />
-                          <Label htmlFor="income">Income generation</Label>
+                        <FormControl>
+                          <Switch checked={field.value} onCheckedChange={field.onChange} />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={securityForm.control}
+                    name="login_notifications"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                        <div className="space-y-0.5">
+                          <FormLabel className="text-sm">Login Notifications</FormLabel>
+                          <FormDescription>Receive notifications when a new login is detected.</FormDescription>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <Checkbox 
-                            id="shortterm" 
-                            checked={profileData.investmentGoals.includes("shortterm")}
-                            onCheckedChange={() => handleInvestmentGoalChange("shortterm")} 
-                          />
-                          <Label htmlFor="shortterm">Short-term trading</Label>
+                        <FormControl>
+                          <Switch checked={field.value} onCheckedChange={field.onChange} />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={securityForm.control}
+                    name="allow_data_collection"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                        <div className="space-y-0.5">
+                          <FormLabel className="text-sm">Allow Data Collection</FormLabel>
+                          <FormDescription>Allow us to collect data to improve our services.</FormDescription>
                         </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-              <CardFooter className="justify-between border-t p-6 bg-muted/30">
-                <div>
-                  {hasChanges && (
-                    <p className="text-sm text-muted-foreground">
-                      You have unsaved changes
-                    </p>
-                  )}
-                </div>
-                <Button 
-                  onClick={handleSaveProfile}
-                  disabled={!hasChanges || isSaving}
-                >
-                  {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {!isSaving && <SaveIcon className="mr-2 h-4 w-4" />}
-                  Save Changes
-                </Button>
-              </CardFooter>
-            </Card>
-          )}
-          
-          {activeTab === "notifications" && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Notification Settings</CardTitle>
-                <CardDescription>
-                  Manage how and when you receive notifications
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  <h3 className="text-sm font-medium">Notification Channels</h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label htmlFor="emailNotifications">Email Notifications</Label>
-                        <p className="text-sm text-muted-foreground">
-                          Receive notifications via email
-                        </p>
-                      </div>
-                      <Switch
-                        id="emailNotifications"
-                        checked={notificationSettings.emailNotifications}
-                        onCheckedChange={(checked) => 
-                          setNotificationSettings({...notificationSettings, emailNotifications: checked})
-                        }
-                      />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label htmlFor="pushNotifications">Push Notifications</Label>
-                        <p className="text-sm text-muted-foreground">
-                          Receive notifications on your device
-                        </p>
-                      </div>
-                      <Switch
-                        id="pushNotifications"
-                        checked={notificationSettings.pushNotifications}
-                        onCheckedChange={(checked) => 
-                          setNotificationSettings({...notificationSettings, pushNotifications: checked})
-                        }
-                      />
-                    </div>
-                  </div>
-                </div>
-                
-                <Separator />
-                
-                <div className="space-y-4">
-                  <h3 className="text-sm font-medium">Notification Types</h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label htmlFor="marketUpdates">Market Updates</Label>
-                        <p className="text-sm text-muted-foreground">
-                          Daily market news and analysis
-                        </p>
-                      </div>
-                      <Switch
-                        id="marketUpdates"
-                        checked={notificationSettings.marketUpdates}
-                        onCheckedChange={(checked) => 
-                          setNotificationSettings({...notificationSettings, marketUpdates: checked})
-                        }
-                      />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label htmlFor="priceAlerts">Price Alerts</Label>
-                        <p className="text-sm text-muted-foreground">
-                          Notifications when stocks hit your target prices
-                        </p>
-                      </div>
-                      <Switch
-                        id="priceAlerts"
-                        checked={notificationSettings.priceAlerts}
-                        onCheckedChange={(checked) => 
-                          setNotificationSettings({...notificationSettings, priceAlerts: checked})
-                        }
-                      />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label htmlFor="tradeConfirmations">Trade Confirmations</Label>
-                        <p className="text-sm text-muted-foreground">
-                          Notifications about executed trades
-                        </p>
-                      </div>
-                      <Switch
-                        id="tradeConfirmations"
-                        checked={notificationSettings.tradeConfirmations}
-                        onCheckedChange={(checked) => 
-                          setNotificationSettings({...notificationSettings, tradeConfirmations: checked})
-                        }
-                      />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label htmlFor="accountActivity">Account Activity</Label>
-                        <p className="text-sm text-muted-foreground">
-                          Login attempts and security alerts
-                        </p>
-                      </div>
-                      <Switch
-                        id="accountActivity"
-                        checked={notificationSettings.accountActivity}
-                        onCheckedChange={(checked) => 
-                          setNotificationSettings({...notificationSettings, accountActivity: checked})
-                        }
-                      />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label htmlFor="marketingCommunications">Marketing Communications</Label>
-                        <p className="text-sm text-muted-foreground">
-                          Promotional offers and updates
-                        </p>
-                      </div>
-                      <Switch
-                        id="marketingCommunications"
-                        checked={notificationSettings.marketingCommunications}
-                        onCheckedChange={(checked) => 
-                          setNotificationSettings({...notificationSettings, marketingCommunications: checked})
-                        }
-                      />
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-              <CardFooter className="justify-between border-t p-6 bg-muted/30">
-                <div>
-                  {hasChanges && (
-                    <p className="text-sm text-muted-foreground">
-                      You have unsaved changes
-                    </p>
-                  )}
-                </div>
-                <Button 
-                  onClick={handleSaveNotifications}
-                  disabled={!hasChanges || isSaving}
-                >
-                  {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {!isSaving && <SaveIcon className="mr-2 h-4 w-4" />}
-                  Save Changes
-                </Button>
-              </CardFooter>
-            </Card>
-          )}
-          
-          {activeTab === "security" && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Security Settings</CardTitle>
-                <CardDescription>
-                  Manage your account security and data privacy
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  <h3 className="text-sm font-medium">Account Security</h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label htmlFor="twoFactorEnabled">Two-Factor Authentication</Label>
-                        <p className="text-sm text-muted-foreground">
-                          Add an extra layer of security to your account
-                        </p>
-                      </div>
-                      <Switch
-                        id="twoFactorEnabled"
-                        checked={securitySettings.twoFactorEnabled}
-                        onCheckedChange={(checked) => 
-                          setSecuritySettings({...securitySettings, twoFactorEnabled: checked})
-                        }
-                      />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label htmlFor="loginNotifications">Login Notifications</Label>
-                        <p className="text-sm text-muted-foreground">
-                          Get notified when someone logs into your account
-                        </p>
-                      </div>
-                      <Switch
-                        id="loginNotifications"
-                        checked={securitySettings.loginNotifications}
-                        onCheckedChange={(checked) => 
-                          setSecuritySettings({...securitySettings, loginNotifications: checked})
-                        }
-                      />
-                    </div>
-                  </div>
-                </div>
-                
-                <Separator />
-                
-                <div className="space-y-4">
-                  <h3 className="text-sm font-medium">Data & Privacy</h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label htmlFor="allowDataCollection">Data Collection</Label>
-                        <p className="text-sm text-muted-foreground">
-                          Allow us to collect usage data to improve your experience
-                        </p>
-                      </div>
-                      <Switch
-                        id="allowDataCollection"
-                        checked={securitySettings.allowDataCollection}
-                        onCheckedChange={(checked) => 
-                          setSecuritySettings({...securitySettings, allowDataCollection: checked})
-                        }
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="mt-4 p-4 border rounded-md bg-muted/50">
-                    <h4 className="text-sm font-medium">Data Export</h4>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      You can request an export of all your data.
-                    </p>
-                    <Button className="mt-2" variant="outline" size="sm">
-                      Request Data Export
-                    </Button>
-                  </div>
-                </div>
-                
-                <Separator />
-                
-                <div className="space-y-2">
-                  <h3 className="text-sm font-medium text-destructive">Danger Zone</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Once you delete your account, there is no going back. Please be certain.
-                  </p>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="destructive" size="sm">
-                        Delete Account
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This action cannot be undone. This will permanently delete your account and remove your data from our servers.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDeleteAccount} className="bg-destructive">
-                          {isDeleting ? (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          ) : (
-                            "Delete Account"
-                          )}
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-              </CardContent>
-              <CardFooter className="justify-between border-t p-6 bg-muted/30">
-                <div>
-                  {hasChanges && (
-                    <p className="text-sm text-muted-foreground">
-                      You have unsaved changes
-                    </p>
-                  )}
-                </div>
-                <Button 
-                  onClick={handleSaveSecurity}
-                  disabled={!hasChanges || isSaving}
-                >
-                  {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {!isSaving && <SaveIcon className="mr-2 h-4 w-4" />}
-                  Save Changes
-                </Button>
-              </CardFooter>
-            </Card>
-          )}
-        </div>
-      </div>
+                        <FormControl>
+                          <Switch checked={field.value} onCheckedChange={field.onChange} />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <Button type="submit">Update Security</Button>
+                </form>
+              </Form>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
     </div>
   );
 };

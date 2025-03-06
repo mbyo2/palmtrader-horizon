@@ -20,6 +20,7 @@ export type Database = {
           is_phone_verified: boolean | null
           kyc_status: Database["public"]["Enums"]["kyc_status"]
           last_name: string | null
+          onboarding_completed: boolean | null
           phone_number: string | null
           role: Database["public"]["Enums"]["account_role"]
           tax_id: string | null
@@ -35,6 +36,7 @@ export type Database = {
           is_phone_verified?: boolean | null
           kyc_status?: Database["public"]["Enums"]["kyc_status"]
           last_name?: string | null
+          onboarding_completed?: boolean | null
           phone_number?: string | null
           role?: Database["public"]["Enums"]["account_role"]
           tax_id?: string | null
@@ -50,6 +52,7 @@ export type Database = {
           is_phone_verified?: boolean | null
           kyc_status?: Database["public"]["Enums"]["kyc_status"]
           last_name?: string | null
+          onboarding_completed?: boolean | null
           phone_number?: string | null
           role?: Database["public"]["Enums"]["account_role"]
           tax_id?: string | null
@@ -907,24 +910,96 @@ export type Database = {
       }
       user_preferences: {
         Row: {
+          account_activity: boolean | null
+          allow_data_collection: boolean | null
           created_at: string
           currency: string
+          email_notifications: boolean | null
           id: string
+          login_notifications: boolean | null
+          market_updates: boolean | null
+          marketing_communications: boolean | null
+          price_alerts: boolean | null
+          push_notifications: boolean | null
+          trade_confirmations: boolean | null
+          two_factor_enabled: boolean | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          account_activity?: boolean | null
+          allow_data_collection?: boolean | null
           created_at?: string
           currency?: string
+          email_notifications?: boolean | null
           id?: string
+          login_notifications?: boolean | null
+          market_updates?: boolean | null
+          marketing_communications?: boolean | null
+          price_alerts?: boolean | null
+          push_notifications?: boolean | null
+          trade_confirmations?: boolean | null
+          two_factor_enabled?: boolean | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          account_activity?: boolean | null
+          allow_data_collection?: boolean | null
           created_at?: string
           currency?: string
+          email_notifications?: boolean | null
           id?: string
+          login_notifications?: boolean | null
+          market_updates?: boolean | null
+          marketing_communications?: boolean | null
+          price_alerts?: boolean | null
+          push_notifications?: boolean | null
+          trade_confirmations?: boolean | null
+          two_factor_enabled?: boolean | null
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_profiles: {
+        Row: {
+          bio: string | null
+          created_at: string | null
+          display_name: string | null
+          first_name: string | null
+          investment_experience: string | null
+          investment_goals: string[] | null
+          last_name: string | null
+          phone: string | null
+          risk_tolerance: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          bio?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          first_name?: string | null
+          investment_experience?: string | null
+          investment_goals?: string[] | null
+          last_name?: string | null
+          phone?: string | null
+          risk_tolerance?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          bio?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          first_name?: string | null
+          investment_experience?: string | null
+          investment_goals?: string[] | null
+          last_name?: string | null
+          phone?: string | null
+          risk_tolerance?: string | null
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: []
