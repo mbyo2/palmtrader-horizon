@@ -10,9 +10,9 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "./ui/use-toast";
 
-interface CurrencySelectorProps {
-  value: string;
-  onChange: (value: string) => void;
+export interface CurrencySelectorProps {
+  value?: string;
+  onChange?: (value: string) => void;
 }
 
 const currencies = [
@@ -23,8 +23,8 @@ const currencies = [
   { code: "JPY", name: "Japanese Yen" },
 ];
 
-const CurrencySelector = ({ value, onChange }: CurrencySelectorProps) => {
-  const [selectedCurrency, setSelectedCurrency] = useState(value || "USD");
+const CurrencySelector = ({ value = "USD", onChange }: CurrencySelectorProps) => {
+  const [selectedCurrency, setSelectedCurrency] = useState(value);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

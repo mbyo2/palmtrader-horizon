@@ -104,19 +104,15 @@ const AccountSettings = () => {
   const fetchUserData = async () => {
     setLoadingProfile(true);
     try {
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user?.id)
-        .single();
-
-      if (profileError) throw profileError;
-
       const { data: userProfileData, error: userProfileError } = await supabase
-        .from('profiles')
-        .select('first_name, last_name, display_name, bio, phone, investment_experience, risk_tolerance, investment_goals')
-        .eq('id', user?.id)
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', user?.id)
         .maybeSingle();
+
+      if (userProfileError && userProfileError.code !== 'PGRST116') {
+        throw userProfileError;
+      }
 
       const { data: preferencesData, error: preferencesError } = await supabase
         .from('user_preferences')
@@ -128,30 +124,23 @@ const AccountSettings = () => {
         throw preferencesError;
       }
 
-      const combinedProfile = {
-        ...profileData,
-        ...(userProfileData || {}),
-      };
+      if (userProfileData) {
+        const investmentExperience = (userProfileData.investment_experience || 'beginner') as 'beginner' | 'intermediate' | 'advanced';
+        const riskTolerance = (userProfileData.risk_tolerance || 'moderate') as 'conservative' | 'moderate' | 'aggressive';
+        const investmentGoals = (userProfileData.investment_goals?.[0] || 'retirement') as 'retirement' | 'growth' | 'income';
 
-      setUserProfile(combinedProfile);
-      setUserPreferences(preferencesData);
-      setAvatarUrl(profileData?.avatar_url);
-
-      const investmentExperience = (userProfileData?.investment_experience || 'beginner') as 'beginner' | 'intermediate' | 'advanced';
-      const riskTolerance = (userProfileData?.risk_tolerance || 'moderate') as 'conservative' | 'moderate' | 'aggressive';
-      const investmentGoals = (userProfileData?.investment_goals?.[0] || 'retirement') as 'retirement' | 'growth' | 'income';
-
-      profileForm.reset({
-        username: profileData?.username || '',
-        first_name: userProfileData?.first_name || '',
-        last_name: userProfileData?.last_name || '',
-        display_name: userProfileData?.display_name || '',
-        bio: userProfileData?.bio || '',
-        phone: userProfileData?.phone || '',
-        investment_experience: investmentExperience,
-        risk_tolerance: riskTolerance,
-        investment_goals: investmentGoals,
-      });
+        profileForm.reset({
+          username: userProfileData.username || '',
+          first_name: userProfileData.first_name || '',
+          last_name: userProfileData.last_name || '',
+          display_name: userProfileData.display_name || '',
+          bio: userProfileData.bio || '',
+          phone: userProfileData.phone || '',
+          investment_experience: investmentExperience,
+          risk_tolerance: riskTolerance,
+          investment_goals: investmentGoals,
+        });
+      }
 
       if (preferencesData) {
         preferencesForm.reset({

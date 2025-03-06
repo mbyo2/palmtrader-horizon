@@ -1,4 +1,3 @@
-
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -20,6 +19,7 @@ const Navbar = () => {
   const { user, accountDetails, signOut } = useAuth();
   const isMobile = useIsMobile();
   const [isOpen, setIsOpen] = useState(false);
+  const [currency, setCurrency] = useState("USD");
 
   const navLinks = [
     { to: "/markets", label: "Markets" },
@@ -48,7 +48,6 @@ const Navbar = () => {
           </Link>
         </div>
         
-        {/* Desktop Navigation */}
         {!isMobile && (
           <div className="flex items-center justify-between flex-1 gap-4">
             <nav className="flex items-center space-x-4 lg:space-x-6">
@@ -65,7 +64,7 @@ const Navbar = () => {
             
             <div className="flex flex-1 items-center justify-end space-x-2">
               <SearchBar />
-              <CurrencySelector />
+              <CurrencySelector value={currency} onChange={setCurrency} />
               {user && <NotificationsIndicator />}
               <ThemeToggle />
               
@@ -122,7 +121,6 @@ const Navbar = () => {
           </div>
         )}
         
-        {/* Mobile Navigation */}
         {isMobile && (
           <div className="flex flex-1 items-center justify-end space-x-2">
             {user && <NotificationsIndicator />}
@@ -165,7 +163,7 @@ const Navbar = () => {
                   </div>
                   
                   <div className="my-2">
-                    <CurrencySelector />
+                    <CurrencySelector value={currency} onChange={setCurrency} />
                   </div>
                   
                   <nav className="flex flex-col space-y-3 mt-4">
