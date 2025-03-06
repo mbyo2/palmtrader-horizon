@@ -61,7 +61,7 @@ const Crypto = () => {
               {isLoading ? (
                 <Skeleton className="h-[400px] w-full" />
               ) : cryptoData && cryptoData.length > 0 ? (
-                <AdvancedStockChart data={cryptoData} />
+                <AdvancedStockChart symbol={selectedCrypto} data={cryptoData} />
               ) : (
                 <div className="h-[400px] flex items-center justify-center text-muted-foreground">
                   No data available for {selectedCrypto}
@@ -92,7 +92,6 @@ const Crypto = () => {
   );
 };
 
-// PriceTicker component to show real-time prices
 const PriceTicker = ({ symbol }: { symbol: string }) => {
   const { data, isLoading } = useQuery({
     queryKey: ['cryptoPrice', symbol],
@@ -100,7 +99,6 @@ const PriceTicker = ({ symbol }: { symbol: string }) => {
     refetchInterval: 30000, // Refetch every 30 seconds
   });
   
-  // Generate mock data for price change
   const priceChange = Math.random() > 0.5 ? 
     Math.random() * 5 : 
     -Math.random() * 5;
@@ -121,7 +119,6 @@ const PriceTicker = ({ symbol }: { symbol: string }) => {
   );
 };
 
-// CryptoPortfolio component to display crypto holdings
 const CryptoPortfolio = () => {
   const { data: portfolio, isLoading } = useQuery({
     queryKey: ['cryptoPortfolio'],

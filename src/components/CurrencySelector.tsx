@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import {
   Select,
@@ -9,6 +10,11 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "./ui/use-toast";
 
+interface CurrencySelectorProps {
+  value: string;
+  onChange: (value: string) => void;
+}
+
 const currencies = [
   { code: "USD", name: "US Dollar" },
   { code: "ZMW", name: "Zambian Kwacha" },
@@ -17,8 +23,8 @@ const currencies = [
   { code: "JPY", name: "Japanese Yen" },
 ];
 
-const CurrencySelector = () => {
-  const [selectedCurrency, setSelectedCurrency] = useState("USD");
+const CurrencySelector = ({ value, onChange }: CurrencySelectorProps) => {
+  const [selectedCurrency, setSelectedCurrency] = useState(value || "USD");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -37,6 +43,7 @@ const CurrencySelector = () => {
 
         if (preferences) {
           setSelectedCurrency(preferences.currency);
+          if (onChange) onChange(preferences.currency);
         } else {
           // Create default preferences if none exist
           await supabase
@@ -79,6 +86,8 @@ const CurrencySelector = () => {
       if (error) throw error;
 
       setSelectedCurrency(value);
+      if (onChange) onChange(value);
+      
       toast({
         title: "Currency updated successfully",
       });

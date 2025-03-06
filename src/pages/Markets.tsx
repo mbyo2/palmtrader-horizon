@@ -91,7 +91,7 @@ const Markets = () => {
             </Card>
           ) : marketData.length > 0 ? (
             <Card className="p-4">
-              <AdvancedStockChart data={marketData} />
+              <AdvancedStockChart symbol={symbol} data={marketData} />
             </Card>
           ) : (
             <Card className="p-6 text-center">

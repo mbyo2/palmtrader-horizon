@@ -15,7 +15,7 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { CurrencySelector } from '@/components/CurrencySelector';
+import CurrencySelector from '@/components/CurrencySelector';
 
 const profileFormSchema = z.object({
   username: z.string().min(2, {
@@ -104,7 +104,6 @@ const AccountSettings = () => {
   const fetchUserData = async () => {
     setLoadingProfile(true);
     try {
-      // Fetch user profile data
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
@@ -113,14 +112,12 @@ const AccountSettings = () => {
 
       if (profileError) throw profileError;
 
-      // Fetch user profile details (additional fields)
       const { data: userProfileData, error: userProfileError } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('user_id', user?.id)
-        .single();
+        .from('profiles')
+        .select('first_name, last_name, display_name, bio, phone, investment_experience, risk_tolerance, investment_goals')
+        .eq('id', user?.id)
+        .maybeSingle();
 
-      // Fetch user preferences
       const { data: preferencesData, error: preferencesError } = await supabase
         .from('user_preferences')
         .select('*')
@@ -131,7 +128,6 @@ const AccountSettings = () => {
         throw preferencesError;
       }
 
-      // Combine profile data
       const combinedProfile = {
         ...profileData,
         ...(userProfileData || {}),
@@ -141,7 +137,10 @@ const AccountSettings = () => {
       setUserPreferences(preferencesData);
       setAvatarUrl(profileData?.avatar_url);
 
-      // Set form values
+      const investmentExperience = (userProfileData?.investment_experience || 'beginner') as 'beginner' | 'intermediate' | 'advanced';
+      const riskTolerance = (userProfileData?.risk_tolerance || 'moderate') as 'conservative' | 'moderate' | 'aggressive';
+      const investmentGoals = (userProfileData?.investment_goals?.[0] || 'retirement') as 'retirement' | 'growth' | 'income';
+
       profileForm.reset({
         username: profileData?.username || '',
         first_name: userProfileData?.first_name || '',
@@ -149,9 +148,9 @@ const AccountSettings = () => {
         display_name: userProfileData?.display_name || '',
         bio: userProfileData?.bio || '',
         phone: userProfileData?.phone || '',
-        investment_experience: userProfileData?.investment_experience || 'beginner',
-        risk_tolerance: userProfileData?.risk_tolerance || 'moderate',
-        investment_goals: userProfileData?.investment_goals?.[0] || 'retirement',
+        investment_experience: investmentExperience,
+        risk_tolerance: riskTolerance,
+        investment_goals: investmentGoals,
       });
 
       if (preferencesData) {
@@ -186,25 +185,8 @@ const AccountSettings = () => {
 
   const onProfileSubmit = async (values: z.infer<typeof profileFormSchema>) => {
     try {
-      // Update profiles table (basic user info)
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({
-          username: values.username,
-        })
-        .eq('id', user?.id);
-
-      if (profileError) throw profileError;
-
-      // Check if user_profile exists
-      const { data: existingProfile } = await supabase
-        .from('user_profiles')
-        .select('user_id')
-        .eq('user_id', user?.id)
-        .single();
-
-      // Update or insert user_profiles
       const profileData = {
+        username: values.username,
         first_name: values.first_name,
         last_name: values.last_name,
         display_name: values.display_name,
@@ -215,25 +197,13 @@ const AccountSettings = () => {
         investment_goals: [values.investment_goals],
         updated_at: new Date().toISOString(),
       };
+      
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update(profileData)
+        .eq('id', user?.id);
 
-      let userProfileError;
-      if (existingProfile) {
-        const { error } = await supabase
-          .from('user_profiles')
-          .update(profileData)
-          .eq('user_id', user?.id);
-        userProfileError = error;
-      } else {
-        const { error } = await supabase
-          .from('user_profiles')
-          .insert({
-            user_id: user?.id,
-            ...profileData,
-          });
-        userProfileError = error;
-      }
-
-      if (userProfileError) throw userProfileError;
+      if (profileError) throw profileError;
 
       toast({
         title: 'Profile Updated',
@@ -253,14 +223,12 @@ const AccountSettings = () => {
 
   const onPreferencesSubmit = async (values: z.infer<typeof preferencesFormSchema>) => {
     try {
-      // Check if user_preferences exists
       const { data: existingPreferences } = await supabase
         .from('user_preferences')
         .select('user_id')
         .eq('user_id', user?.id)
         .single();
 
-      // Update or insert user_preferences
       const preferencesData = {
         currency: values.currency,
         email_notifications: values.email_notifications,
@@ -310,14 +278,12 @@ const AccountSettings = () => {
 
   const onSecuritySubmit = async (values: z.infer<typeof securityFormSchema>) => {
     try {
-      // Check if user_preferences exists
       const { data: existingPreferences } = await supabase
         .from('user_preferences')
         .select('user_id')
         .eq('user_id', user?.id)
         .single();
 
-      // Update or insert security settings in user_preferences
       const securityData = {
         two_factor_enabled: values.two_factor_enabled,
         login_notifications: values.login_notifications,

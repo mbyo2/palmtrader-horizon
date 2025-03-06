@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,6 +11,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/components/ui/use-toast';
+import { Loader2 } from 'lucide-react';
 
 const investmentFormSchema = z.object({
   investment_experience: z.enum(['beginner', 'intermediate', 'advanced']),
@@ -119,12 +120,10 @@ const Onboarding = () => {
   });
 
   React.useEffect(() => {
-    // Redirect if user is not authenticated
     if (!loading && !user) {
       navigate('/auth');
     }
     
-    // Redirect if onboarding is already completed
     if (accountDetails?.onboarding_completed) {
       navigate('/');
     }
@@ -140,7 +139,8 @@ const Onboarding = () => {
       {step < 3 ? (
         <Button onClick={() => setStep(step + 1)}>Next</Button>
       ) : (
-        <Button type="submit" isLoading={isSubmitting}>
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Complete
         </Button>
       )}
@@ -151,7 +151,6 @@ const Onboarding = () => {
     try {
       setIsSubmitting(true);
       
-      // Update account_details to mark onboarding as completed
       const { error: accountError } = await supabase
         .from('account_details')
         .update({
@@ -161,14 +160,12 @@ const Onboarding = () => {
       
       if (accountError) throw accountError;
       
-      // Save all the profile information
       const { data: existingProfile } = await supabase
         .from('user_profiles')
         .select('user_id')
         .eq('user_id', user?.id)
         .single();
         
-      // Information to save to user_profiles
       const profileData = {
         investment_experience: values.investment_experience,
         risk_tolerance: values.risk_tolerance,
@@ -176,7 +173,6 @@ const Onboarding = () => {
       };
       
       if (existingProfile) {
-        // Update existing profile
         const { error } = await supabase
           .from('user_profiles')
           .update(profileData)
@@ -184,7 +180,6 @@ const Onboarding = () => {
           
         if (error) throw error;
       } else {
-        // Insert new profile
         const { error } = await supabase
           .from('user_profiles')
           .insert({

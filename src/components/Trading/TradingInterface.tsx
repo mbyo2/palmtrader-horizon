@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -41,20 +40,17 @@ const TradingInterface = () => {
   const [isFractional, setIsFractional] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Fetch current stock price
   const { data: stockPrice, isLoading: isPriceLoading } = useQuery({
     queryKey: ["stockPrice", symbol],
     queryFn: async () => await MarketDataService.fetchLatestPrice(symbol),
-    refetchInterval: 10000, // Refetch every 10 seconds
+    refetchInterval: 10000,
   });
   
-  // Fetch historical data for the chart
   const { data: historicalData, isLoading: isHistoricalLoading } = useQuery({
     queryKey: ["historicalData", symbol],
     queryFn: async () => await MarketDataService.fetchHistoricalData(symbol, 30),
   });
   
-  // Check if user owns the stock (for sell orders)
   const { data: userPosition } = useQuery({
     queryKey: ["position", user?.id, symbol],
     queryFn: async () => {
@@ -72,7 +68,6 @@ const TradingInterface = () => {
     enabled: !!user && orderAction === "sell",
   });
   
-  // Calculate total order value
   const calculateOrderValue = () => {
     if (!shares || !stockPrice) return 0;
     
@@ -87,12 +82,10 @@ const TradingInterface = () => {
   
   const orderValue = calculateOrderValue();
   
-  // Handle symbol change
   const handleSymbolChange = (value: string) => {
     setSymbol(value);
   };
   
-  // Handle custom symbol input
   const handleCustomSymbolSubmit = () => {
     if (customSymbol) {
       setSymbol(customSymbol.toUpperCase());
@@ -100,7 +93,6 @@ const TradingInterface = () => {
     }
   };
   
-  // Reset form fields when changing order type
   const handleOrderTypeChange = (value: OrderType) => {
     setOrderType(value);
     if (value === "market") {
@@ -109,7 +101,6 @@ const TradingInterface = () => {
     }
   };
   
-  // Form validation
   const isFormValid = () => {
     if (!shares || Number(shares) <= 0) return false;
     if (!isFractional && !Number.isInteger(Number(shares))) return false;
@@ -124,7 +115,6 @@ const TradingInterface = () => {
     return true;
   };
   
-  // Submit order
   const handleSubmitOrder = async () => {
     if (!user || !isFormValid() || !stockPrice) return;
     
@@ -137,7 +127,6 @@ const TradingInterface = () => {
           (limitPrice || stockPrice.price) : 
           (stopPrice || stockPrice.price);
       
-      // Insert the trade
       const { error } = await supabase.from("trades").insert({
         user_id: user.id,
         symbol: symbol,
@@ -156,7 +145,6 @@ const TradingInterface = () => {
       
       toast.success(`${orderAction === 'buy' ? 'Bought' : 'Sold'} ${shares} shares of ${symbol} at $${price.toFixed(2)}`);
       
-      // Reset form
       setShares("");
       setLimitPrice("");
       setStopPrice("");
@@ -358,7 +346,7 @@ const TradingInterface = () => {
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : historicalData && historicalData.length > 0 ? (
-            <AdvancedStockChart data={historicalData} />
+            <AdvancedStockChart symbol={symbol} data={historicalData} compact={true} />
           ) : (
             <div className="h-[400px] flex items-center justify-center text-muted-foreground">
               No historical data available for {symbol}

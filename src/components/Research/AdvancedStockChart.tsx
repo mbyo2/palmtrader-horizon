@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { 
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, 
@@ -8,19 +9,37 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { fetchHistoricalData } from "@/services/market/dataFetchService";
 import { Calculator, Calendar, Clock, TrendingUp } from "lucide-react";
+import { MarketData } from "@/services/market/types";
 
-const AdvancedStockChart = ({ symbol, compact = false }: { symbol: string, compact?: boolean }) => {
+interface AdvancedStockChartProps {
+  symbol?: string;
+  data?: MarketData[];
+  compact?: boolean;
+}
+
+const AdvancedStockChart = ({ symbol, data, compact = false }: AdvancedStockChartProps) => {
   const [chartType, setChartType] = useState<'price' | 'volume' | 'both'>('price');
   const [timeframe, setTimeframe] = useState<number>(30);
-  const [data, setData] = useState<any[]>([]);
+  const [chartData, setChartData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadData = async () => {
+      if (data && data.length > 0) {
+        setChartData(data);
+        setLoading(false);
+        return;
+      }
+
+      if (!symbol) {
+        setLoading(false);
+        return;
+      }
+      
       setLoading(true);
       try {
         const historicalData = await fetchHistoricalData(symbol, timeframe);
-        setData(historicalData);
+        setChartData(historicalData);
       } catch (error) {
         console.error("Failed to fetch historical data:", error);
       } finally {
@@ -29,9 +48,9 @@ const AdvancedStockChart = ({ symbol, compact = false }: { symbol: string, compa
     };
 
     loadData();
-  }, [symbol, timeframe]);
+  }, [symbol, timeframe, data]);
 
-  const processedData = data.map(item => ({
+  const processedData = chartData.map(item => ({
     date: new Date(parseInt(item.timestamp)).toLocaleDateString(),
     price: item.price,
     volume: item.volume,
@@ -40,7 +59,7 @@ const AdvancedStockChart = ({ symbol, compact = false }: { symbol: string, compa
   return (
     <Card className={compact ? "h-[400px]" : ""}>
       <CardHeader>
-        <CardTitle>{symbol} Historical Data</CardTitle>
+        <CardTitle>{symbol || "Market"} Historical Data</CardTitle>
         {!compact && (
           <div className="flex items-center space-x-2 text-sm text-muted-foreground">
             <Calendar className="h-4 w-4" />
@@ -49,11 +68,13 @@ const AdvancedStockChart = ({ symbol, compact = false }: { symbol: string, compa
             <span>Updated {new Date().toLocaleTimeString()}</span>
           </div>
         )}
-        <div className="flex items-center space-x-2 mt-2">
-          <Button variant="outline" size="sm" onClick={() => setTimeframe(30)}>30D</Button>
-          <Button variant="outline" size="sm" onClick={() => setTimeframe(90)}>90D</Button>
-          <Button variant="outline" size="sm" onClick={() => setTimeframe(365)}>1Y</Button>
-        </div>
+        {symbol && (
+          <div className="flex items-center space-x-2 mt-2">
+            <Button variant="outline" size="sm" onClick={() => setTimeframe(30)}>30D</Button>
+            <Button variant="outline" size="sm" onClick={() => setTimeframe(90)}>90D</Button>
+            <Button variant="outline" size="sm" onClick={() => setTimeframe(365)}>1Y</Button>
+          </div>
+        )}
       </CardHeader>
       
       <CardContent className="p-0">
@@ -88,7 +109,6 @@ const AdvancedStockChart = ({ symbol, compact = false }: { symbol: string, compa
                 <Bar
                   dataKey="volume"
                   fill="#64748b"
-                  opacity={0.5}
                   yAxisId="volume"
                   name="Volume"
                 />
@@ -106,7 +126,7 @@ const AdvancedStockChart = ({ symbol, compact = false }: { symbol: string, compa
                 <Tooltip />
                 <Legend />
                 <Line type="monotone" yAxisId="price" dataKey="price" stroke="#8884d8" name="Price" />
-                <Bar yAxisId="volume" dataKey="volume" fill="#64748b" opacity={0.5} name="Volume" />
+                <Bar yAxisId="volume" dataKey="volume" fill="#64748b" name="Volume" />
               </ComposedChart>
             </ResponsiveContainer>
           </TabsContent>
