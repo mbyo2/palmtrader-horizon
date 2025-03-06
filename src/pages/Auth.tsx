@@ -1,3 +1,4 @@
+
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Auth as SupabaseAuth } from "@supabase/auth-ui-react";
@@ -45,6 +46,17 @@ const Auth = () => {
 
         console.log("Account details:", accountDetails);
 
+        // Check if this is a new user that needs to go through onboarding
+        if (accountDetails && !accountDetails.onboarding_completed) {
+          // Redirect to the onboarding flow
+          navigate('/onboarding');
+          toast({
+            title: "Welcome!",
+            description: "Let's get your account set up.",
+          });
+          return;
+        }
+
         // Show welcome message based on account status
         if (accountDetails.account_status === 'pending') {
           toast({
@@ -80,7 +92,7 @@ const Auth = () => {
     <div className="min-h-screen flex items-center justify-center px-4 bg-background">
       <Card className="w-full max-w-md space-y-8 p-8">
         <div className="text-center">
-          <h2 className="text-3xl font-bold gradient-text">Welcome to PalmCacia</h2>
+          <h2 className="text-3xl font-bold gradient-text">Welcome to BullTrade</h2>
           <p className="mt-2 text-muted-foreground">
             Sign in to access your trading account
           </p>

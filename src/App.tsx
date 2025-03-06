@@ -16,6 +16,8 @@ import Portfolio from "./pages/Portfolio";
 import IPO from "./pages/IPO";
 import IPODetails from "./pages/IPODetails";
 import Crypto from "./pages/Crypto";
+import Onboarding from "./pages/Onboarding";
+import AccountSettings from "./pages/AccountSettings";
 import { NotificationsProvider } from "./components/Notifications/NotificationsProvider";
 
 const queryClient = new QueryClient();
@@ -41,6 +43,8 @@ function App() {
                     <Route path="/ipo" element={<IPO />} />
                     <Route path="/ipo/:id" element={<IPODetails />} />
                     <Route path="/crypto" element={<Crypto />} />
+                    <Route path="/onboarding" element={<Onboarding />} />
+                    <Route path="/settings" element={<AccountSettings />} />
                   </Routes>
                 </main>
                 <Footer />

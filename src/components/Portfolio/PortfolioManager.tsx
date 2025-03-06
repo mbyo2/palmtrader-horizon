@@ -11,7 +11,7 @@ import PortfolioSummary from "./PortfolioSummary";
 import PortfolioPositions from "./PortfolioPositions";
 import PortfolioAllocation from "./PortfolioAllocation";
 import PortfolioPerformance from "./PortfolioPerformance";
-import { ReloadIcon } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 const PortfolioManager = () => {
@@ -79,9 +79,9 @@ const PortfolioManager = () => {
           disabled={isFetching}
         >
           {isFetching ? (
-            <ReloadIcon className="h-4 w-4 mr-1 animate-spin" />
+            <RefreshCw className="h-4 w-4 mr-1 animate-spin" />
           ) : (
-            <ReloadIcon className="h-4 w-4 mr-1" />
+            <RefreshCw className="h-4 w-4 mr-1" />
           )}
           Refresh
         </Button>
