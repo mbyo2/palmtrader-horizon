@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -97,6 +98,37 @@
 .card-gradient {
   @apply bg-background/80 backdrop-blur-[2px] border border-border/50;
   background-attachment: local;
+}
+
+.animated-gradient {
+  background: linear-gradient(-45deg, #7c2cf3, #6b549e, #8354f4, #48356e);
+  background-size: 400% 400%;
+  animation: gradient 5s ease infinite;
+}
+
+@keyframes gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.hero-section {
+  background: radial-gradient(circle at center, rgba(124, 44, 243, 0.15), rgba(0, 0, 0, 0) 70%);
+}
+
+.feature-card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.feature-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px -5px rgba(124, 44, 243, 0.2);
 }
 
 @media (prefers-reduced-motion: reduce) {

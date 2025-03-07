@@ -26,10 +26,14 @@ const currencies = [
 const CurrencySelector = ({ value = "USD", onChange }: CurrencySelectorProps) => {
   const [selectedCurrency, setSelectedCurrency] = useState(value);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     const fetchUserPreferences = async () => {
       try {
+        setLoading(true);
+        setError(null);
+        
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
           setLoading(false);
@@ -55,6 +59,7 @@ const CurrencySelector = ({ value = "USD", onChange }: CurrencySelectorProps) =>
         }
       } catch (error) {
         console.error('Error fetching user preferences:', error);
+        setError(error instanceof Error ? error : new Error('Unknown error'));
         toast({
           title: "Error loading preferences",
           variant: "destructive",
@@ -69,6 +74,8 @@ const CurrencySelector = ({ value = "USD", onChange }: CurrencySelectorProps) =>
 
   const handleCurrencyChange = async (value: string) => {
     try {
+      setSelectedCurrency(value);
+      
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         toast({
@@ -88,7 +95,6 @@ const CurrencySelector = ({ value = "USD", onChange }: CurrencySelectorProps) =>
 
       if (error) throw error;
 
-      setSelectedCurrency(value);
       if (onChange) onChange(value);
       
       toast({
@@ -103,7 +109,19 @@ const CurrencySelector = ({ value = "USD", onChange }: CurrencySelectorProps) =>
     }
   };
 
-  if (loading) return null;
+  if (error) {
+    return (
+      <div className="text-destructive text-sm">
+        Failed to load currency preferences
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="w-[180px] h-10 bg-muted animate-pulse rounded"></div>
+    );
+  }
 
   return (
     <Select value={selectedCurrency} onValueChange={handleCurrencyChange}>

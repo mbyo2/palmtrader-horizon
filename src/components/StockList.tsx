@@ -1,3 +1,4 @@
+
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useState, useEffect, useCallback, memo } from "react";
@@ -46,6 +47,8 @@ StockCard.displayName = 'StockCard';
 
 const StockList = () => {
   const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const [stocks, setStocks] = useState<Stock[]>([
     { symbol: "ZCCM.ZM", name: "ZCCM Investments Holdings Plc", price: "24.50", change: "+2.3%" },
     { symbol: "CEC.ZM", name: "Copperbelt Energy Corporation Plc", price: "12.75", change: "-0.8%" },
@@ -64,44 +67,64 @@ const StockList = () => {
   const isMobile = useIsMobile();
 
   useEffect(() => {
-    console.log("Setting up stock data subscriptions");
-    
-    // Subscribe to all stock symbols
-    stocks.forEach(stock => {
-      finnhubSocket.subscribe(stock.symbol);
-    });
-
-    // Set up data handler
-    const unsubscribe = finnhubSocket.onMarketData(({ symbol, price }) => {
-      console.log("Received stock data:", { symbol, price });
+    try {
+      console.log("Setting up stock data subscriptions");
+      setLoading(true);
       
-      setStocks(prevStocks => 
-        prevStocks.map(stock => {
-          if (stock.symbol === symbol) {
-            const prevPrice = parseFloat(stock.price);
-            const percentChange = ((price - prevPrice) / prevPrice * 100).toFixed(2);
-            
-            return {
-              ...stock,
-              previousPrice: stock.price,
-              price: price.toFixed(2),
-              change: `${percentChange.startsWith('-') ? '' : '+'}${percentChange}%`
-            };
-          }
-          return stock;
-        })
-      );
-    });
-
-    // Cleanup subscriptions
-    return () => {
-      console.log("Cleaning up stock data subscriptions");
+      // After data is loaded, set loading to false
+      setLoading(false);
+      
+      // Subscribe to all stock symbols
       stocks.forEach(stock => {
-        finnhubSocket.unsubscribe(stock.symbol);
+        try {
+          finnhubSocket.subscribe(stock.symbol);
+        } catch (e) {
+          console.error(`Error subscribing to ${stock.symbol}:`, e);
+        }
       });
-      unsubscribe();
-    };
-  }, [stocks]);
+
+      // Set up data handler
+      const unsubscribe = finnhubSocket.onMarketData(({ symbol, price }) => {
+        if (!symbol || !price) return;
+        
+        console.log("Received stock data:", { symbol, price });
+        
+        setStocks(prevStocks => 
+          prevStocks.map(stock => {
+            if (stock.symbol === symbol) {
+              const prevPrice = parseFloat(stock.price);
+              const percentChange = ((price - prevPrice) / prevPrice * 100).toFixed(2);
+              
+              return {
+                ...stock,
+                previousPrice: stock.price,
+                price: price.toFixed(2),
+                change: `${percentChange.startsWith('-') ? '' : '+'}${percentChange}%`
+              };
+            }
+            return stock;
+          })
+        );
+      });
+
+      // Cleanup subscriptions
+      return () => {
+        console.log("Cleaning up stock data subscriptions");
+        stocks.forEach(stock => {
+          try {
+            finnhubSocket.unsubscribe(stock.symbol);
+          } catch (e) {
+            console.error(`Error unsubscribing from ${stock.symbol}:`, e);
+          }
+        });
+        unsubscribe();
+      };
+    } catch (err) {
+      console.error("Error in StockList useEffect:", err);
+      setError(err instanceof Error ? err : new Error('Unknown error'));
+      setLoading(false);
+    }
+  }, []);
 
   const filteredStocks = stocks.filter(
     (stock) =>
@@ -116,6 +139,33 @@ const StockList = () => {
   ));
 
   Row.displayName = 'Row';
+  
+  if (error) {
+    return (
+      <div className="p-6 text-center">
+        <p className="text-destructive">Error loading stocks: {error.message}</p>
+        <button 
+          onClick={() => window.location.reload()} 
+          className="mt-4 px-4 py-2 bg-primary text-white rounded-md"
+        >
+          Reload
+        </button>
+      </div>
+    );
+  }
+  
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <div className="h-10 w-full max-w-md bg-muted animate-pulse rounded-md"></div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[1, 2, 3, 4, 5, 6].map(i => (
+            <div key={i} className="h-24 bg-muted animate-pulse rounded-md"></div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -126,17 +176,29 @@ const StockList = () => {
         onChange={(e) => setSearch(e.target.value)}
         className="max-w-md bg-background/50"
       />
-      <div className="h-[600px] content-visibility-auto">
-        <List
-          height={600}
-          itemCount={filteredStocks.length}
-          itemSize={100}
-          width="100%"
-          overscanCount={2}
-        >
-          {Row}
-        </List>
-      </div>
+      {filteredStocks.length === 0 ? (
+        <div className="text-center p-8 border border-border rounded-md">
+          <p className="text-muted-foreground">No stocks found matching "{search}"</p>
+        </div>
+      ) : isMobile ? (
+        <div className="space-y-2">
+          {filteredStocks.map(stock => (
+            <StockCard key={stock.symbol} stock={stock} />
+          ))}
+        </div>
+      ) : (
+        <div className="h-[600px] content-visibility-auto">
+          <List
+            height={600}
+            itemCount={filteredStocks.length}
+            itemSize={100}
+            width="100%"
+            overscanCount={2}
+          >
+            {Row}
+          </List>
+        </div>
+      )}
     </div>
   );
 };
