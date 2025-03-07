@@ -10,8 +10,12 @@ import SocialShare from "@/components/Social/SocialShare";
 import Comments from "@/components/Social/Comments";
 import WatchlistButton from "@/components/WatchlistButton";
 import PriceAlertModal from "@/components/Alerts/PriceAlertModal";
+import PredictiveAnalytics from "./PredictiveAnalytics";
+import AdvancedChart from "./AdvancedChart";
 import { Button } from "@/components/ui/button";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, LineChart } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { MarketDataService } from "@/services/MarketDataService";
 
 interface ResearchToolsProps {
   onSymbolChange?: (symbol: string) => void;
@@ -22,8 +26,17 @@ const ResearchTools = ({ onSymbolChange, initialSymbol = "AAPL" }: ResearchTools
   const [symbol, setSymbol] = useState(initialSymbol);
   const [inputSymbol, setInputSymbol] = useState(initialSymbol);
 
-  // Mock current price - in a real app, you'd get this from your market data service
-  const currentPrice = 150.75;
+  // Fetch market data for advanced charts
+  const { data: marketData, isLoading: isLoadingMarketData } = useQuery({
+    queryKey: ['marketData', symbol],
+    queryFn: () => MarketDataService.fetchHistoricalData(symbol, 90),
+    staleTime: 1000 * 60 * 5 // 5 minutes
+  });
+
+  // Get current price
+  const currentPrice = marketData && marketData.length > 0 
+    ? marketData[marketData.length - 1].price 
+    : 150.75;
 
   const handleSymbolChange = () => {
     const newSymbol = inputSymbol.trim().toUpperCase();
@@ -68,26 +81,44 @@ const ResearchTools = ({ onSymbolChange, initialSymbol = "AAPL" }: ResearchTools
         </div>
       </div>
 
-      <Tabs defaultValue="fundamentals">
+      <Tabs defaultValue="chart">
         <TabsList className="mb-4">
-          <TabsTrigger value="fundamentals">Fundamentals</TabsTrigger>
+          <TabsTrigger value="chart" className="flex items-center gap-1">
+            <LineChart className="h-4 w-4" />
+            Advanced Chart
+          </TabsTrigger>
           <TabsTrigger value="technical">Technical</TabsTrigger>
+          <TabsTrigger value="fundamentals">Fundamentals</TabsTrigger>
+          <TabsTrigger value="predictive">Predictive</TabsTrigger>
           <TabsTrigger value="news">News</TabsTrigger>
           <TabsTrigger value="analysts">Analysts</TabsTrigger>
           <TabsTrigger value="social">Social</TabsTrigger>
         </TabsList>
-        <TabsContent value="fundamentals">
-          <CompanyFundamentals symbol={symbol} />
+
+        <TabsContent value="chart">
+          <AdvancedChart symbol={symbol} data={marketData || []} />
         </TabsContent>
+        
         <TabsContent value="technical">
           <TechnicalIndicators symbol={symbol} />
         </TabsContent>
+        
+        <TabsContent value="fundamentals">
+          <CompanyFundamentals symbol={symbol} />
+        </TabsContent>
+        
+        <TabsContent value="predictive">
+          <PredictiveAnalytics symbol={symbol} currentPrice={currentPrice} />
+        </TabsContent>
+        
         <TabsContent value="news">
           <MarketNews symbol={symbol} />
         </TabsContent>
+        
         <TabsContent value="analysts">
           <AnalystRatings symbol={symbol} />
         </TabsContent>
+        
         <TabsContent value="social">
           <div className="space-y-4">
             <SocialShare symbol={symbol} />

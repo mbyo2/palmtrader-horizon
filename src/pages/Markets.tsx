@@ -2,6 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { AdvancedStockChart } from "@/components/Research/AdvancedStockChart";
+import AdvancedChart from "@/components/Research/AdvancedChart";
 import ResearchTools from "@/components/Research/ResearchTools";
 import { MarketDataService, MarketData } from "@/services/MarketDataService";
 import { Card } from "@/components/ui/card";
@@ -11,6 +12,7 @@ import { finnhubSocket } from "@/utils/finnhubSocket";
 import MarketOverview from "@/components/MarketOverview";
 import TradingInterface from "@/components/Trading/TradingInterface";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TechnicalIndicatorService } from "@/services/TechnicalIndicatorService";
 
 const Markets = () => {
   const [symbol, setSymbol] = useState("AAPL");
@@ -18,10 +20,17 @@ const Markets = () => {
   
   const { data: marketData = [], isLoading, error, refetch } = useQuery({
     queryKey: ['marketData', symbol, lastUpdate],
-    queryFn: () => MarketDataService.fetchHistoricalData(symbol, 30),
+    queryFn: () => MarketDataService.fetchHistoricalData(symbol, 90),
     retry: 2,
     refetchOnWindowFocus: false,
     staleTime: 60000 // Consider data stale after 1 minute
+  });
+
+  // Preload technical indicators for the current symbol
+  useQuery({
+    queryKey: ["technical-indicators", symbol],
+    queryFn: () => TechnicalIndicatorService.getIndicators(symbol),
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
   // Subscribe to real-time updates for the current symbol
@@ -90,9 +99,7 @@ const Markets = () => {
               <Skeleton className="h-[400px] w-full" />
             </Card>
           ) : marketData.length > 0 ? (
-            <Card className="p-4">
-              <AdvancedStockChart symbol={symbol} data={marketData} />
-            </Card>
+            <AdvancedChart symbol={symbol} data={marketData} />
           ) : (
             <Card className="p-6 text-center">
               <p className="text-muted-foreground mb-2">No market data available for {symbol}</p>
