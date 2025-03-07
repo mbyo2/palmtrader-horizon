@@ -21,6 +21,7 @@ import AccountSettings from "./pages/AccountSettings";
 import { NotificationsProvider } from "./components/Notifications/NotificationsProvider";
 import { toast } from "sonner";
 import ErrorBoundary from "./components/ErrorBoundary";
+import { useOrderProcessor } from './hooks/useOrderProcessor';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -31,6 +32,12 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+// Component to initialize order processor
+const OrderProcessorInitializer = () => {
+  useOrderProcessor();
+  return null;
+};
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
@@ -86,6 +93,7 @@ function App() {
                     </div>
                   }>
                     <ErrorBoundary>
+                      <OrderProcessorInitializer />
                       <Routes>
                         <Route path="/" element={<Index />} />
                         <Route path="/auth" element={<Auth />} />

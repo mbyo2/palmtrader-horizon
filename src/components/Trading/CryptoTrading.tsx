@@ -9,6 +9,8 @@ import { MarketDataService } from '@/services/MarketDataService';
 import { toast } from "sonner";
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { TradingService } from '@/services/TradingService';
+import { Loader2 } from 'lucide-react';
 
 const POPULAR_CRYPTOS = [
   { symbol: 'BTC', name: 'Bitcoin' },
@@ -24,6 +26,7 @@ export default function CryptoTrading() {
   const [amount, setAmount] = useState(0);
   const [quantity, setQuantity] = useState(0);
   const [orderType, setOrderType] = useState<'buy' | 'sell'>('buy');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = useAuth();
 
   const { data: cryptoPrice, isLoading } = useQuery({
@@ -76,36 +79,31 @@ export default function CryptoTrading() {
       return;
     }
 
+    // For sell orders, make sure the user has enough crypto
+    if (orderType === 'sell') {
+      if (!cryptoPortfolio || cryptoPortfolio.shares < quantity) {
+        toast.error(`You don't have enough ${selectedCrypto.symbol} to sell`);
+        return;
+      }
+    }
+
+    setIsSubmitting(true);
+
     try {
-      // Calculate the quantity based on the amount and current price
-      const cryptoQuantity = amount / cryptoPrice.price;
+      // Use the TradingService to execute the crypto order
+      const { success, error } = await TradingService.executeOrder({
+        userId: user.id,
+        symbol: selectedCrypto.symbol,
+        type: orderType,
+        shares: quantity,
+        price: cryptoPrice.price,
+        orderType: "market", // Crypto orders are always market orders in this implementation
+        isFractional: true,  // Crypto is always fractional
+      });
 
-      // For sell orders, make sure the user has enough crypto
-      if (orderType === 'sell') {
-        if (!cryptoPortfolio || cryptoPortfolio.shares < cryptoQuantity) {
-          toast.error(`You don't have enough ${selectedCrypto.symbol} to sell`);
-          return;
-        }
-      }
+      if (!success) throw new Error(error);
 
-      // Insert the trade
-      const { error } = await supabase
-        .from('trades')
-        .insert({
-          user_id: user.id,
-          symbol: selectedCrypto.symbol,
-          type: orderType,
-          shares: cryptoQuantity,
-          price: cryptoPrice.price,
-          total_amount: amount,
-          status: 'completed',
-        });
-
-      if (error) {
-        throw error;
-      }
-
-      toast.success(`${orderType === 'buy' ? 'Bought' : 'Sold'} ${cryptoQuantity.toFixed(8)} ${selectedCrypto.symbol} for $${amount.toFixed(2)}`);
+      toast.success(`${orderType === 'buy' ? 'Bought' : 'Sold'} ${quantity.toFixed(8)} ${selectedCrypto.symbol} for $${amount.toFixed(2)}`);
       
       // Refetch portfolio data
       refetchPortfolio();
@@ -115,7 +113,9 @@ export default function CryptoTrading() {
       setQuantity(0);
     } catch (error) {
       console.error('Error placing crypto order:', error);
-      toast.error("Failed to place order");
+      toast.error(error instanceof Error ? error.message : "Failed to place order");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -150,7 +150,11 @@ export default function CryptoTrading() {
             </div>
             <div className="text-right">
               <p className="font-medium">
-                {isLoading ? "Loading..." : `$${cryptoPrice?.price.toFixed(2) || "N/A"}`}
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin inline mr-1" />
+                ) : (
+                  `$${cryptoPrice?.price.toFixed(2) || "N/A"}`
+                )}
               </p>
               {cryptoPortfolio?.shares && (
                 <p className="text-sm text-muted-foreground">
@@ -165,6 +169,7 @@ export default function CryptoTrading() {
               variant={orderType === 'buy' ? "default" : "outline"} 
               className="flex-1"
               onClick={() => setOrderType('buy')}
+              disabled={isSubmitting}
             >
               Buy
             </Button>
@@ -172,6 +177,7 @@ export default function CryptoTrading() {
               variant={orderType === 'sell' ? "destructive" : "outline"} 
               className="flex-1"
               onClick={() => setOrderType('sell')}
+              disabled={isSubmitting}
             >
               Sell
             </Button>
@@ -188,6 +194,7 @@ export default function CryptoTrading() {
               onChange={handleAmountChange}
               placeholder="Enter amount in USD"
               className="mt-1"
+              disabled={isSubmitting}
             />
           </div>
 
@@ -203,9 +210,10 @@ export default function CryptoTrading() {
         <Button 
           onClick={handleSubmitOrder} 
           className="w-full" 
-          disabled={isLoading || amount <= 0}
+          disabled={isLoading || amount <= 0 || isSubmitting}
           variant={orderType === 'buy' ? "default" : "destructive"}
         >
+          {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {orderType === 'buy' ? 'Buy' : 'Sell'} {selectedCrypto.symbol}
         </Button>
       </CardFooter>

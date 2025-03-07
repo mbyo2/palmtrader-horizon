@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AdvancedStockChart } from "../Research/AdvancedStockChart";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { TradingService, OrderType } from "@/services/TradingService";
 
 const POPULAR_STOCKS = [
   { symbol: "AAPL", name: "Apple Inc." },
@@ -24,8 +25,6 @@ const POPULAR_STOCKS = [
   { symbol: "TSLA", name: "Tesla Inc." },
   { symbol: "NVDA", name: "NVIDIA Corp." },
 ];
-
-type OrderType = "market" | "limit" | "stop";
 
 const TradingInterface = () => {
   const { user } = useAuth();
@@ -39,6 +38,7 @@ const TradingInterface = () => {
   const [isAdvancedOrder, setIsAdvancedOrder] = useState(false);
   const [isFractional, setIsFractional] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [orderId, setOrderId] = useState<string | null>(null);
   
   const { data: stockPrice, isLoading: isPriceLoading } = useQuery({
     queryKey: ["stockPrice", symbol],
@@ -127,30 +127,39 @@ const TradingInterface = () => {
           (limitPrice || stockPrice.price) : 
           (stopPrice || stockPrice.price);
       
-      const { error } = await supabase.from("trades").insert({
-        user_id: user.id,
+      const { success, orderId, error } = await TradingService.executeOrder({
+        userId: user.id,
         symbol: symbol,
         type: orderAction,
         shares: Number(shares),
         price: price,
-        total_amount: Number(shares) * price,
-        status: orderType === "market" ? "completed" : "pending",
-        order_type: orderType,
-        limit_price: limitPrice || null,
-        stop_price: stopPrice || null,
-        is_fractional: isFractional,
+        orderType: orderType,
+        limitPrice: limitPrice ? Number(limitPrice) : null,
+        stopPrice: stopPrice ? Number(stopPrice) : null,
+        isFractional: isFractional,
       });
       
-      if (error) throw error;
+      if (!success) throw new Error(error);
       
-      toast.success(`${orderAction === 'buy' ? 'Bought' : 'Sold'} ${shares} shares of ${symbol} at $${price.toFixed(2)}`);
+      if (orderId) setOrderId(orderId);
+      
+      if (orderType === "market") {
+        toast.success(`${orderAction === 'buy' ? 'Bought' : 'Sold'} ${shares} shares of ${symbol} at $${price.toFixed(2)}`);
+      } else {
+        toast.success(`${orderAction === 'buy' ? 'Buy' : 'Sell'} order for ${shares} shares of ${symbol} placed successfully`);
+      }
       
       setShares("");
       setLimitPrice("");
       setStopPrice("");
+      
+      if (orderType !== "market") {
+        toast.info("Your order will be executed when conditions are met. Check Order History for updates.");
+        TradingService.processPendingOrders(user.id);
+      }
     } catch (error) {
       console.error("Error submitting order:", error);
-      toast.error("Failed to submit order. Please try again.");
+      toast.error(error instanceof Error ? error.message : "Failed to submit order. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
