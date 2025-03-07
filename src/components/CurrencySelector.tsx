@@ -51,11 +51,6 @@ const CurrencySelector = ({ value = "USD", onChange }: CurrencySelectorProps) =>
         if (preferences) {
           setSelectedCurrency(preferences.currency);
           if (onChange) onChange(preferences.currency);
-        } else {
-          // Create default preferences if none exist
-          await supabase
-            .from('user_preferences')
-            .insert([{ user_id: user.id, currency: 'USD' }]);
         }
       } catch (error) {
         console.error('Error fetching user preferences:', error);

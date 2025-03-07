@@ -67,25 +67,25 @@ function App() {
   }
 
   return (
-    <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
-          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-            <TooltipProvider>
-              <NotificationsProvider>
-                <div className="min-h-screen flex flex-col">
-                  <Navbar />
-                  <main className="flex-1">
-                    <Toaster />
-                    <Sonner />
-                    <Suspense fallback={
-                      <div className="container py-6 flex items-center justify-center min-h-[60vh]">
-                        <div className="text-center space-y-4">
-                          <div className="w-12 h-12 mx-auto border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-                          <p className="text-foreground/80">Loading...</p>
-                        </div>
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <TooltipProvider>
+            <NotificationsProvider>
+              <div className="min-h-screen flex flex-col">
+                <Navbar />
+                <main className="flex-1">
+                  <Toaster />
+                  <Sonner />
+                  <Suspense fallback={
+                    <div className="container py-6 flex items-center justify-center min-h-[60vh]">
+                      <div className="text-center space-y-4">
+                        <div className="w-12 h-12 mx-auto border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                        <p className="text-foreground/80">Loading...</p>
                       </div>
-                    }>
+                    </div>
+                  }>
+                    <ErrorBoundary>
                       <Routes>
                         <Route path="/" element={<Index />} />
                         <Route path="/auth" element={<Auth />} />
@@ -98,16 +98,16 @@ function App() {
                         <Route path="/onboarding" element={<Onboarding />} />
                         <Route path="/settings" element={<AccountSettings />} />
                       </Routes>
-                    </Suspense>
-                  </main>
-                  <Footer />
-                </div>
-              </NotificationsProvider>
-            </TooltipProvider>
-          </ThemeProvider>
-        </BrowserRouter>
-      </QueryClientProvider>
-    </ErrorBoundary>
+                    </ErrorBoundary>
+                  </Suspense>
+                </main>
+                <Footer />
+              </div>
+            </NotificationsProvider>
+          </TooltipProvider>
+        </ThemeProvider>
+      </BrowserRouter>
+    </QueryClientProvider>
   );
 }
 
