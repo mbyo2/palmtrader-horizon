@@ -8,7 +8,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "./ui/use-toast";
+import { toast } from "sonner";
 
 export interface CurrencySelectorProps {
   value?: string;
@@ -44,7 +44,7 @@ const CurrencySelector = ({ value = "USD", onChange }: CurrencySelectorProps) =>
           .from('user_preferences')
           .select('currency')
           .eq('user_id', user.id)
-          .single();
+          .maybeSingle();
 
         if (error && error.code !== 'PGRST116') throw error;
 
@@ -60,10 +60,7 @@ const CurrencySelector = ({ value = "USD", onChange }: CurrencySelectorProps) =>
       } catch (error) {
         console.error('Error fetching user preferences:', error);
         setError(error instanceof Error ? error : new Error('Unknown error'));
-        toast({
-          title: "Error loading preferences",
-          variant: "destructive",
-        });
+        toast.error("Error loading preferences");
       } finally {
         setLoading(false);
       }
@@ -78,10 +75,7 @@ const CurrencySelector = ({ value = "USD", onChange }: CurrencySelectorProps) =>
       
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        toast({
-          title: "Please sign in to change currency",
-          variant: "destructive",
-        });
+        toast.error("Please sign in to change currency");
         return;
       }
 
@@ -97,29 +91,24 @@ const CurrencySelector = ({ value = "USD", onChange }: CurrencySelectorProps) =>
 
       if (onChange) onChange(value);
       
-      toast({
-        title: "Currency updated successfully",
-      });
+      toast.success("Currency updated successfully");
     } catch (error) {
       console.error('Error updating currency:', error);
-      toast({
-        title: "Error updating currency",
-        variant: "destructive",
-      });
+      toast.error("Error updating currency");
     }
   };
+
+  if (loading) {
+    return (
+      <div className="w-[180px] h-10 bg-muted animate-pulse rounded"></div>
+    );
+  }
 
   if (error) {
     return (
       <div className="text-destructive text-sm">
         Failed to load currency preferences
       </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className="w-[180px] h-10 bg-muted animate-pulse rounded"></div>
     );
   }
 

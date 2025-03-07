@@ -1,3 +1,4 @@
+
 import React, { Component, ErrorInfo, ReactNode } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -29,19 +30,21 @@ class ErrorBoundary extends Component<Props, State> {
   public render() {
     if (this.state.hasError) {
       return (
-        <Card className="p-6 text-center">
-          <h2 className="text-xl font-semibold mb-4">Something went wrong</h2>
-          <p className="text-muted-foreground mb-4">
-            {this.state.error?.message || "An unexpected error occurred"}
-          </p>
-          <Button
-            onClick={() => window.location.reload()}
-            className="inline-flex items-center"
-          >
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Reload page
-          </Button>
-        </Card>
+        <div className="min-h-screen flex items-center justify-center p-4">
+          <Card className="p-6 text-center max-w-md w-full">
+            <h2 className="text-xl font-semibold mb-4">Something went wrong</h2>
+            <p className="text-muted-foreground mb-4">
+              {this.state.error?.message || "An unexpected error occurred"}
+            </p>
+            <Button
+              onClick={() => window.location.reload()}
+              variant="default"
+            >
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Reload page
+            </Button>
+          </Card>
+        </div>
       );
     }
 
