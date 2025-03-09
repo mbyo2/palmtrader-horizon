@@ -35,7 +35,7 @@ export const TechnicalIndicatorService = {
         symbol: item.symbol,
         name: item.indicator_type,
         value: item.value,
-        signal: "neutral", // Default value, should be calculated based on the indicator value
+        signal: this.calculateSignal(item.indicator_type, item.value), // Calculate signal based on indicator type and value
         timeframe: item.period ? `${item.period}d` : "1d",
         timestamp: item.timestamp
       }));
@@ -72,16 +72,52 @@ export const TechnicalIndicatorService = {
     }
   },
   
+  // Calculate trading signal based on indicator type and value
+  calculateSignal(indicatorType: string, value: number): "buy" | "sell" | "hold" | "neutral" {
+    switch (indicatorType.toUpperCase()) {
+      case "RSI":
+        if (value < 30) return "buy";
+        if (value > 70) return "sell";
+        return "neutral";
+        
+      case "MACD":
+        if (value > 0.5) return "buy";
+        if (value < -0.5) return "sell";
+        return "neutral";
+        
+      case "BOLLINGER BANDS":
+        if (value < 0.8) return "buy";
+        if (value > 1.2) return "sell";
+        return "neutral";
+        
+      case "MOVING AVERAGE":
+      case "MOVING AVERAGE (50)":
+      case "MOVING AVERAGE (200)":
+        // This is a simple approximation - would need current price for proper signal
+        if (value > 0) return "buy";
+        if (value < 0) return "sell";
+        return "neutral";
+        
+      case "STOCHASTIC OSCILLATOR":
+        if (value < 20) return "buy";
+        if (value > 80) return "sell";
+        return "neutral";
+        
+      default:
+        return "neutral";
+    }
+  },
+  
   // Generate mock indicators for demo purposes
   getMockIndicators(symbol: string): TechnicalIndicator[] {
     const now = new Date();
     
-    return [
+    const mockIndicators = [
       {
         symbol,
         name: "RSI",
         value: Math.random() * 40 + 30, // Between 30-70
-        signal: Math.random() > 0.7 ? "buy" : Math.random() > 0.5 ? "sell" : "neutral",
+        signal: "neutral", // Will be calculated
         timeframe: "1d",
         timestamp: now.toISOString()
       },
@@ -89,7 +125,7 @@ export const TechnicalIndicatorService = {
         symbol,
         name: "MACD",
         value: Math.random() * 2 - 1, // Between -1 and 1
-        signal: Math.random() > 0.6 ? "buy" : Math.random() > 0.4 ? "sell" : "neutral",
+        signal: "neutral", // Will be calculated
         timeframe: "1d",
         timestamp: now.toISOString()
       },
@@ -97,7 +133,7 @@ export const TechnicalIndicatorService = {
         symbol,
         name: "Bollinger Bands",
         value: Math.random() * 0.5 + 0.75, // Width between 0.75 and 1.25
-        signal: Math.random() > 0.5 ? "buy" : "sell",
+        signal: "neutral", // Will be calculated
         timeframe: "1d",
         timestamp: now.toISOString()
       },
@@ -105,7 +141,7 @@ export const TechnicalIndicatorService = {
         symbol,
         name: "Moving Average (50)",
         value: Math.random() * 30 + 130, // Mock price around 130-160
-        signal: Math.random() > 0.5 ? "buy" : "sell",
+        signal: "neutral", // Will be calculated
         timeframe: "1d",
         timestamp: now.toISOString()
       },
@@ -113,10 +149,16 @@ export const TechnicalIndicatorService = {
         symbol,
         name: "Stochastic Oscillator",
         value: Math.random() * 60 + 20, // Between 20-80
-        signal: Math.random() > 0.7 ? "buy" : Math.random() > 0.3 ? "sell" : "hold",
+        signal: "neutral", // Will be calculated
         timeframe: "1d",
         timestamp: now.toISOString()
       }
     ];
+    
+    // Calculate signals based on values
+    return mockIndicators.map(indicator => ({
+      ...indicator,
+      signal: this.calculateSignal(indicator.name, indicator.value)
+    }));
   }
 };

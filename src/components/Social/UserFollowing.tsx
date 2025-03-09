@@ -2,169 +2,149 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { UserCheck, UserPlus, Users, UserX } from "lucide-react";
-import { toast } from "@/components/ui/use-toast";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { User, UserPlus, Users, RefreshCcw } from "lucide-react";
+import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 
 interface UserProfile {
   id: string;
   username: string | null;
   avatar_url: string | null;
-  isFollowing?: boolean;
 }
 
 const UserFollowing = () => {
   const [following, setFollowing] = useState<UserProfile[]>([]);
   const [followers, setFollowers] = useState<UserProfile[]>([]);
-  const [suggestedUsers, setSuggestedUsers] = useState<UserProfile[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [suggested, setSuggested] = useState<UserProfile[]>([]);
+  const [loadingFollowing, setLoadingFollowing] = useState(true);
+  const [loadingFollowers, setLoadingFollowers] = useState(true);
+  const [loadingSuggested, setLoadingSuggested] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    checkAuth();
+    checkUser();
   }, []);
 
-  useEffect(() => {
-    if (currentUserId) {
-      loadFollowing();
-      loadFollowers();
-      loadSuggestedUsers();
-    }
-  }, [currentUserId]);
-
-  const checkAuth = async () => {
+  const checkUser = async () => {
     const { data: { session } } = await supabase.auth.getSession();
-    if (session?.user) {
+    if (session?.user?.id) {
       setCurrentUserId(session.user.id);
-    } else {
-      setLoading(false);
+      loadFollowing(session.user.id);
+      loadFollowers(session.user.id);
+      loadSuggestedUsers(session.user.id);
     }
   };
 
-  const loadFollowing = async () => {
+  const loadFollowing = async (userId: string) => {
     try {
-      if (!currentUserId) return;
-      
-      const { data, error } = await supabase
-        .from("user_follows")
-        .select(`
-          following_id,
-          following:following_id(id, username, avatar_url)
-        `)
-        .eq("follower_id", currentUserId);
-        
-      if (error) throw error;
-      
-      const followingUsers = data.map(item => ({
-        id: item.following_id,
-        username: item.following?.username || "Unknown User",
-        avatar_url: item.following?.avatar_url,
-        isFollowing: true
-      }));
-      
-      setFollowing(followingUsers);
-    } catch (error) {
-      console.error("Error loading following:", error);
-      toast({
-        title: "Failed to load following",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadFollowers = async () => {
-    try {
-      if (!currentUserId) return;
-      
-      const { data, error } = await supabase
-        .from("user_follows")
-        .select(`
-          follower_id,
-          followers:follower_id(id, username, avatar_url)
-        `)
-        .eq("following_id", currentUserId);
-        
-      if (error) throw error;
-      
-      // Check which followers you are following back
-      const followerIds = data.map(item => item.follower_id);
-      
-      const followingCheck = await supabase
+      setLoadingFollowing(true);
+      // First get the user IDs that the current user is following
+      const { data: followingData, error: followingError } = await supabase
         .from("user_follows")
         .select("following_id")
-        .eq("follower_id", currentUserId)
-        .in("following_id", followerIds);
+        .eq("follower_id", userId);
+
+      if (followingError) throw followingError;
       
-      const followingSet = new Set(followingCheck.data?.map(item => item.following_id) || []);
+      if (!followingData || followingData.length === 0) {
+        setFollowing([]);
+        return;
+      }
       
-      const followersList = data.map(item => ({
-        id: item.follower_id,
-        username: item.followers?.username || "Unknown User",
-        avatar_url: item.followers?.avatar_url,
-        isFollowing: followingSet.has(item.follower_id)
-      }));
+      // Then get the profile data for those users
+      const followingIds = followingData.map(item => item.following_id);
       
-      setFollowers(followersList);
+      const { data: profilesData, error: profilesError } = await supabase
+        .from("profiles")
+        .select("*")
+        .in("id", followingIds);
+      
+      if (profilesError) throw profilesError;
+      
+      setFollowing(profilesData || []);
     } catch (error) {
-      console.error("Error loading followers:", error);
-      toast({
-        title: "Failed to load followers",
-        variant: "destructive"
-      });
+      console.error("Error loading following:", error);
+      toast.error("Failed to load users you follow");
+    } finally {
+      setLoadingFollowing(false);
     }
   };
 
-  const loadSuggestedUsers = async () => {
+  const loadFollowers = async (userId: string) => {
     try {
-      if (!currentUserId) return;
+      setLoadingFollowers(true);
+      // First get the user IDs of users following the current user
+      const { data: followerData, error: followerError } = await supabase
+        .from("user_follows")
+        .select("follower_id")
+        .eq("following_id", userId);
+
+      if (followerError) throw followerError;
       
-      // Get a list of users you're already following
+      if (!followerData || followerData.length === 0) {
+        setFollowers([]);
+        return;
+      }
+      
+      // Then get the profile data for those users
+      const followerIds = followerData.map(item => item.follower_id);
+      
+      const { data: profilesData, error: profilesError } = await supabase
+        .from("profiles")
+        .select("*")
+        .in("id", followerIds);
+      
+      if (profilesError) throw profilesError;
+      
+      setFollowers(profilesData || []);
+    } catch (error) {
+      console.error("Error loading followers:", error);
+      toast.error("Failed to load your followers");
+    } finally {
+      setLoadingFollowers(false);
+    }
+  };
+
+  const loadSuggestedUsers = async (userId: string) => {
+    try {
+      setLoadingSuggested(true);
+      // Get following IDs to exclude from suggestions
       const { data: followingData } = await supabase
         .from("user_follows")
         .select("following_id")
-        .eq("follower_id", currentUserId);
+        .eq("follower_id", userId);
       
-      const followingIds = new Set([
-        ...(followingData?.map(item => item.following_id) || []), 
-        currentUserId // Exclude yourself
-      ]);
+      const followingIds = followingData ? followingData.map(f => f.following_id) : [];
+      followingIds.push(userId); // Also exclude current user
       
-      // Get suggested users (users you're not following)
+      // Get some random profiles that the user is not following
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, username, avatar_url")
-        .order("created_at", { ascending: false })
+        .select("*")
+        .not("id", "in", `(${followingIds.join(",")})`)
         .limit(5);
       
       if (error) throw error;
       
-      const suggested = data
-        .filter(user => !followingIds.has(user.id))
-        .map(user => ({
-          ...user,
-          isFollowing: false
-        }));
-      
-      setSuggestedUsers(suggested);
+      setSuggested(data || []);
     } catch (error) {
       console.error("Error loading suggested users:", error);
+      // No need to show error toast for suggestions
+    } finally {
+      setLoadingSuggested(false);
     }
   };
 
   const handleFollow = async (userId: string) => {
+    if (!currentUserId) {
+      toast.error("Please sign in to follow users");
+      return;
+    }
+
     try {
-      if (!currentUserId) {
-        toast({
-          title: "Please sign in to follow users",
-          variant: "destructive"
-        });
-        return;
-      }
-      
       const { error } = await supabase
         .from("user_follows")
         .insert({
@@ -174,213 +154,133 @@ const UserFollowing = () => {
       
       if (error) throw error;
       
-      // Update UI state
-      setFollowing(prev => [...prev, suggestedUsers.find(u => u.id === userId)!]);
-      setSuggestedUsers(prev => prev.map(user => 
-        user.id === userId ? { ...user, isFollowing: true } : user
-      ));
-      setFollowers(prev => prev.map(user => 
-        user.id === userId ? { ...user, isFollowing: true } : user
-      ));
-      
-      toast({
-        title: "Followed successfully",
-      });
+      toast.success("User followed successfully");
+      // Reload data
+      loadFollowing(currentUserId);
+      loadSuggestedUsers(currentUserId);
     } catch (error) {
       console.error("Error following user:", error);
-      toast({
-        title: "Failed to follow user",
-        variant: "destructive"
-      });
+      toast.error("Failed to follow user");
     }
   };
 
   const handleUnfollow = async (userId: string) => {
+    if (!currentUserId) return;
+
     try {
-      if (!currentUserId) return;
-      
       const { error } = await supabase
         .from("user_follows")
         .delete()
-        .eq("follower_id", currentUserId)
-        .eq("following_id", userId);
+        .match({
+          follower_id: currentUserId,
+          following_id: userId
+        });
       
       if (error) throw error;
       
-      // Update UI state
-      setFollowing(prev => prev.filter(user => user.id !== userId));
-      setSuggestedUsers(prev => prev.map(user => 
-        user.id === userId ? { ...user, isFollowing: false } : user
-      ));
-      setFollowers(prev => prev.map(user => 
-        user.id === userId ? { ...user, isFollowing: false } : user
-      ));
-      
-      toast({
-        title: "Unfollowed successfully",
-      });
+      toast.success("User unfollowed");
+      // Update the following list
+      setFollowing(following.filter(user => user.id !== userId));
+      // Reload suggested users
+      loadSuggestedUsers(currentUserId);
     } catch (error) {
       console.error("Error unfollowing user:", error);
-      toast({
-        title: "Failed to unfollow user",
-        variant: "destructive"
-      });
+      toast.error("Failed to unfollow user");
     }
   };
 
-  if (!currentUserId) {
-    return (
-      <div className="p-6 text-center border border-dashed rounded-lg">
-        <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-        <h3 className="text-lg font-medium mb-2">Follow Other Traders</h3>
-        <p className="text-muted-foreground mb-4">Sign in to connect with other traders and see their activity</p>
-        <Button>Sign In</Button>
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className="space-y-4">
-        <Skeleton className="h-10 w-full" />
-        <div className="space-y-2">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="flex items-center justify-between p-3 border rounded-md">
-              <div className="flex items-center gap-2">
-                <Skeleton className="h-10 w-10 rounded-full" />
-                <Skeleton className="h-5 w-32" />
-              </div>
-              <Skeleton className="h-9 w-24" />
+  const renderUserList = (users: UserProfile[], loading: boolean, showFollowButton = false, showUnfollowButton = false) => {
+    if (loading) {
+      return Array(3).fill(0).map((_, index) => (
+        <div key={index} className="flex items-center justify-between p-3 border-b">
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-10 w-10 rounded-full" />
+            <div>
+              <Skeleton className="h-4 w-32 mb-1" />
+              <Skeleton className="h-3 w-20" />
             </div>
-          ))}
+          </div>
+          <Skeleton className="h-9 w-24" />
         </div>
+      ));
+    }
+
+    if (users.length === 0) {
+      return (
+        <div className="text-center py-8 text-muted-foreground">
+          <Users className="h-12 w-12 mx-auto mb-2 opacity-20" />
+          <p>No users found</p>
+        </div>
+      );
+    }
+
+    return users.map(user => (
+      <div key={user.id} className="flex items-center justify-between p-3 border-b last:border-b-0">
+        <div className="flex items-center gap-3">
+          <Avatar>
+            <AvatarImage src={user.avatar_url || undefined} />
+            <AvatarFallback>
+              <User className="h-4 w-4" />
+            </AvatarFallback>
+          </Avatar>
+          <div>
+            <p className="font-medium">{user.username || "Anonymous"}</p>
+          </div>
+        </div>
+        {showFollowButton && (
+          <Button size="sm" onClick={() => handleFollow(user.id)}>
+            <UserPlus className="h-4 w-4 mr-2" />
+            Follow
+          </Button>
+        )}
+        {showUnfollowButton && (
+          <Button variant="outline" size="sm" onClick={() => handleUnfollow(user.id)}>
+            Unfollow
+          </Button>
+        )}
       </div>
-    );
-  }
+    ));
+  };
 
   return (
-    <div className="space-y-4">
+    <Card className="p-4">
       <Tabs defaultValue="following">
-        <TabsList className="w-full">
-          <TabsTrigger value="following" className="flex-1">
-            Following ({following.length})
-          </TabsTrigger>
-          <TabsTrigger value="followers" className="flex-1">
-            Followers ({followers.length})
-          </TabsTrigger>
-          <TabsTrigger value="suggested" className="flex-1">
-            Suggested
-          </TabsTrigger>
+        <TabsList className="grid grid-cols-3 mb-4">
+          <TabsTrigger value="following">Following</TabsTrigger>
+          <TabsTrigger value="followers">Followers</TabsTrigger>
+          <TabsTrigger value="suggested">Suggested</TabsTrigger>
         </TabsList>
         
-        <TabsContent value="following" className="space-y-2 mt-2">
-          {following.length === 0 ? (
-            <div className="text-center p-6 border border-dashed rounded-md">
-              <UserPlus className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-              <p className="text-muted-foreground">You are not following anyone yet</p>
-            </div>
-          ) : (
-            following.map(user => (
-              <div key={user.id} className="flex items-center justify-between p-3 border rounded-md">
-                <div className="flex items-center gap-2">
-                  <Avatar>
-                    <AvatarImage src={user.avatar_url || undefined} />
-                    <AvatarFallback>{user.username?.[0] || "U"}</AvatarFallback>
-                  </Avatar>
-                  <span className="font-medium">{user.username || "Unknown User"}</span>
-                </div>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => handleUnfollow(user.id)}
-                >
-                  <UserCheck className="h-4 w-4 mr-2" />
-                  Following
-                </Button>
-              </div>
-            ))
-          )}
+        <TabsContent value="following">
+          <div className="rounded-md border max-h-96 overflow-y-auto">
+            {renderUserList(following, loadingFollowing, false, true)}
+          </div>
         </TabsContent>
         
-        <TabsContent value="followers" className="space-y-2 mt-2">
-          {followers.length === 0 ? (
-            <div className="text-center p-6 border border-dashed rounded-md">
-              <Users className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-              <p className="text-muted-foreground">You don't have any followers yet</p>
-            </div>
-          ) : (
-            followers.map(user => (
-              <div key={user.id} className="flex items-center justify-between p-3 border rounded-md">
-                <div className="flex items-center gap-2">
-                  <Avatar>
-                    <AvatarImage src={user.avatar_url || undefined} />
-                    <AvatarFallback>{user.username?.[0] || "U"}</AvatarFallback>
-                  </Avatar>
-                  <span className="font-medium">{user.username || "Unknown User"}</span>
-                </div>
-                {user.isFollowing ? (
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => handleUnfollow(user.id)}
-                  >
-                    <UserCheck className="h-4 w-4 mr-2" />
-                    Following
-                  </Button>
-                ) : (
-                  <Button 
-                    variant="default" 
-                    size="sm"
-                    onClick={() => handleFollow(user.id)}
-                  >
-                    <UserPlus className="h-4 w-4 mr-2" />
-                    Follow Back
-                  </Button>
-                )}
-              </div>
-            ))
-          )}
+        <TabsContent value="followers">
+          <div className="rounded-md border max-h-96 overflow-y-auto">
+            {renderUserList(followers, loadingFollowers)}
+          </div>
         </TabsContent>
         
-        <TabsContent value="suggested" className="space-y-2 mt-2">
-          {suggestedUsers.length === 0 ? (
-            <div className="text-center p-6 border border-dashed rounded-md">
-              <Users className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-              <p className="text-muted-foreground">No suggested users available</p>
-            </div>
-          ) : (
-            suggestedUsers.map(user => (
-              <div key={user.id} className="flex items-center justify-between p-3 border rounded-md">
-                <div className="flex items-center gap-2">
-                  <Avatar>
-                    <AvatarImage src={user.avatar_url || undefined} />
-                    <AvatarFallback>{user.username?.[0] || "U"}</AvatarFallback>
-                  </Avatar>
-                  <span className="font-medium">{user.username || "Unknown User"}</span>
-                </div>
-                <Button 
-                  variant={user.isFollowing ? "outline" : "default"}
-                  size="sm"
-                  onClick={() => user.isFollowing ? handleUnfollow(user.id) : handleFollow(user.id)}
-                >
-                  {user.isFollowing ? (
-                    <>
-                      <UserX className="h-4 w-4 mr-2" />
-                      Unfollow
-                    </>
-                  ) : (
-                    <>
-                      <UserPlus className="h-4 w-4 mr-2" />
-                      Follow
-                    </>
-                  )}
-                </Button>
-              </div>
-            ))
-          )}
+        <TabsContent value="suggested">
+          <div className="flex justify-end mb-2">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => currentUserId && loadSuggestedUsers(currentUserId)}
+              disabled={loadingSuggested}
+            >
+              <RefreshCcw className={`h-3 w-3 mr-2 ${loadingSuggested ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
+          <div className="rounded-md border max-h-96 overflow-y-auto">
+            {renderUserList(suggested, loadingSuggested, true)}
+          </div>
         </TabsContent>
       </Tabs>
-    </div>
+    </Card>
   );
 };
 
