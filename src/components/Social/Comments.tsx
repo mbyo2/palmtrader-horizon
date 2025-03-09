@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -55,33 +56,36 @@ const Comments = ({ symbol, limit = 10, showTitle = true }: CommentsProps) => {
     try {
       setIsInitialLoading(true);
       console.log("Loading comments for symbol:", symbol);
-      const query = supabase
-        .from("comments")
+      
+      // Get comments with a count of likes
+      const { data, error } = await supabase
+        .from('comments')
         .select(`
           *,
-          profiles:user_id(username, avatar_url)
+          profiles:user_id(username, avatar_url),
+          likes_count:comment_likes!comment_id(count)
         `)
-        .order("created_at", { ascending: false });
-
-      if (symbol) {
-        query.eq("symbol", symbol);
-      }
-
-      if (limit) {
-        query.limit(limit);
-      }
-
-      const { data, error } = await query;
+        .order('created_at', { ascending: false })
+        .eq(symbol ? 'symbol' : 'id', symbol || '')
+        .limit(limit || 10);
+      
       if (error) {
         console.error("Error fetching comments:", error);
         throw error;
       }
-      console.log("Fetched comments:", data);
-      setComments(data || []);
+      
+      // Format the comments to include like count
+      const formattedComments = data?.map(comment => ({
+        ...comment,
+        likes_count: comment.likes_count?.[0]?.count || 0
+      })) || [];
+      
+      console.log("Fetched comments:", formattedComments);
+      setComments(formattedComments);
       
       // If user is logged in, check which comments they've liked
       if (userId) {
-        checkLikedComments(data?.map(c => c.id) || []);
+        checkLikedComments(formattedComments.map(c => c.id));
       }
     } catch (error) {
       console.error("Error loading comments:", error);
@@ -99,10 +103,10 @@ const Comments = ({ symbol, limit = 10, showTitle = true }: CommentsProps) => {
     
     try {
       const { data, error } = await supabase
-        .from("comment_likes")
-        .select("comment_id")
-        .eq("user_id", userId)
-        .in("comment_id", commentIds);
+        .from('comment_likes')
+        .select('comment_id')
+        .eq('user_id', userId)
+        .in('comment_id', commentIds);
       
       if (error) throw error;
       
