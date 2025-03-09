@@ -62,8 +62,7 @@ const Comments = ({ symbol, limit = 10, showTitle = true }: CommentsProps) => {
         .from('comments')
         .select(`
           *,
-          profiles:user_id(username, avatar_url),
-          likes_count:comment_likes(count)
+          profiles:user_id(username, avatar_url)
         `)
         .order('created_at', { ascending: false });
       
@@ -83,10 +82,28 @@ const Comments = ({ symbol, limit = 10, showTitle = true }: CommentsProps) => {
         throw error;
       }
       
+      // Get like counts for each comment
+      const commentIds = filteredComments.map(comment => comment.id);
+      const { data: likesData, error: likesError } = await supabase
+        .from('comment_likes')
+        .select('comment_id, count')
+        .in('comment_id', commentIds)
+        .group('comment_id');
+      
+      if (likesError) {
+        console.error("Error fetching like counts:", likesError);
+      }
+      
+      // Create a map of comment IDs to like counts
+      const likesMap = new Map();
+      likesData?.forEach(item => {
+        likesMap.set(item.comment_id, parseInt(item.count));
+      });
+      
       // Format the comments to include like count
       const formattedComments = filteredComments.map(comment => ({
         ...comment,
-        likes_count: comment.likes_count?.[0]?.count || 0
+        likes_count: likesMap.get(comment.id) || 0
       }));
       
       console.log("Fetched comments:", formattedComments);
@@ -94,7 +111,7 @@ const Comments = ({ symbol, limit = 10, showTitle = true }: CommentsProps) => {
       
       // If user is logged in, check which comments they've liked
       if (userId) {
-        checkLikedComments(formattedComments.map(c => c.id));
+        checkLikedComments(commentIds);
       }
     } catch (error) {
       console.error("Error loading comments:", error);
@@ -111,9 +128,18 @@ const Comments = ({ symbol, limit = 10, showTitle = true }: CommentsProps) => {
     if (!userId || commentIds.length === 0) return;
     
     try {
-      // Just check if the user has liked each comment individually
-      // This is a workaround until the comment_likes table is properly set up
-      const likedSet = new Set<string>();
+      const { data, error } = await supabase
+        .from('comment_likes')
+        .select('comment_id')
+        .eq('user_id', userId)
+        .in('comment_id', commentIds);
+      
+      if (error) {
+        console.error("Error checking liked comments:", error);
+        return;
+      }
+      
+      const likedSet = new Set(data?.map(like => like.comment_id));
       setLikedComments(likedSet);
     } catch (error) {
       console.error("Error checking liked comments:", error);
@@ -191,15 +217,16 @@ const Comments = ({ symbol, limit = 10, showTitle = true }: CommentsProps) => {
     }
     
     try {
-      // Simulate optimistic UI update for now
       const isLiked = likedComments.has(commentId);
       
-      // Update local state
+      // Optimistic UI update
       const newLikedComments = new Set(likedComments);
       
       if (isLiked) {
+        // Unlike: Remove from set
         newLikedComments.delete(commentId);
       } else {
+        // Like: Add to set
         newLikedComments.add(commentId);
       }
       
@@ -216,6 +243,39 @@ const Comments = ({ symbol, limit = 10, showTitle = true }: CommentsProps) => {
         return comment;
       }));
       
+      // Perform the actual database operation
+      if (isLiked) {
+        // Delete the like
+        const { error } = await supabase
+          .from('comment_likes')
+          .delete()
+          .eq('user_id', userId)
+          .eq('comment_id', commentId);
+          
+        if (error) {
+          console.error("Error unliking comment:", error);
+          // Revert UI if there's an error
+          setLikedComments(likedComments);
+          setComments(comments);
+          throw error;
+        }
+      } else {
+        // Add the like
+        const { error } = await supabase
+          .from('comment_likes')
+          .insert({
+            user_id: userId,
+            comment_id: commentId
+          });
+          
+        if (error) {
+          console.error("Error liking comment:", error);
+          // Revert UI if there's an error
+          setLikedComments(likedComments);
+          setComments(comments);
+          throw error;
+        }
+      }
     } catch (error) {
       console.error("Error liking/unliking comment:", error);
       toast({
@@ -229,6 +289,20 @@ const Comments = ({ symbol, limit = 10, showTitle = true }: CommentsProps) => {
     toast({
       title: "Report submitted",
       description: "Thank you for helping keep our community safe",
+    });
+  };
+
+  const handleReply = (commentId: string) => {
+    toast({
+      title: "Reply functionality",
+      description: "Comment replies will be implemented soon",
+    });
+  };
+
+  const handleViewMore = () => {
+    toast({
+      title: "View more comments",
+      description: "Pagination will be implemented soon",
     });
   };
 
@@ -338,6 +412,7 @@ const Comments = ({ symbol, limit = 10, showTitle = true }: CommentsProps) => {
                   variant="ghost"
                   size="sm"
                   className="text-muted-foreground"
+                  onClick={() => handleReply(comment.id)}
                 >
                   <Reply className="h-4 w-4 mr-1" />
                   Reply
@@ -351,7 +426,7 @@ const Comments = ({ symbol, limit = 10, showTitle = true }: CommentsProps) => {
           <Button 
             variant="outline" 
             className="w-full" 
-            onClick={() => {/* Implement view more logic */}}
+            onClick={handleViewMore}
           >
             View More Comments
           </Button>
