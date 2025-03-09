@@ -29,7 +29,18 @@ export const TechnicalIndicatorService = {
         return this.getMockIndicators(symbol);
       }
       
-      return data as TechnicalIndicator[];
+      // Map database fields to our TechnicalIndicator interface
+      const indicators: TechnicalIndicator[] = data.map(item => ({
+        id: item.id,
+        symbol: item.symbol,
+        name: item.indicator_type,
+        value: item.value,
+        signal: "neutral", // Default value, should be calculated based on the indicator value
+        timeframe: item.period ? `${item.period}d` : "1d",
+        timestamp: item.timestamp
+      }));
+      
+      return indicators;
     } catch (error) {
       console.error("Error fetching technical indicators:", error);
       return this.getMockIndicators(symbol);
@@ -39,14 +50,18 @@ export const TechnicalIndicatorService = {
   // Create a new indicator
   async createIndicator(indicator: TechnicalIndicator): Promise<{ success: boolean; error?: string }> {
     try {
+      // Map our TechnicalIndicator interface to the database schema
+      const dbIndicator = {
+        symbol: indicator.symbol,
+        indicator_type: indicator.name,
+        value: indicator.value,
+        period: parseInt(indicator.timeframe.replace('d', '')),
+        timestamp: indicator.timestamp || new Date().toISOString()
+      };
+      
       const { error } = await supabase
         .from("technical_indicators")
-        .insert([
-          { 
-            ...indicator,
-            timestamp: new Date().toISOString()
-          }
-        ]);
+        .insert([dbIndicator]);
         
       if (error) throw error;
       

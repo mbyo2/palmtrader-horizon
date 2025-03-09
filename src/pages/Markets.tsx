@@ -13,6 +13,9 @@ import MarketOverview from "@/components/MarketOverview";
 import TradingInterface from "@/components/Trading/TradingInterface";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TechnicalIndicatorService } from "@/services/TechnicalIndicatorService";
+import TechnicalIndicators from "@/components/TechnicalIndicators";
+import SocialShare from "@/components/Social/SocialShare";
+import Comments from "@/components/Social/Comments";
 
 const Markets = () => {
   const [symbol, setSymbol] = useState("AAPL");
@@ -91,6 +94,7 @@ const Markets = () => {
         <TabsList>
           <TabsTrigger value="chart">Charts & Analysis</TabsTrigger>
           <TabsTrigger value="trading">Trading</TabsTrigger>
+          <TabsTrigger value="social">Social</TabsTrigger>
         </TabsList>
         
         <TabsContent value="chart" className="space-y-6">
@@ -106,11 +110,41 @@ const Markets = () => {
               <p className="text-sm">Using demonstration data. Check your connection or try again later.</p>
             </Card>
           )}
-          <ResearchTools onSymbolChange={handleSymbolChange} initialSymbol={symbol} />
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="md:col-span-2">
+              <ResearchTools onSymbolChange={handleSymbolChange} initialSymbol={symbol} />
+            </div>
+            <div>
+              <TechnicalIndicators symbol={symbol} />
+            </div>
+          </div>
         </TabsContent>
         
         <TabsContent value="trading" className="space-y-6">
           <TradingInterface />
+        </TabsContent>
+        
+        <TabsContent value="social" className="space-y-6">
+          <Card className="p-6">
+            <div className="flex flex-col space-y-6">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                  <h2 className="text-2xl font-bold">{symbol}</h2>
+                  <p className="text-muted-foreground">Share your thoughts and insights about {symbol} with the community</p>
+                </div>
+                <SocialShare 
+                  symbol={symbol} 
+                  title={`Check out ${symbol} on TradeHub!`} 
+                  description={`I'm analyzing ${symbol} on TradeHub. What do you think about this stock?`}
+                />
+              </div>
+              
+              <div className="border-t pt-6">
+                <Comments symbol={symbol} limit={5} />
+              </div>
+            </div>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
