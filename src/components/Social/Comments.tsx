@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -57,15 +56,21 @@ const Comments = ({ symbol, limit = 10, showTitle = true }: CommentsProps) => {
       setIsInitialLoading(true);
       console.log("Loading comments for symbol:", symbol);
       
-      // Get comments with a count of likes
+      // Get comments with profiles
       const { data, error } = await supabase
         .from('comments')
         .select(`
           *,
-          profiles:user_id(username, avatar_url)
+          profiles:user_id(username, avatar_url),
+          likes:comment_likes(count)
         `)
         .order('created_at', { ascending: false });
       
+      if (error) {
+        console.error("Error fetching comments:", error);
+        throw error;
+      }
+
       // Apply filters if needed
       let filteredComments = data || [];
       if (symbol) {
@@ -76,34 +81,11 @@ const Comments = ({ symbol, limit = 10, showTitle = true }: CommentsProps) => {
       if (limit) {
         filteredComments = filteredComments.slice(0, limit);
       }
-      
-      if (error) {
-        console.error("Error fetching comments:", error);
-        throw error;
-      }
-      
-      // Get like counts for each comment
-      const commentIds = filteredComments.map(comment => comment.id);
-      const { data: likesData, error: likesError } = await supabase
-        .from('comment_likes')
-        .select('comment_id, count')
-        .in('comment_id', commentIds)
-        .group('comment_id');
-      
-      if (likesError) {
-        console.error("Error fetching like counts:", likesError);
-      }
-      
-      // Create a map of comment IDs to like counts
-      const likesMap = new Map();
-      likesData?.forEach(item => {
-        likesMap.set(item.comment_id, parseInt(item.count));
-      });
-      
-      // Format the comments to include like count
+
+      // Format comments to include like count
       const formattedComments = filteredComments.map(comment => ({
         ...comment,
-        likes_count: likesMap.get(comment.id) || 0
+        likes_count: comment.likes?.length || 0
       }));
       
       console.log("Fetched comments:", formattedComments);
@@ -111,8 +93,10 @@ const Comments = ({ symbol, limit = 10, showTitle = true }: CommentsProps) => {
       
       // If user is logged in, check which comments they've liked
       if (userId) {
+        const commentIds = formattedComments.map(comment => comment.id);
         checkLikedComments(commentIds);
       }
+
     } catch (error) {
       console.error("Error loading comments:", error);
       toast({
