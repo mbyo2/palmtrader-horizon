@@ -1,5 +1,5 @@
 
-import { useComments } from "@/hooks/useComments";
+import { useComments } from "@/hooks/comments";
 import CommentForm from "./CommentForm";
 import CommentList from "./CommentList";
 
