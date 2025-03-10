@@ -71,7 +71,7 @@ const CommentItem = ({ comment, userId, isLiked, onLike, onDelete }: CommentItem
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => handleReport(comment.id)}>
+            <DropdownMenuItem onClick={handleReport}>
               <Flag className="h-4 w-4 mr-2" />
               Report
             </DropdownMenuItem>
@@ -102,7 +102,7 @@ const CommentItem = ({ comment, userId, isLiked, onLike, onDelete }: CommentItem
           variant="ghost"
           size="sm"
           className="text-muted-foreground"
-          onClick={() => handleReply(comment.id)}
+          onClick={handleReply}
         >
           <Reply className="h-4 w-4 mr-1" />
           Reply
