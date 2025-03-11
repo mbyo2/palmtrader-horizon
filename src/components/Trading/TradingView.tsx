@@ -1,8 +1,10 @@
+
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import OrderForm from "./OrderForm";
 import PositionsList from "./PositionsList";
+import { useTrading } from "@/hooks/useTrading";
 
 const TradingView = () => {
   const [positions, setPositions] = useState([
@@ -10,18 +12,30 @@ const TradingView = () => {
     { symbol: "GOOGL", shares: 5, averagePrice: 2750.0 },
   ]);
 
-  const handleOrderPlaced = () => {
-    // Refresh positions after order is placed
-    // You can implement the actual refresh logic here
-    console.log("Order placed, refreshing positions...");
-  };
+  const {
+    symbol, 
+    orderAction, 
+    setOrderAction, 
+    stockPrice, 
+    userPosition, 
+    isSubmitting, 
+    handleSubmitOrder
+  } = useTrading("AAPL");
 
   return (
     <div className="space-y-6">
       <ErrorBoundary>
         <Card className="p-6 card-gradient">
           <h2 className="text-xl font-semibold mb-4">Place Order</h2>
-          <OrderForm onOrderPlaced={handleOrderPlaced} />
+          <OrderForm
+            symbol={symbol}
+            stockPrice={stockPrice}
+            orderAction={orderAction}
+            userPosition={userPosition}
+            isSubmitting={isSubmitting}
+            onOrderActionChange={setOrderAction}
+            onSubmitOrder={handleSubmitOrder}
+          />
         </Card>
 
         <Card className="p-6 card-gradient">
