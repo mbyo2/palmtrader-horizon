@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { finnhubSocket } from "@/utils/finnhubSocket";
 
 // Order types
-export type OrderType = "market" | "limit" | "stop";
+export type OrderType = "market" | "limit" | "stop" | "stop_limit" | "trailing_stop";
 export type OrderAction = "buy" | "sell";
 
 // Order interface
@@ -17,6 +17,7 @@ export interface TradeOrder {
   orderType: OrderType;
   limitPrice?: number | null;
   stopPrice?: number | null;
+  trailingPercent?: number | null;
   isFractional?: boolean;
 }
 
@@ -28,7 +29,6 @@ export class TradingService {
       
       // For market orders, use real-time price if available
       if (order.orderType === "market") {
-        // Try to get the latest price from socket first
         try {
           const latestPrice = await this.fetchRealTimePrice(order.symbol);
           if (latestPrice) {
@@ -54,10 +54,20 @@ export class TradingService {
         order_type: order.orderType,
         limit_price: order.limitPrice || null,
         stop_price: order.stopPrice || null,
+        trailing_percent: order.trailingPercent || null,
         is_fractional: order.isFractional || false,
       }).select("id").single();
       
       if (error) throw error;
+      
+      // Send confirmation for completed orders
+      if (order.orderType === "market") {
+        const message = `${order.type === 'buy' ? 'Bought' : 'Sold'} ${order.shares} shares of ${order.symbol} at $${order.price.toFixed(2)}`;
+        toast.success(message);
+      } else {
+        toast.success(`${order.type === 'buy' ? 'Buy' : 'Sell'} order placed successfully`);
+        toast.info("Order will be executed when conditions are met");
+      }
       
       return { 
         success: true, 
@@ -142,13 +152,16 @@ export class TradingService {
           const currentPrice = await this.fetchRealTimePrice(order.symbol);
           
           let shouldExecute = false;
+          let executionPrice = currentPrice;
           
           // Check if limit order should execute
           if (order.order_type === "limit") {
             if (order.type === "buy" && currentPrice <= order.limit_price) {
               shouldExecute = true;
+              executionPrice = currentPrice;
             } else if (order.type === "sell" && currentPrice >= order.limit_price) {
               shouldExecute = true;
+              executionPrice = currentPrice;
             }
           }
           
@@ -156,8 +169,41 @@ export class TradingService {
           else if (order.order_type === "stop") {
             if (order.type === "buy" && currentPrice >= order.stop_price) {
               shouldExecute = true;
+              executionPrice = currentPrice;
             } else if (order.type === "sell" && currentPrice <= order.stop_price) {
               shouldExecute = true;
+              executionPrice = currentPrice;
+            }
+          }
+          
+          // Check if stop-limit order should execute
+          else if (order.order_type === "stop_limit") {
+            if (order.type === "buy" && 
+                currentPrice >= order.stop_price && 
+                currentPrice <= order.limit_price) {
+              shouldExecute = true;
+              executionPrice = currentPrice;
+            } else if (order.type === "sell" && 
+                      currentPrice <= order.stop_price && 
+                      currentPrice >= order.limit_price) {
+              shouldExecute = true;
+              executionPrice = currentPrice;
+            }
+          }
+          
+          // Check if trailing stop order should execute
+          else if (order.order_type === "trailing_stop" && order.trailing_percent) {
+            const trailingAmount = order.price * (order.trailing_percent / 100);
+            if (order.type === "buy") {
+              if (currentPrice >= order.price + trailingAmount) {
+                shouldExecute = true;
+                executionPrice = currentPrice;
+              }
+            } else { // sell
+              if (currentPrice <= order.price - trailingAmount) {
+                shouldExecute = true;
+                executionPrice = currentPrice;
+              }
             }
           }
           
@@ -167,14 +213,14 @@ export class TradingService {
               .from("trades")
               .update({ 
                 status: "completed",
-                price: currentPrice,
-                total_amount: order.shares * currentPrice
+                price: executionPrice,
+                total_amount: order.shares * executionPrice
               })
               .eq("id", order.id);
               
             if (updateError) throw updateError;
             
-            toast.success(`${order.type === 'buy' ? 'Buy' : 'Sell'} order for ${order.shares} shares of ${order.symbol} executed at $${currentPrice.toFixed(2)}`);
+            toast.success(`${order.type === 'buy' ? 'Buy' : 'Sell'} order for ${order.shares} shares of ${order.symbol} executed at $${executionPrice.toFixed(2)}`);
           }
         } catch (error) {
           console.error(`Error processing order ${order.id}:`, error);

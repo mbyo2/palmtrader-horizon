@@ -1,89 +1,120 @@
+
+import { useEffect, useState } from 'react';
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { useQuery } from "@tanstack/react-query";
 
 interface Order {
   id: string;
-  type: "market" | "limit" | "stop";
-  action: "buy" | "sell";
+  type: string;
+  order_type: string;
   symbol: string;
   shares: number;
   price: number;
-  status: "filled" | "pending" | "cancelled";
-  timestamp: string;
+  status: string;
+  created_at: string;
+  limit_price?: number;
+  stop_price?: number;
+  trailing_percent?: number;
+  total_amount: number;
 }
 
 const OrderHistory = () => {
-  // Mock data - in a real app, this would come from an API
-  const orders: Order[] = [
-    {
-      id: "1",
-      type: "market",
-      action: "buy",
-      symbol: "AAPL",
-      shares: 10,
-      price: 150.50,
-      status: "filled",
-      timestamp: "2024-01-09T10:30:00Z",
+  const { user } = useAuth();
+  
+  const { data: orders = [], isLoading } = useQuery({
+    queryKey: ['orders', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from('trades')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+        
+      if (error) throw error;
+      return data;
     },
-    {
-      id: "2",
-      type: "limit",
-      action: "sell",
-      symbol: "GOOGL",
-      shares: 5,
-      price: 2750.00,
-      status: "pending",
-      timestamp: "2024-01-09T11:15:00Z",
-    },
-  ];
+    enabled: !!user
+  });
+
+  const getOrderTypeDisplay = (order: Order) => {
+    switch (order.order_type) {
+      case 'market':
+        return 'Market Order';
+      case 'limit':
+        return `Limit ${order.type.toUpperCase()} @ $${order.limit_price}`;
+      case 'stop':
+        return `Stop ${order.type.toUpperCase()} @ $${order.stop_price}`;
+      case 'stop_limit':
+        return `Stop-Limit ${order.type.toUpperCase()} @ $${order.stop_price}/$${order.limit_price}`;
+      case 'trailing_stop':
+        return `Trailing Stop ${order.type.toUpperCase()} @ ${order.trailing_percent}%`;
+      default:
+        return order.order_type;
+    }
+  };
 
   return (
-    <Card className="p-6 card-gradient">
+    <Card className="p-6">
       <h2 className="text-xl font-semibold mb-4">Order History</h2>
-      <div className="space-y-4">
-        {orders.map((order) => (
-          <div
-            key={order.id}
-            className="flex justify-between items-center p-3 rounded-lg bg-background/50"
-          >
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-semibold">{order.symbol}</span>
-                <span
-                  className={`text-xs px-2 py-1 rounded ${
-                    order.action === "buy"
-                      ? "bg-green-500/10 text-green-500"
-                      : "bg-red-500/10 text-red-500"
-                  }`}
-                >
-                  {order.action.toUpperCase()}
-                </span>
-                <span
-                  className={`text-xs px-2 py-1 rounded ${
-                    order.status === "filled"
-                      ? "bg-green-500/10 text-green-500"
-                      : order.status === "pending"
-                      ? "bg-yellow-500/10 text-yellow-500"
-                      : "bg-red-500/10 text-red-500"
-                  }`}
-                >
-                  {order.status.toUpperCase()}
-                </span>
+      <ScrollArea className="h-[500px] pr-4">
+        <div className="space-y-4">
+          {isLoading ? (
+            <div className="text-center py-4">Loading orders...</div>
+          ) : orders.length === 0 ? (
+            <div className="text-center py-4 text-muted-foreground">
+              No orders to display
+            </div>
+          ) : (
+            orders.map((order) => (
+              <div
+                key={order.id}
+                className="flex justify-between items-start p-4 rounded-lg bg-background/50 border"
+              >
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold">{order.symbol}</span>
+                    <Badge
+                      variant={order.type === 'buy' ? 'default' : 'destructive'}
+                    >
+                      {order.type.toUpperCase()}
+                    </Badge>
+                    <Badge
+                      variant={
+                        order.status === 'completed'
+                          ? 'default'
+                          : order.status === 'pending'
+                          ? 'secondary'
+                          : 'destructive'
+                      }
+                    >
+                      {order.status.toUpperCase()}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {getOrderTypeDisplay(order)}
+                  </p>
+                  <p className="text-sm">
+                    {order.shares} shares @ ${order.price.toFixed(2)}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Total: ${order.total_amount.toFixed(2)}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm text-muted-foreground">
+                    {new Date(order.created_at).toLocaleString()}
+                  </p>
+                </div>
               </div>
-              <p className="text-sm text-muted-foreground">
-                {order.shares} shares @ ${order.price.toFixed(2)}
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="text-sm text-muted-foreground">
-                {new Date(order.timestamp).toLocaleString()}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {order.type.toUpperCase()} Order
-              </p>
-            </div>
-          </div>
-        ))}
-      </div>
+            ))
+          )}
+        </div>
+      </ScrollArea>
     </Card>
   );
 };
