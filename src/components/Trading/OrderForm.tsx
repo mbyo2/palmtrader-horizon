@@ -1,217 +1,208 @@
-import React, { useState } from "react";
-import { Button } from "@/components/ui/button";
+
+import { useState } from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { useToast } from "@/components/ui/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
+import { OrderType } from "@/services/TradingService";
 
 interface OrderFormProps {
-  onOrderPlaced: () => void;
+  symbol: string;
+  stockPrice: { price: number } | undefined;
+  orderAction: "buy" | "sell";
+  userPosition?: { shares: number } | null;
+  isSubmitting: boolean;
+  onOrderActionChange: (value: "buy" | "sell") => void;
+  onSubmitOrder: () => void;
 }
 
-const OrderForm = React.memo(({ onOrderPlaced }: OrderFormProps) => {
-  const [orderType, setOrderType] = useState<"market" | "limit" | "stop" | "trailing_stop" | "oco">("market");
-  const [shares, setShares] = useState("");
-  const [limitPrice, setLimitPrice] = useState("");
-  const [stopPrice, setStopPrice] = useState("");
-  const [trailingPercent, setTrailingPercent] = useState("");
-  const [symbol, setSymbol] = useState("");
+const OrderForm = ({
+  symbol,
+  stockPrice,
+  orderAction,
+  userPosition,
+  isSubmitting,
+  onOrderActionChange,
+  onSubmitOrder
+}: OrderFormProps) => {
+  const [orderType, setOrderType] = useState<OrderType>("market");
+  const [shares, setShares] = useState<number | "">("");
+  const [limitPrice, setLimitPrice] = useState<number | "">("");
+  const [stopPrice, setStopPrice] = useState<number | "">("");
+  const [isAdvancedOrder, setIsAdvancedOrder] = useState(false);
   const [isFractional, setIsFractional] = useState(false);
-  const [riskLevel, setRiskLevel] = useState<"low" | "medium" | "high">("medium");
-  const { toast } = useToast();
 
-  const handleTrade = async (action: "buy" | "sell") => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        toast({
-          title: "Error",
-          description: "You must be logged in to place trades",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const tradeData = {
-        user_id: user.id,
-        symbol: symbol.toUpperCase(),
-        type: action,
-        shares: parseFloat(shares),
-        price: parseFloat(limitPrice) || 0,
-        total_amount: parseFloat(shares) * (parseFloat(limitPrice) || 0),
-        order_type: orderType,
-        is_fractional: isFractional,
-        trailing_percent: trailingPercent ? parseFloat(trailingPercent) : null,
-        stop_price: stopPrice ? parseFloat(stopPrice) : null,
-        limit_price: limitPrice ? parseFloat(limitPrice) : null,
-        risk_level: riskLevel,
-      };
-
-      const { error } = await supabase.from("trades").insert(tradeData);
-
-      if (error) throw error;
-
-      toast({
-        title: "Order Placed",
-        description: `${action.toUpperCase()} order for ${shares} shares of ${symbol} placed successfully`,
-      });
-
-      onOrderPlaced();
-      
-      // Reset form
-      setShares("");
+  const handleOrderTypeChange = (value: OrderType) => {
+    setOrderType(value);
+    if (value === "market") {
       setLimitPrice("");
       setStopPrice("");
-      setTrailingPercent("");
-      setSymbol("");
-    } catch (error) {
-      console.error("Error placing trade:", error);
-      toast({
-        title: "Error",
-        description: "Failed to place trade",
-        variant: "destructive",
-      });
     }
   };
 
+  const calculateOrderValue = () => {
+    if (!shares || !stockPrice) return 0;
+    
+    const price = orderType === "market" ? 
+      stockPrice.price : 
+      orderType === "limit" ? 
+        (limitPrice || stockPrice.price) : 
+        (stopPrice || stockPrice.price);
+    
+    return Number(shares) * price;
+  };
+
+  const isFormValid = () => {
+    if (!shares || Number(shares) <= 0) return false;
+    if (!isFractional && !Number.isInteger(Number(shares))) return false;
+    
+    if (orderType === "limit" && (!limitPrice || Number(limitPrice) <= 0)) return false;
+    if (orderType === "stop" && (!stopPrice || Number(stopPrice) <= 0)) return false;
+    
+    if (orderAction === "sell" && userPosition) {
+      return Number(shares) <= userPosition.shares;
+    }
+    
+    return true;
+  };
+
+  const orderValue = calculateOrderValue();
+
   return (
     <div className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium mb-1">Symbol</label>
-        <Input
-          value={symbol}
-          onChange={(e) => setSymbol(e.target.value)}
-          placeholder="Enter stock symbol"
-        />
-      </div>
+      <Tabs defaultValue="buy" onValueChange={(value) => onOrderActionChange(value as "buy" | "sell")}>
+        <TabsList className="grid grid-cols-2">
+          <TabsTrigger value="buy">Buy</TabsTrigger>
+          <TabsTrigger value="sell">Sell</TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       <div>
-        <label className="block text-sm font-medium mb-1">Order Type</label>
-        <Select
-          value={orderType}
-          onValueChange={(value: typeof orderType) => setOrderType(value)}
+        <Label htmlFor="order-type">Order Type</Label>
+        <Select 
+          value={orderType} 
+          onValueChange={(value) => handleOrderTypeChange(value as OrderType)}
         >
-          <SelectTrigger>
+          <SelectTrigger id="order-type">
             <SelectValue placeholder="Select order type" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="market">Market Order</SelectItem>
             <SelectItem value="limit">Limit Order</SelectItem>
             <SelectItem value="stop">Stop Order</SelectItem>
-            <SelectItem value="trailing_stop">Trailing Stop</SelectItem>
-            <SelectItem value="oco">OCO (One-Cancels-Other)</SelectItem>
           </SelectContent>
         </Select>
+        <p className="text-sm text-muted-foreground mt-1">
+          {orderType === "market" 
+            ? "Execute immediately at current market price" 
+            : orderType === "limit" 
+            ? "Set a maximum price for buy or minimum price for sell" 
+            : "Set a trigger price to execute a market order"}
+        </p>
       </div>
 
-      <div>
-        <label className="block text-sm font-medium mb-1">
-          Shares
-          <span className="text-xs text-muted-foreground ml-2">
-            (Fractional trading available)
-          </span>
-        </label>
-        <Input
-          type="number"
-          value={shares}
-          onChange={(e) => setShares(e.target.value)}
-          placeholder="Enter number of shares"
-          step="0.01"
+      <div className="flex items-center space-x-2">
+        <Switch 
+          id="advanced-order" 
+          checked={isAdvancedOrder} 
+          onCheckedChange={setIsAdvancedOrder} 
         />
-        <div className="mt-1">
-          <label className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              checked={isFractional}
-              onChange={(e) => setIsFractional(e.target.checked)}
-              className="form-checkbox"
-            />
-            <span className="text-sm">Enable fractional shares</span>
-          </label>
-        </div>
+        <Label htmlFor="advanced-order">Advanced Order Options</Label>
       </div>
 
-      {(orderType === "limit" || orderType === "oco") && (
-        <div>
-          <label className="block text-sm font-medium mb-1">Limit Price</label>
-          <Input
-            type="number"
-            value={limitPrice}
-            onChange={(e) => setLimitPrice(e.target.value)}
-            placeholder="Enter limit price"
+      {isAdvancedOrder && (
+        <div className="flex items-center space-x-2">
+          <Switch 
+            id="fractional-shares" 
+            checked={isFractional} 
+            onCheckedChange={setIsFractional} 
           />
-        </div>
-      )}
-
-      {(orderType === "stop" || orderType === "oco") && (
-        <div>
-          <label className="block text-sm font-medium mb-1">Stop Price</label>
-          <Input
-            type="number"
-            value={stopPrice}
-            onChange={(e) => setStopPrice(e.target.value)}
-            placeholder="Enter stop price"
-          />
-        </div>
-      )}
-
-      {orderType === "trailing_stop" && (
-        <div>
-          <label className="block text-sm font-medium mb-1">
-            Trailing Percent
-          </label>
-          <Input
-            type="number"
-            value={trailingPercent}
-            onChange={(e) => setTrailingPercent(e.target.value)}
-            placeholder="Enter trailing percentage"
-          />
+          <Label htmlFor="fractional-shares">Enable Fractional Shares</Label>
         </div>
       )}
 
       <div>
-        <label className="block text-sm font-medium mb-1">Risk Level</label>
-        <Select
-          value={riskLevel}
-          onValueChange={(value: "low" | "medium" | "high") =>
-            setRiskLevel(value)
-          }
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select risk level" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="low">Low Risk</SelectItem>
-            <SelectItem value="medium">Medium Risk</SelectItem>
-            <SelectItem value="high">High Risk</SelectItem>
-          </SelectContent>
-        </Select>
+        <Label htmlFor="shares">Number of Shares</Label>
+        <Input
+          id="shares"
+          type="number"
+          min={isFractional ? "0.000001" : "1"}
+          step={isFractional ? "0.000001" : "1"}
+          value={shares}
+          onChange={(e) => setShares(e.target.value ? Number(e.target.value) : "")}
+          className="mt-1"
+        />
       </div>
 
-      <div className="flex gap-2">
-        <Button
-          onClick={() => handleTrade("buy")}
-          className="flex-1 bg-green-600 hover:bg-green-700"
-        >
-          Buy
-        </Button>
-        <Button
-          onClick={() => handleTrade("sell")}
-          className="flex-1 bg-red-600 hover:bg-red-700"
-        >
-          Sell
-        </Button>
+      {orderType === "limit" && (
+        <div>
+          <Label htmlFor="limit-price">Limit Price</Label>
+          <Input
+            id="limit-price"
+            type="number"
+            min="0.01"
+            step="0.01"
+            value={limitPrice}
+            onChange={(e) => setLimitPrice(e.target.value ? Number(e.target.value) : "")}
+            className="mt-1"
+          />
+        </div>
+      )}
+
+      {orderType === "stop" && (
+        <div>
+          <Label htmlFor="stop-price">Stop Price</Label>
+          <Input
+            id="stop-price"
+            type="number"
+            min="0.01"
+            step="0.01"
+            value={stopPrice}
+            onChange={(e) => setStopPrice(e.target.value ? Number(e.target.value) : "")}
+            className="mt-1"
+          />
+        </div>
+      )}
+
+      <div className="border-t pt-4">
+        <div className="flex justify-between mb-2">
+          <span>Estimated Total:</span>
+          <span className="font-medium">
+            ${orderValue.toFixed(2)}
+          </span>
+        </div>
+        {orderAction === "sell" && userPosition && Number(shares) > userPosition.shares && (
+          <p className="text-sm text-destructive mb-2">
+            You don't have enough shares to sell. You own {userPosition.shares} shares.
+          </p>
+        )}
       </div>
+
+      <Button 
+        onClick={() => {
+          // Pass the form data to the parent through the provided onSubmitOrder
+          // Set the form data in the parent's state first
+          window.formData = {
+            orderType,
+            shares: Number(shares),
+            limitPrice: limitPrice ? Number(limitPrice) : null,
+            stopPrice: stopPrice ? Number(stopPrice) : null,
+            isFractional
+          };
+          onSubmitOrder();
+        }} 
+        className="w-full" 
+        disabled={isSubmitting || !isFormValid() || !stockPrice}
+        variant={orderAction === "buy" ? "default" : "destructive"}
+      >
+        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+        {orderAction === "buy" ? "Buy" : "Sell"} {symbol}
+      </Button>
     </div>
   );
-});
-
-OrderForm.displayName = "OrderForm";
+};
 
 export default OrderForm;
