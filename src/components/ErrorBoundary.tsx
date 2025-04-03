@@ -1,54 +1,69 @@
 
-import React, { Component, ErrorInfo, ReactNode } from "react";
-import { Card } from "@/components/ui/card";
+import React, { Component, ErrorInfo } from "react";
 import { Button } from "@/components/ui/button";
-import { RefreshCw } from "lucide-react";
+import { logError } from "@/utils/errorHandling";
+import { AlertTriangle, RefreshCw } from "lucide-react";
 
-interface Props {
-  children: ReactNode;
-  fallback?: ReactNode;
+interface ErrorBoundaryProps {
+  children: React.ReactNode;
 }
 
-interface State {
+interface ErrorBoundaryState {
   hasError: boolean;
   error: Error | null;
 }
 
-class ErrorBoundary extends Component<Props, State> {
-  public state: State = {
-    hasError: false,
-    error: null,
-  };
+class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
 
-  public static getDerivedStateFromError(error: Error): State {
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
     return { hasError: true, error };
   }
 
-  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error("Uncaught error:", error, errorInfo);
+  componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
+    logError(error, errorInfo);
   }
 
-  public render() {
-    if (this.state.hasError) {
-      if (this.props.fallback) {
-        return this.props.fallback;
-      }
+  handleReset = (): void => {
+    this.setState({ hasError: false, error: null });
+    window.location.href = "/";
+  }
 
+  handleRefresh = (): void => {
+    this.setState({ hasError: false, error: null });
+    window.location.reload();
+  }
+
+  render(): React.ReactNode {
+    if (this.state.hasError) {
       return (
-        <div className="min-h-screen flex items-center justify-center p-4">
-          <Card className="p-6 text-center max-w-md w-full">
-            <h2 className="text-xl font-semibold mb-4">Something went wrong</h2>
-            <p className="text-muted-foreground mb-4">
-              {this.state.error?.message || "An unexpected error occurred"}
-            </p>
-            <Button
-              onClick={() => window.location.reload()}
-              variant="default"
-            >
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Reload page
-            </Button>
-          </Card>
+        <div className="min-h-[60vh] flex items-center justify-center p-6">
+          <div className="w-full max-w-md rounded-lg border p-8 shadow-sm bg-background">
+            <div className="flex flex-col items-center text-center">
+              <div className="mb-4 rounded-full bg-destructive/10 p-3">
+                <AlertTriangle className="h-8 w-8 text-destructive" />
+              </div>
+              <h2 className="mb-2 text-2xl font-bold">Something went wrong</h2>
+              <p className="mb-6 text-muted-foreground">
+                An unexpected error occurred. Our team has been notified.
+              </p>
+              {this.state.error && (
+                <div className="mb-6 w-full rounded-md bg-muted p-4 overflow-auto text-left">
+                  <code className="text-sm">{this.state.error.toString()}</code>
+                </div>
+              )}
+              <div className="flex gap-4">
+                <Button variant="outline" onClick={this.handleRefresh} className="gap-2">
+                  <RefreshCw className="h-4 w-4" />
+                  Refresh Page
+                </Button>
+                <Button onClick={this.handleReset}>Return to Home</Button>
+              </div>
+            </div>
+          </div>
         </div>
       );
     }

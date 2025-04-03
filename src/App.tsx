@@ -110,6 +110,7 @@ function App() {
                       <Route path="/onboarding" element={<Onboarding />} />
                       <Route path="/settings" element={<AccountSettings />} />
                       <Route path="/banking" element={<Banking />} />
+                      <Route path="*" element={<NotFound />} />
                     </Routes>
                   </ErrorBoundary>
                 </Suspense>
@@ -122,5 +123,18 @@ function App() {
     </BrowserRouter>
   );
 }
+
+// Add a 404 page component
+const NotFound = () => {
+  const navigate = useNavigate();
+  
+  return (
+    <div className="container py-20 text-center">
+      <h1 className="text-4xl font-bold mb-4">404 - Page Not Found</h1>
+      <p className="text-muted-foreground mb-8">The page you are looking for doesn't exist or has been moved.</p>
+      <Button onClick={() => navigate("/")}>Return to Home</Button>
+    </div>
+  );
+};
 
 export default App;
