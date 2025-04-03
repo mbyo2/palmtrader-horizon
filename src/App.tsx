@@ -75,16 +75,16 @@ function App() {
   }
 
   return (
-    <BrowserRouter>
-      <QueryClientProvider client={queryClient}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <div className="min-h-screen flex flex-col">
+    <React.StrictMode>
+      <BrowserRouter>
+        <QueryClientProvider client={queryClient}>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             <NotificationsProvider>
-              <Navbar />
-              <main className="flex-1">
-                <Toaster />
-                <Sonner />
-                <TooltipProvider>
+              <div className="min-h-screen flex flex-col">
+                <Navbar />
+                <main className="flex-1">
+                  <Toaster />
+                  <Sonner />
                   <Suspense fallback={
                     <div className="container py-6 flex items-center justify-center min-h-[60vh]">
                       <div className="text-center space-y-4">
@@ -95,29 +95,31 @@ function App() {
                   }>
                     <ErrorBoundary>
                       <OrderProcessorInitializer />
-                      <Routes>
-                        <Route path="/" element={<Index />} />
-                        <Route path="/auth" element={<Auth />} />
-                        <Route path="/markets" element={<Markets />} />
-                        <Route path="/watchlist" element={<Watchlist />} />
-                        <Route path="/portfolio" element={<Portfolio />} />
-                        <Route path="/ipo" element={<IPO />} />
-                        <Route path="/ipo/:id" element={<IPODetails />} />
-                        <Route path="/crypto" element={<Crypto />} />
-                        <Route path="/onboarding" element={<Onboarding />} />
-                        <Route path="/settings" element={<AccountSettings />} />
-                        <Route path="/banking" element={<Banking />} />
-                      </Routes>
+                      <TooltipProvider>
+                        <Routes>
+                          <Route path="/" element={<Index />} />
+                          <Route path="/auth" element={<Auth />} />
+                          <Route path="/markets" element={<Markets />} />
+                          <Route path="/watchlist" element={<Watchlist />} />
+                          <Route path="/portfolio" element={<Portfolio />} />
+                          <Route path="/ipo" element={<IPO />} />
+                          <Route path="/ipo/:id" element={<IPODetails />} />
+                          <Route path="/crypto" element={<Crypto />} />
+                          <Route path="/onboarding" element={<Onboarding />} />
+                          <Route path="/settings" element={<AccountSettings />} />
+                          <Route path="/banking" element={<Banking />} />
+                        </Routes>
+                      </TooltipProvider>
                     </ErrorBoundary>
                   </Suspense>
-                </TooltipProvider>
-              </main>
-              <Footer />
+                </main>
+                <Footer />
+              </div>
             </NotificationsProvider>
-          </div>
-        </ThemeProvider>
-      </QueryClientProvider>
-    </BrowserRouter>
+          </ThemeProvider>
+        </QueryClientProvider>
+      </BrowserRouter>
+    </React.StrictMode>
   );
 }
 
