@@ -18,6 +18,7 @@ import IPODetails from "./pages/IPODetails";
 import Crypto from "./pages/Crypto";
 import Onboarding from "./pages/Onboarding";
 import AccountSettings from "./pages/AccountSettings";
+import Banking from "./pages/Banking";
 import { NotificationsProvider } from "./components/Notifications/NotificationsProvider";
 import { toast } from "sonner";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -77,11 +78,11 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <TooltipProvider>
+          <div className="min-h-screen flex flex-col">
             <NotificationsProvider>
-              <div className="min-h-screen flex flex-col">
-                <Navbar />
-                <main className="flex-1">
+              <Navbar />
+              <main className="flex-1">
+                <TooltipProvider>
                   <Toaster />
                   <Sonner />
                   <Suspense fallback={
@@ -105,14 +106,15 @@ function App() {
                         <Route path="/crypto" element={<Crypto />} />
                         <Route path="/onboarding" element={<Onboarding />} />
                         <Route path="/settings" element={<AccountSettings />} />
+                        <Route path="/banking" element={<Banking />} />
                       </Routes>
                     </ErrorBoundary>
                   </Suspense>
-                </main>
-                <Footer />
-              </div>
+                </TooltipProvider>
+              </main>
+              <Footer />
             </NotificationsProvider>
-          </TooltipProvider>
+          </div>
         </ThemeProvider>
       </BrowserRouter>
     </QueryClientProvider>
