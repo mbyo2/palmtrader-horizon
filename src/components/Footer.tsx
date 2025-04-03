@@ -41,51 +41,51 @@ const Footer = () => {
           <div className="flex items-center gap-4">
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <a
-                    href="https://github.com/palmcacia"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex items-center justify-center w-full h-full"
-                  >
+                <a
+                  href="https://github.com/palmcacia"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center justify-center"
+                >
+                  <Button variant="ghost" size="icon">
                     <Github className="h-4 w-4" />
                     <span className="sr-only">GitHub</span>
-                  </a>
-                </Button>
+                  </Button>
+                </a>
               </TooltipTrigger>
               <TooltipContent>GitHub</TooltipContent>
             </Tooltip>
             
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <a
-                    href="https://twitter.com/palmcacia"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex items-center justify-center w-full h-full"
-                  >
+                <a
+                  href="https://twitter.com/palmcacia"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center justify-center"
+                >
+                  <Button variant="ghost" size="icon">
                     <Twitter className="h-4 w-4" />
                     <span className="sr-only">Twitter</span>
-                  </a>
-                </Button>
+                  </Button>
+                </a>
               </TooltipTrigger>
               <TooltipContent>Twitter</TooltipContent>
             </Tooltip>
             
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <a
-                    href="https://palmcacia.com"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex items-center justify-center w-full h-full"
-                  >
+                <a
+                  href="https://palmcacia.com"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center justify-center"
+                >
+                  <Button variant="ghost" size="icon">
                     <Globe className="h-4 w-4" />
                     <span className="sr-only">Website</span>
-                  </a>
-                </Button>
+                  </Button>
+                </a>
               </TooltipTrigger>
               <TooltipContent>Website</TooltipContent>
             </Tooltip>
