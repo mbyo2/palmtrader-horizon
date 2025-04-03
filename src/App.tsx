@@ -9,7 +9,6 @@ import { NotificationsProvider } from "./components/Notifications/NotificationsP
 import { toast } from "sonner";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { useOrderProcessor } from './hooks/useOrderProcessor';
-import { TooltipProvider } from "@/components/ui/tooltip";
 
 // Components
 import Navbar from "./components/Navbar";
@@ -83,43 +82,41 @@ function App() {
     <BrowserRouter>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <TooltipProvider>
-            <NotificationsProvider>
-              <div className="min-h-screen flex flex-col">
-                <Navbar />
-                <main className="flex-1">
-                  <Toaster />
-                  <Sonner />
-                  <Suspense fallback={
-                    <div className="container py-6 flex items-center justify-center min-h-[60vh]">
-                      <div className="text-center space-y-4">
-                        <div className="w-12 h-12 mx-auto border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-                        <p className="text-foreground/80">Loading...</p>
-                      </div>
+          <NotificationsProvider>
+            <div className="min-h-screen flex flex-col">
+              <Navbar />
+              <main className="flex-1">
+                <Toaster />
+                <Sonner />
+                <Suspense fallback={
+                  <div className="container py-6 flex items-center justify-center min-h-[60vh]">
+                    <div className="text-center space-y-4">
+                      <div className="w-12 h-12 mx-auto border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                      <p className="text-foreground/80">Loading...</p>
                     </div>
-                  }>
-                    <ErrorBoundary>
-                      <OrderProcessorInitializer />
-                      <Routes>
-                        <Route path="/" element={<Index />} />
-                        <Route path="/auth" element={<Auth />} />
-                        <Route path="/markets" element={<Markets />} />
-                        <Route path="/watchlist" element={<Watchlist />} />
-                        <Route path="/portfolio" element={<Portfolio />} />
-                        <Route path="/ipo" element={<IPO />} />
-                        <Route path="/ipo/:id" element={<IPODetails />} />
-                        <Route path="/crypto" element={<Crypto />} />
-                        <Route path="/onboarding" element={<Onboarding />} />
-                        <Route path="/settings" element={<AccountSettings />} />
-                        <Route path="/banking" element={<Banking />} />
-                      </Routes>
-                    </ErrorBoundary>
-                  </Suspense>
-                </main>
-                <Footer />
-              </div>
-            </NotificationsProvider>
-          </TooltipProvider>
+                  </div>
+                }>
+                  <ErrorBoundary>
+                    <OrderProcessorInitializer />
+                    <Routes>
+                      <Route path="/" element={<Index />} />
+                      <Route path="/auth" element={<Auth />} />
+                      <Route path="/markets" element={<Markets />} />
+                      <Route path="/watchlist" element={<Watchlist />} />
+                      <Route path="/portfolio" element={<Portfolio />} />
+                      <Route path="/ipo" element={<IPO />} />
+                      <Route path="/ipo/:id" element={<IPODetails />} />
+                      <Route path="/crypto" element={<Crypto />} />
+                      <Route path="/onboarding" element={<Onboarding />} />
+                      <Route path="/settings" element={<AccountSettings />} />
+                      <Route path="/banking" element={<Banking />} />
+                    </Routes>
+                  </ErrorBoundary>
+                </Suspense>
+              </main>
+              <Footer />
+            </div>
+          </NotificationsProvider>
         </ThemeProvider>
       </QueryClientProvider>
     </BrowserRouter>

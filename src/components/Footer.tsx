@@ -39,13 +39,13 @@ const Footer = () => {
             </a>
           </nav>
           <div className="flex items-center gap-4">
+            {/* GitHub */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <a
                   href="https://github.com/palmcacia"
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center justify-center"
                 >
                   <Button variant="ghost" size="icon">
                     <Github className="h-4 w-4" />
@@ -56,13 +56,13 @@ const Footer = () => {
               <TooltipContent>GitHub</TooltipContent>
             </Tooltip>
             
+            {/* Twitter */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <a
                   href="https://twitter.com/palmcacia"
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center justify-center"
                 >
                   <Button variant="ghost" size="icon">
                     <Twitter className="h-4 w-4" />
@@ -73,13 +73,13 @@ const Footer = () => {
               <TooltipContent>Twitter</TooltipContent>
             </Tooltip>
             
+            {/* Website */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <a
                   href="https://palmcacia.com"
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center justify-center"
                 >
                   <Button variant="ghost" size="icon">
                     <Globe className="h-4 w-4" />
