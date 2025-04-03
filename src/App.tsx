@@ -75,51 +75,49 @@ function App() {
   }
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
+    <BrowserRouter>
+      <QueryClientProvider client={queryClient}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <div className="min-h-screen flex flex-col">
             <NotificationsProvider>
               <Navbar />
               <main className="flex-1">
-                <React.StrictMode>
-                  <TooltipProvider>
-                    <Toaster />
-                    <Sonner />
-                    <Suspense fallback={
-                      <div className="container py-6 flex items-center justify-center min-h-[60vh]">
-                        <div className="text-center space-y-4">
-                          <div className="w-12 h-12 mx-auto border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-                          <p className="text-foreground/80">Loading...</p>
-                        </div>
+                <Toaster />
+                <Sonner />
+                <TooltipProvider>
+                  <Suspense fallback={
+                    <div className="container py-6 flex items-center justify-center min-h-[60vh]">
+                      <div className="text-center space-y-4">
+                        <div className="w-12 h-12 mx-auto border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                        <p className="text-foreground/80">Loading...</p>
                       </div>
-                    }>
-                      <ErrorBoundary>
-                        <OrderProcessorInitializer />
-                        <Routes>
-                          <Route path="/" element={<Index />} />
-                          <Route path="/auth" element={<Auth />} />
-                          <Route path="/markets" element={<Markets />} />
-                          <Route path="/watchlist" element={<Watchlist />} />
-                          <Route path="/portfolio" element={<Portfolio />} />
-                          <Route path="/ipo" element={<IPO />} />
-                          <Route path="/ipo/:id" element={<IPODetails />} />
-                          <Route path="/crypto" element={<Crypto />} />
-                          <Route path="/onboarding" element={<Onboarding />} />
-                          <Route path="/settings" element={<AccountSettings />} />
-                          <Route path="/banking" element={<Banking />} />
-                        </Routes>
-                      </ErrorBoundary>
-                    </Suspense>
-                  </TooltipProvider>
-                </React.StrictMode>
+                    </div>
+                  }>
+                    <ErrorBoundary>
+                      <OrderProcessorInitializer />
+                      <Routes>
+                        <Route path="/" element={<Index />} />
+                        <Route path="/auth" element={<Auth />} />
+                        <Route path="/markets" element={<Markets />} />
+                        <Route path="/watchlist" element={<Watchlist />} />
+                        <Route path="/portfolio" element={<Portfolio />} />
+                        <Route path="/ipo" element={<IPO />} />
+                        <Route path="/ipo/:id" element={<IPODetails />} />
+                        <Route path="/crypto" element={<Crypto />} />
+                        <Route path="/onboarding" element={<Onboarding />} />
+                        <Route path="/settings" element={<AccountSettings />} />
+                        <Route path="/banking" element={<Banking />} />
+                      </Routes>
+                    </ErrorBoundary>
+                  </Suspense>
+                </TooltipProvider>
               </main>
               <Footer />
             </NotificationsProvider>
           </div>
         </ThemeProvider>
-      </BrowserRouter>
-    </QueryClientProvider>
+      </QueryClientProvider>
+    </BrowserRouter>
   );
 }
 
