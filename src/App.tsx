@@ -1,7 +1,7 @@
 
 import React, { Suspense, useState, useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -9,6 +9,7 @@ import { NotificationsProvider } from "./components/Notifications/NotificationsP
 import { toast } from "sonner";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { useOrderProcessor } from './hooks/useOrderProcessor';
+import { setupGlobalErrorHandlers } from "./utils/errorHandling";
 
 // Components
 import Navbar from "./components/Navbar";
@@ -26,6 +27,7 @@ import Crypto from "./pages/Crypto";
 import Onboarding from "./pages/Onboarding";
 import AccountSettings from "./pages/AccountSettings";
 import Banking from "./pages/Banking";
+import NotFound from "./pages/NotFound";
 
 // Create query client
 const queryClient = new QueryClient({
@@ -54,16 +56,11 @@ function App() {
     }, 1000);
 
     // Add global error handler
-    const handleError = (event: ErrorEvent) => {
-      console.error("Global error:", event.error);
-      toast.error("Something went wrong. Please try refreshing the page.");
-    };
-
-    window.addEventListener('error', handleError);
+    const cleanup = setupGlobalErrorHandlers();
 
     return () => {
       clearTimeout(timer);
-      window.removeEventListener('error', handleError);
+      cleanup();
     };
   }, []);
 
@@ -123,18 +120,5 @@ function App() {
     </BrowserRouter>
   );
 }
-
-// Add a 404 page component
-const NotFound = () => {
-  const navigate = useNavigate();
-  
-  return (
-    <div className="container py-20 text-center">
-      <h1 className="text-4xl font-bold mb-4">404 - Page Not Found</h1>
-      <p className="text-muted-foreground mb-8">The page you are looking for doesn't exist or has been moved.</p>
-      <Button onClick={() => navigate("/")}>Return to Home</Button>
-    </div>
-  );
-};
 
 export default App;

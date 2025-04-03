@@ -2,7 +2,7 @@
 import React, { Component, ErrorInfo } from "react";
 import { Button } from "@/components/ui/button";
 import { logError } from "@/utils/errorHandling";
-import { AlertTriangle, RefreshCw } from "lucide-react";
+import { AlertTriangle, RefreshCw, Home } from "lucide-react";
 
 interface ErrorBoundaryProps {
   children: React.ReactNode;
@@ -11,29 +11,31 @@ interface ErrorBoundaryProps {
 interface ErrorBoundaryState {
   hasError: boolean;
   error: Error | null;
+  componentStack: string | null;
 }
 
 class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false, error: null, componentStack: null };
   }
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    return { hasError: true, error };
+    return { hasError: true, error, componentStack: null };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
+    this.setState({ componentStack: errorInfo.componentStack });
     logError(error, errorInfo);
   }
 
   handleReset = (): void => {
-    this.setState({ hasError: false, error: null });
+    this.setState({ hasError: false, error: null, componentStack: null });
     window.location.href = "/";
   }
 
   handleRefresh = (): void => {
-    this.setState({ hasError: false, error: null });
+    this.setState({ hasError: false, error: null, componentStack: null });
     window.location.reload();
   }
 
@@ -53,6 +55,14 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
               {this.state.error && (
                 <div className="mb-6 w-full rounded-md bg-muted p-4 overflow-auto text-left">
                   <code className="text-sm">{this.state.error.toString()}</code>
+                  {this.state.componentStack && (
+                    <details className="mt-2">
+                      <summary className="cursor-pointer text-xs text-muted-foreground">Stack trace</summary>
+                      <pre className="mt-2 text-xs overflow-auto max-h-40">
+                        {this.state.componentStack}
+                      </pre>
+                    </details>
+                  )}
                 </div>
               )}
               <div className="flex gap-4">
@@ -60,7 +70,10 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
                   <RefreshCw className="h-4 w-4" />
                   Refresh Page
                 </Button>
-                <Button onClick={this.handleReset}>Return to Home</Button>
+                <Button onClick={this.handleReset} className="gap-2">
+                  <Home className="h-4 w-4" />
+                  Return to Home
+                </Button>
               </div>
             </div>
           </div>
