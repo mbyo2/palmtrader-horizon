@@ -1,6 +1,7 @@
 
 import { Copyright, Github, Twitter, Globe } from "lucide-react";
 import { Button } from "./ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -38,36 +39,56 @@ const Footer = () => {
             </a>
           </nav>
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" asChild>
-              <a
-                href="https://github.com/palmcacia"
-                target="_blank"
-                rel="noreferrer"
-              >
-                <Github className="h-4 w-4" />
-                <span className="sr-only">GitHub</span>
-              </a>
-            </Button>
-            <Button variant="ghost" size="icon" asChild>
-              <a
-                href="https://twitter.com/palmcacia"
-                target="_blank"
-                rel="noreferrer"
-              >
-                <Twitter className="h-4 w-4" />
-                <span className="sr-only">Twitter</span>
-              </a>
-            </Button>
-            <Button variant="ghost" size="icon" asChild>
-              <a
-                href="https://palmcacia.com"
-                target="_blank"
-                rel="noreferrer"
-              >
-                <Globe className="h-4 w-4" />
-                <span className="sr-only">Website</span>
-              </a>
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <a
+                    href="https://github.com/palmcacia"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center justify-center w-full h-full"
+                  >
+                    <Github className="h-4 w-4" />
+                    <span className="sr-only">GitHub</span>
+                  </a>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>GitHub</TooltipContent>
+            </Tooltip>
+            
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <a
+                    href="https://twitter.com/palmcacia"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center justify-center w-full h-full"
+                  >
+                    <Twitter className="h-4 w-4" />
+                    <span className="sr-only">Twitter</span>
+                  </a>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Twitter</TooltipContent>
+            </Tooltip>
+            
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <a
+                    href="https://palmcacia.com"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center justify-center w-full h-full"
+                  >
+                    <Globe className="h-4 w-4" />
+                    <span className="sr-only">Website</span>
+                  </a>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Website</TooltipContent>
+            </Tooltip>
           </div>
         </div>
       </div>
