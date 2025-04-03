@@ -52,7 +52,10 @@ const StockInfo = ({
           
           {stockPrice && !isPriceLoading && (
             <div className="mt-1">
-              <PriceAlertModal symbol={symbol} currentPrice={stockPrice.price}>
+              <PriceAlertModal 
+                symbol={symbol} 
+                currentPrice={stockPrice.price}
+              >
                 <Button variant="outline" size="sm" className="text-xs flex items-center gap-1">
                   <AlertCircle className="h-3 w-3" />
                   Set Alert

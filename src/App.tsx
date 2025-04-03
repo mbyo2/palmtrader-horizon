@@ -1,13 +1,20 @@
 
 import React, { Suspense, useState, useEffect } from 'react';
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { NotificationsProvider } from "./components/Notifications/NotificationsProvider";
+import { toast } from "sonner";
+import ErrorBoundary from "./components/ErrorBoundary";
+import { useOrderProcessor } from './hooks/useOrderProcessor';
+
+// Components
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+
+// Pages
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Markets from "./pages/Markets";
@@ -19,11 +26,8 @@ import Crypto from "./pages/Crypto";
 import Onboarding from "./pages/Onboarding";
 import AccountSettings from "./pages/AccountSettings";
 import Banking from "./pages/Banking";
-import { NotificationsProvider } from "./components/Notifications/NotificationsProvider";
-import { toast } from "sonner";
-import ErrorBoundary from "./components/ErrorBoundary";
-import { useOrderProcessor } from './hooks/useOrderProcessor';
 
+// Create query client
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -75,51 +79,47 @@ function App() {
   }
 
   return (
-    <React.StrictMode>
-      <BrowserRouter>
-        <QueryClientProvider client={queryClient}>
-          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-            <NotificationsProvider>
-              <div className="min-h-screen flex flex-col">
-                <Navbar />
-                <main className="flex-1">
-                  <Toaster />
-                  <Sonner />
-                  <Suspense fallback={
-                    <div className="container py-6 flex items-center justify-center min-h-[60vh]">
-                      <div className="text-center space-y-4">
-                        <div className="w-12 h-12 mx-auto border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-                        <p className="text-foreground/80">Loading...</p>
-                      </div>
+    <BrowserRouter>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <NotificationsProvider>
+            <div className="min-h-screen flex flex-col">
+              <Navbar />
+              <main className="flex-1">
+                <Toaster />
+                <Sonner />
+                <Suspense fallback={
+                  <div className="container py-6 flex items-center justify-center min-h-[60vh]">
+                    <div className="text-center space-y-4">
+                      <div className="w-12 h-12 mx-auto border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                      <p className="text-foreground/80">Loading...</p>
                     </div>
-                  }>
-                    <ErrorBoundary>
-                      <OrderProcessorInitializer />
-                      <TooltipProvider>
-                        <Routes>
-                          <Route path="/" element={<Index />} />
-                          <Route path="/auth" element={<Auth />} />
-                          <Route path="/markets" element={<Markets />} />
-                          <Route path="/watchlist" element={<Watchlist />} />
-                          <Route path="/portfolio" element={<Portfolio />} />
-                          <Route path="/ipo" element={<IPO />} />
-                          <Route path="/ipo/:id" element={<IPODetails />} />
-                          <Route path="/crypto" element={<Crypto />} />
-                          <Route path="/onboarding" element={<Onboarding />} />
-                          <Route path="/settings" element={<AccountSettings />} />
-                          <Route path="/banking" element={<Banking />} />
-                        </Routes>
-                      </TooltipProvider>
-                    </ErrorBoundary>
-                  </Suspense>
-                </main>
-                <Footer />
-              </div>
-            </NotificationsProvider>
-          </ThemeProvider>
-        </QueryClientProvider>
-      </BrowserRouter>
-    </React.StrictMode>
+                  </div>
+                }>
+                  <ErrorBoundary>
+                    <OrderProcessorInitializer />
+                    <Routes>
+                      <Route path="/" element={<Index />} />
+                      <Route path="/auth" element={<Auth />} />
+                      <Route path="/markets" element={<Markets />} />
+                      <Route path="/watchlist" element={<Watchlist />} />
+                      <Route path="/portfolio" element={<Portfolio />} />
+                      <Route path="/ipo" element={<IPO />} />
+                      <Route path="/ipo/:id" element={<IPODetails />} />
+                      <Route path="/crypto" element={<Crypto />} />
+                      <Route path="/onboarding" element={<Onboarding />} />
+                      <Route path="/settings" element={<AccountSettings />} />
+                      <Route path="/banking" element={<Banking />} />
+                    </Routes>
+                  </ErrorBoundary>
+                </Suspense>
+              </main>
+              <Footer />
+            </div>
+          </NotificationsProvider>
+        </ThemeProvider>
+      </QueryClientProvider>
+    </BrowserRouter>
   );
 }
 

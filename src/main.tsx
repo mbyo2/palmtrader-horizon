@@ -4,7 +4,10 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css';
 
-// Register service worker
+// Basic render without StrictMode to avoid double-rendering issues
+ReactDOM.createRoot(document.getElementById('root')!).render(<App />);
+
+// Register service worker - moved after render to prioritize UI
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/service-worker.js')
@@ -16,9 +19,3 @@ if ('serviceWorker' in navigator) {
       });
   });
 }
-
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);

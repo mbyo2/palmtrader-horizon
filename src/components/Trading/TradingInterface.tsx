@@ -21,6 +21,9 @@ const TradingInterface = () => {
     handleSubmitOrder
   } = useTrading();
 
+  // Add a dummy cash balance for demonstration
+  const cashBalance = 10000;
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       <Card className="w-full">
@@ -41,6 +44,7 @@ const TradingInterface = () => {
               isPriceLoading={isPriceLoading}
               userPosition={userPosition}
               orderAction={orderAction}
+              cashBalance={cashBalance}
             />
 
             <OrderForm 
