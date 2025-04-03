@@ -1,5 +1,7 @@
 
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import PriceAlertModal from "@/components/Alerts/PriceAlertModal";
 
 interface StockInfoProps {
   symbol: string;
@@ -46,6 +48,17 @@ const StockInfo = ({
             <p className="text-sm text-muted-foreground">
               You own: {userPosition.shares} shares
             </p>
+          )}
+          
+          {stockPrice && !isPriceLoading && (
+            <div className="mt-1">
+              <PriceAlertModal symbol={symbol} currentPrice={stockPrice.price}>
+                <Button variant="outline" size="sm" className="text-xs flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  Set Alert
+                </Button>
+              </PriceAlertModal>
+            </div>
           )}
         </div>
       </div>
