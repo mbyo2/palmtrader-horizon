@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -7,9 +8,14 @@ import { useToast } from "@/hooks/use-toast";
 import { Bell } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
-const PriceAlertForm = () => {
-  const [symbol, setSymbol] = useState("");
-  const [targetPrice, setTargetPrice] = useState("");
+interface PriceAlertFormProps {
+  symbol?: string;
+  currentPrice?: number;
+}
+
+export const PriceAlertForm = ({ symbol = "", currentPrice }: PriceAlertFormProps) => {
+  const [symbolValue, setSymbolValue] = useState(symbol);
+  const [targetPrice, setTargetPrice] = useState(currentPrice ? currentPrice.toString() : "");
   const [condition, setCondition] = useState<"above" | "below">("above");
   const { toast } = useToast();
 
@@ -29,7 +35,7 @@ const PriceAlertForm = () => {
 
       const { error } = await supabase.from("price_alerts").insert({
         user_id: user.id,
-        symbol: symbol.toUpperCase(),
+        symbol: symbolValue.toUpperCase(),
         target_price: parseFloat(targetPrice),
         condition,
       });
@@ -41,10 +47,12 @@ const PriceAlertForm = () => {
         description: "Price alert created successfully",
       });
 
-      // Reset form
-      setSymbol("");
-      setTargetPrice("");
-      setCondition("above");
+      // Reset form if no initial values were provided
+      if (!symbol) {
+        setSymbolValue("");
+        setTargetPrice("");
+        setCondition("above");
+      }
     } catch (error) {
       console.error("Error creating price alert:", error);
       toast({
@@ -61,10 +69,11 @@ const PriceAlertForm = () => {
         <div>
           <label className="block text-sm font-medium mb-1">Symbol</label>
           <Input
-            value={symbol}
-            onChange={(e) => setSymbol(e.target.value)}
+            value={symbolValue}
+            onChange={(e) => setSymbolValue(e.target.value)}
             placeholder="Enter stock symbol"
             required
+            readOnly={!!symbol}
           />
         </div>
         
