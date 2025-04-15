@@ -45,6 +45,14 @@ export default function BankAccountForm() {
     setIsVerifying(true);
     
     try {
+      // Get current user
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError) throw userError;
+      
+      if (!userData.user) {
+        throw new Error("You must be logged in to verify a bank account");
+      }
+
       // Call the Edge Function to verify the bank account
       const { data: result, error } = await supabase.functions.invoke("banking", {
         body: {
@@ -68,6 +76,7 @@ export default function BankAccountForm() {
             bank_name: data.bankName,
             account_name: data.accountName,
             is_verified: true,
+            user_id: userData.user.id // Add user_id to the insert
           });
 
         if (insertError) throw insertError;

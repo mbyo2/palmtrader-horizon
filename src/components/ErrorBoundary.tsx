@@ -27,14 +27,17 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    this.setState({ componentStack: errorInfo.componentStack });
+    this.setState({ componentStack: errorInfo.componentStack || null });
     
     // Call the onError prop if provided
     if (this.props.onError) {
       this.props.onError(error);
     }
     
-    logError(error, errorInfo);
+    // Pass the error info with safe handling of optional componentStack
+    logError(error, { 
+      componentStack: errorInfo.componentStack || "No component stack available" 
+    });
   }
 
   handleReset = (): void => {

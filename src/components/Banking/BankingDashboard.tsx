@@ -56,7 +56,21 @@ export default function BankingDashboard() {
         if (transfersError) throw transfersError;
         
         setBankAccounts(accountsData || []);
-        setTransferHistory(transfersData as TransferHistory[] || []);
+        
+        // Transform the data to match the TransferHistory type
+        const formattedTransfers = (transfersData || []).map((transfer: any) => ({
+          id: transfer.id,
+          amount: transfer.amount,
+          direction: transfer.direction,
+          status: transfer.status,
+          created_at: transfer.created_at,
+          bank_account: {
+            bank_name: transfer.bank_accounts?.bank_name,
+            account_number: transfer.bank_accounts?.account_number
+          }
+        }));
+        
+        setTransferHistory(formattedTransfers);
       } catch (error) {
         console.error("Error fetching banking data:", error);
       } finally {
