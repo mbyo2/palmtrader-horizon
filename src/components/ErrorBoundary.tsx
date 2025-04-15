@@ -6,6 +6,8 @@ import { AlertTriangle, RefreshCw, Home } from "lucide-react";
 
 interface ErrorBoundaryProps {
   children: React.ReactNode;
+  fallback?: React.ReactNode;
+  onError?: (error: Error) => void;
 }
 
 interface ErrorBoundaryState {
@@ -26,6 +28,12 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     this.setState({ componentStack: errorInfo.componentStack });
+    
+    // Call the onError prop if provided
+    if (this.props.onError) {
+      this.props.onError(error);
+    }
+    
     logError(error, errorInfo);
   }
 
@@ -41,6 +49,12 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
 
   render(): React.ReactNode {
     if (this.state.hasError) {
+      // Use custom fallback if provided
+      if (this.props.fallback) {
+        return this.props.fallback;
+      }
+      
+      // Default fallback UI
       return (
         <div className="min-h-[60vh] flex items-center justify-center p-6">
           <div className="w-full max-w-md rounded-lg border p-8 shadow-sm bg-background">
