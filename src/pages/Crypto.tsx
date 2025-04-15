@@ -1,12 +1,32 @@
+
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import CryptoTrading from "@/components/Trading/CryptoTrading";
 import { useQuery } from "@tanstack/react-query";
 import { MarketDataService } from "@/services/MarketDataService";
 import { AdvancedStockChart } from "@/components/Research/AdvancedStockChart";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
+
+// Create the missing CryptoTrading component
+const CryptoTrading = () => {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Crypto Trading</CardTitle>
+        <CardDescription>Buy and sell cryptocurrencies</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="text-center py-4">
+          <p>Trading functionality coming soon!</p>
+          <p className="text-sm text-muted-foreground mt-2">
+            We're working on integrating crypto trading capabilities.
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
 
 const popularCryptos = [
   { symbol: "BTC", name: "Bitcoin" },

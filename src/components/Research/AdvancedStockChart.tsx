@@ -1,139 +1,286 @@
 
-import React, { useState, useEffect } from 'react';
-import { 
-  LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, 
-  Tooltip, Legend, ResponsiveContainer, Area, AreaChart, ComposedChart
-} from 'recharts';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState } from "react";
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+  Bar,
+  BarChart,
+  ComposedChart,
+  Line,
+} from "recharts";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { fetchHistoricalData } from "@/services/market/dataFetchService";
-import { Calculator, Calendar, Clock, TrendingUp } from "lucide-react";
-import { MarketData } from "@/services/market/types";
+import { MarketData } from "@/services/MarketDataService";
 
 interface AdvancedStockChartProps {
-  symbol?: string;
-  data?: MarketData[];
-  compact?: boolean;
+  symbol: string;
+  data: MarketData[];
 }
 
-const AdvancedStockChart = ({ symbol, data, compact = false }: AdvancedStockChartProps) => {
-  const [chartType, setChartType] = useState<'price' | 'volume' | 'both'>('price');
-  const [timeframe, setTimeframe] = useState<number>(30);
-  const [chartData, setChartData] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+export function AdvancedStockChart({ symbol, data }: AdvancedStockChartProps) {
+  const [timeRange, setTimeRange] = useState<"1W" | "1M" | "3M" | "1Y" | "ALL">("1M");
+  const [chartType, setChartType] = useState<"area" | "candle" | "line" | "bar">("area");
 
-  useEffect(() => {
-    const loadData = async () => {
-      if (data && data.length > 0) {
-        setChartData(data);
-        setLoading(false);
-        return;
-      }
+  // Filter data based on selected time range
+  const filteredData = (() => {
+    const currentDate = new Date();
+    let startDate: Date;
 
-      if (!symbol) {
-        setLoading(false);
-        return;
-      }
-      
-      setLoading(true);
-      try {
-        const historicalData = await fetchHistoricalData(symbol, timeframe);
-        setChartData(historicalData);
-      } catch (error) {
-        console.error("Failed to fetch historical data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+    switch (timeRange) {
+      case "1W":
+        startDate = new Date(currentDate);
+        startDate.setDate(currentDate.getDate() - 7);
+        break;
+      case "1M":
+        startDate = new Date(currentDate);
+        startDate.setMonth(currentDate.getMonth() - 1);
+        break;
+      case "3M":
+        startDate = new Date(currentDate);
+        startDate.setMonth(currentDate.getMonth() - 3);
+        break;
+      case "1Y":
+        startDate = new Date(currentDate);
+        startDate.setFullYear(currentDate.getFullYear() - 1);
+        break;
+      default:
+        return data;
+    }
 
-    loadData();
-  }, [symbol, timeframe, data]);
+    return data.filter((item) => new Date(item.date) >= startDate);
+  })();
 
-  const processedData = chartData.map(item => ({
-    date: new Date(parseInt(item.timestamp)).toLocaleDateString(),
-    price: item.price,
-    volume: item.volume,
+  // Calculate price change
+  const currentPrice = data.length > 0 ? data[data.length - 1].close : 0;
+  const initialPrice = filteredData.length > 0 ? filteredData[0].open : 0;
+  const priceChange = currentPrice - initialPrice;
+  const percentChange = initialPrice > 0 ? (priceChange / initialPrice) * 100 : 0;
+
+  const isDarkMode = document.documentElement.classList.contains("dark");
+  const colors = {
+    primary: isDarkMode ? "#818cf8" : "#4f46e5",
+    secondary: isDarkMode ? "#9ca3af" : "#6b7280",
+    positive: "#10b981",
+    negative: "#ef4444",
+    background: isDarkMode ? "#1f2937" : "#f3f4f6",
+    grid: isDarkMode ? "#374151" : "#e5e7eb",
+  };
+
+  // Format data for better visualization
+  const formattedData = filteredData.map((item) => ({
+    ...item,
+    // Format date based on time range
+    displayDate:
+      timeRange === "1W" || timeRange === "1M"
+        ? new Date(item.date).toLocaleDateString(undefined, {
+            month: "short",
+            day: "numeric",
+          })
+        : new Date(item.date).toLocaleDateString(undefined, {
+            month: "short",
+            year: "2-digit",
+          }),
   }));
 
   return (
-    <Card className={compact ? "h-[400px]" : ""}>
-      <CardHeader>
-        <CardTitle>{symbol || "Market"} Historical Data</CardTitle>
-        {!compact && (
-          <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-            <Calendar className="h-4 w-4" />
-            <span>{timeframe} Days</span>
-            <Clock className="h-4 w-4" />
-            <span>Updated {new Date().toLocaleTimeString()}</span>
-          </div>
-        )}
-        {symbol && (
-          <div className="flex items-center space-x-2 mt-2">
-            <Button variant="outline" size="sm" onClick={() => setTimeframe(30)}>30D</Button>
-            <Button variant="outline" size="sm" onClick={() => setTimeframe(90)}>90D</Button>
-            <Button variant="outline" size="sm" onClick={() => setTimeframe(365)}>1Y</Button>
-          </div>
-        )}
+    <Card className="w-full">
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <div>
+          <CardTitle className="text-xl">{symbol}</CardTitle>
+          <CardDescription className="flex items-center mt-1">
+            <span className="text-lg font-semibold">${currentPrice.toFixed(2)}</span>
+            <span
+              className={`ml-2 ${
+                priceChange >= 0 ? "text-green-500" : "text-red-500"
+              }`}
+            >
+              {priceChange >= 0 ? "+" : ""}
+              {priceChange.toFixed(2)} ({percentChange.toFixed(2)}%)
+            </span>
+          </CardDescription>
+        </div>
+        <div className="flex space-x-2">
+          <Select value={timeRange} onValueChange={(value: any) => setTimeRange(value)}>
+            <SelectTrigger className="w-[80px]">
+              <SelectValue placeholder={timeRange} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="1W">1W</SelectItem>
+              <SelectItem value="1M">1M</SelectItem>
+              <SelectItem value="3M">3M</SelectItem>
+              <SelectItem value="1Y">1Y</SelectItem>
+              <SelectItem value="ALL">ALL</SelectItem>
+            </SelectContent>
+          </Select>
+          <Tabs defaultValue="area" value={chartType} onValueChange={(value: any) => setChartType(value)}>
+            <TabsList className="grid grid-cols-4 h-8">
+              <TabsTrigger value="area" className="px-2 text-xs">Area</TabsTrigger>
+              <TabsTrigger value="line" className="px-2 text-xs">Line</TabsTrigger>
+              <TabsTrigger value="candle" className="px-2 text-xs">Candle</TabsTrigger>
+              <TabsTrigger value="bar" className="px-2 text-xs">Bar</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
       </CardHeader>
-      
-      <CardContent className="p-0">
-        <Tabs defaultValue="price" className="h-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="price">Price</TabsTrigger>
-            <TabsTrigger value="volume">Volume</TabsTrigger>
-            <TabsTrigger value="both">Both</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="price" className="h-full">
-            <ResponsiveContainer width="100%" height={compact ? 350 : 500}>
-              <LineChart data={processedData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Line type="monotone" dataKey="price" stroke="#8884d8" name="Price" />
-              </LineChart>
+      <CardContent>
+        <div className="h-[400px] w-full">
+          {chartType === "area" && (
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={formattedData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorClose" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={colors.primary} stopOpacity={0.8} />
+                    <stop offset="95%" stopColor={colors.primary} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} />
+                <XAxis 
+                  dataKey="displayDate" 
+                  tick={{ fontSize: 12 }}
+                  interval="preserveStartEnd"
+                  tickMargin={10}
+                />
+                <YAxis domain={['auto', 'auto']} tick={{ fontSize: 12 }} />
+                <Tooltip
+                  formatter={(value: any) => [`$${value}`, "Price"]}
+                  labelFormatter={(label) => `Date: ${label}`}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="close"
+                  stroke={colors.primary}
+                  fillOpacity={1}
+                  fill="url(#colorClose)"
+                />
+              </AreaChart>
             </ResponsiveContainer>
-          </TabsContent>
-          
-          <TabsContent value="volume" className="h-full">
-            <ResponsiveContainer width="100%" height={compact ? 350 : 500}>
-              <BarChart data={processedData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis yAxisId="volume" orientation="right" />
-                <Tooltip />
+          )}
+
+          {chartType === "line" && (
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={formattedData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} />
+                <XAxis 
+                  dataKey="displayDate" 
+                  tick={{ fontSize: 12 }}
+                  interval="preserveStartEnd"
+                  tickMargin={10}
+                />
+                <YAxis domain={['auto', 'auto']} tick={{ fontSize: 12 }} />
+                <Tooltip
+                  formatter={(value: any) => [`$${value}`, "Price"]}
+                  labelFormatter={(label) => `Date: ${label}`}
+                />
                 <Legend />
-                <Bar
-                  dataKey="volume"
-                  fill="#64748b"
-                  yAxisId="volume"
-                  name="Volume"
+                <Line
+                  type="monotone"
+                  dataKey="close"
+                  stroke={colors.primary}
+                  strokeWidth={2}
+                  dot={false}
+                  activeDot={{ r: 6 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="open"
+                  stroke={colors.secondary}
+                  strokeWidth={1}
+                  strokeDasharray="5 5"
+                  dot={false}
+                />
+              </ComposedChart>
+            </ResponsiveContainer>
+          )}
+
+          {chartType === "candle" && (
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={formattedData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} />
+                <XAxis 
+                  dataKey="displayDate" 
+                  tick={{ fontSize: 12 }}
+                  interval="preserveStartEnd"
+                  tickMargin={10}
+                />
+                <YAxis domain={['auto', 'auto']} tick={{ fontSize: 12 }} />
+                <Tooltip
+                  formatter={(value: any) => [`$${value}`, "Price"]}
+                  labelFormatter={(label) => `Date: ${label}`}
+                />
+                <Legend />
+                <Bar 
+                  dataKey="high" 
+                  fill="transparent" 
+                  stroke={colors.secondary} 
+                  barSize={3}
+                />
+                <Bar 
+                  dataKey="low" 
+                  fill="transparent" 
+                  stroke={colors.secondary} 
+                  barSize={3}
+                />
+                <Bar 
+                  dataKey="close" 
+                  fill={colors.positive} 
+                  barSize={10}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="close"
+                  stroke={colors.primary}
+                  dot={false}
+                />
+              </ComposedChart>
+            </ResponsiveContainer>
+          )}
+
+          {chartType === "bar" && (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={formattedData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} />
+                <XAxis 
+                  dataKey="displayDate" 
+                  tick={{ fontSize: 12 }}
+                  interval="preserveStartEnd"
+                  tickMargin={10}
+                />
+                <YAxis domain={['auto', 'auto']} tick={{ fontSize: 12 }} />
+                <Tooltip
+                  formatter={(value: any) => [`$${value}`, "Price"]}
+                  labelFormatter={(label) => `Date: ${label}`}
+                />
+                <Legend />
+                <Bar 
+                  dataKey="close" 
+                  fill={colors.primary} 
+                  barSize={4}
+                  name="Close Price"
+                />
+                <Bar 
+                  dataKey="open" 
+                  fill={colors.secondary} 
+                  barSize={4}
+                  name="Open Price"
                 />
               </BarChart>
             </ResponsiveContainer>
-          </TabsContent>
-          
-          <TabsContent value="both" className="h-full">
-            <ResponsiveContainer width="100%" height={compact ? 350 : 500}>
-              <ComposedChart data={processedData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis yAxisId="price" />
-                <YAxis yAxisId="volume" orientation="right" />
-                <Tooltip />
-                <Legend />
-                <Line type="monotone" yAxisId="price" dataKey="price" stroke="#8884d8" name="Price" />
-                <Bar yAxisId="volume" dataKey="volume" fill="#64748b" name="Volume" />
-              </ComposedChart>
-            </ResponsiveContainer>
-          </TabsContent>
-        </Tabs>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
-};
-
-export { AdvancedStockChart };
+}
