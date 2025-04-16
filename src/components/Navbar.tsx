@@ -196,12 +196,16 @@ const Navbar = () => {
                   
                   <div className="mt-auto pt-4 border-t">
                     {user ? (
-                      <Button variant="outline" className="w-full" onClick={() => {
-                        signOut();
-                        setIsOpen(false);
-                      }}>
+                      <Button 
+                        variant="outline" 
+                        className="w-full" 
+                        onClick={() => {
+                          signOut();
+                          setIsOpen(false);
+                        }}
+                      >
                         <LogOut className="h-4 w-4 mr-2" />
-                        Logout
+                        <span>Logout</span>
                       </Button>
                     ) : (
                       <Button variant="default" className="w-full" asChild>
