@@ -1,3 +1,4 @@
+
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -203,7 +204,7 @@ const Navbar = () => {
                         Logout
                       </Button>
                     ) : (
-                      <Button variant="default" className="w-full" asChild onClick={() => setIsOpen(false)}>
+                      <Button variant="default" className="w-full" asChild>
                         <Link to="/auth">Login</Link>
                       </Button>
                     )}
