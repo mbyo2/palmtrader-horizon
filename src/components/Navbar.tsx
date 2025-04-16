@@ -13,7 +13,7 @@ import {
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Menu, X, User, Settings, LogOut } from "lucide-react";
+import { Menu, X, User, Settings, LogOut, TrendingUp, BarChart3, Activity, DollarSign } from "lucide-react";
 import { useState } from "react";
 
 const Navbar = () => {
@@ -23,11 +23,11 @@ const Navbar = () => {
   const [currency, setCurrency] = useState("USD");
 
   const navLinks = [
-    { to: "/markets", label: "Markets" },
-    { to: "/crypto", label: "Crypto" },
-    { to: "/portfolio", label: "Portfolio" },
-    { to: "/watchlist", label: "Watchlist" },
-    { to: "/ipo", label: "IPO" },
+    { to: "/markets", label: "Markets", icon: <BarChart3 className="h-4 w-4 mr-2" /> },
+    { to: "/crypto", label: "Crypto", icon: <Activity className="h-4 w-4 mr-2" /> },
+    { to: "/portfolio", label: "Portfolio", icon: <TrendingUp className="h-4 w-4 mr-2" /> },
+    { to: "/watchlist", label: "Watchlist", icon: <DollarSign className="h-4 w-4 mr-2" /> },
+    { to: "/ipo", label: "IPO", icon: <BarChart3 className="h-4 w-4 mr-2" /> },
   ];
 
   const getInitials = () => {
@@ -56,9 +56,10 @@ const Navbar = () => {
                 <Link
                   key={link.to}
                   to={link.to}
-                  className="text-sm font-medium transition-colors hover:text-primary"
+                  className="text-sm font-medium transition-colors hover:text-primary flex items-center"
                 >
-                  {link.label}
+                  {link.icon}
+                  <span>{link.label}</span>
                 </Link>
               ))}
             </nav>
@@ -172,10 +173,11 @@ const Navbar = () => {
                       <Link
                         key={link.to}
                         to={link.to}
-                        className="py-2 px-3 text-sm font-medium hover:bg-accent/50 rounded-md transition-colors"
+                        className="py-2 px-3 text-sm font-medium hover:bg-accent/50 rounded-md transition-colors flex items-center"
                         onClick={() => setIsOpen(false)}
                       >
-                        {link.label}
+                        {link.icon}
+                        <span>{link.label}</span>
                       </Link>
                     ))}
                     
