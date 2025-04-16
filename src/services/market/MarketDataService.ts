@@ -140,8 +140,8 @@ export class MarketDataService {
             const previous = mockData[mockData.length - 2];
             result.push({
               symbol,
-              price: latest.close,
-              change: latest.close - previous.close,
+              price: latest.close || latest.price,
+              change: latest.close && previous.close ? latest.close - previous.close : 0,
               volume: latest.volume || 0
             });
           } else {
@@ -167,7 +167,7 @@ export class MarketDataService {
           const latest = mockData[mockData.length - 1];
           return {
             symbol,
-            price: latest.close,
+            price: latest.price,
             change: 0,
             volume: latest.volume || 0
           };
