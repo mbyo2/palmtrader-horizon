@@ -7,6 +7,7 @@ import { MarketDataService } from "@/services/MarketDataService";
 import { AdvancedStockChart } from "@/components/Research/AdvancedStockChart";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 // Create the missing CryptoTrading component
 const CryptoTrading = () => {
@@ -81,7 +82,9 @@ const Crypto = () => {
               {isLoading ? (
                 <Skeleton className="h-[400px] w-full" />
               ) : cryptoData && cryptoData.length > 0 ? (
-                <AdvancedStockChart symbol={selectedCrypto} data={cryptoData} />
+                <TooltipProvider>
+                  <AdvancedStockChart symbol={selectedCrypto} data={cryptoData} />
+                </TooltipProvider>
               ) : (
                 <div className="h-[400px] flex items-center justify-center text-muted-foreground">
                   No data available for {selectedCrypto}

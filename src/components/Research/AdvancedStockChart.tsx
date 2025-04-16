@@ -28,9 +28,10 @@ import { MarketData } from "@/services/MarketDataService";
 interface AdvancedStockChartProps {
   symbol: string;
   data: MarketData[];
+  compact?: boolean;
 }
 
-export function AdvancedStockChart({ symbol, data }: AdvancedStockChartProps) {
+export function AdvancedStockChart({ symbol, data, compact = false }: AdvancedStockChartProps) {
   const [timeRange, setTimeRange] = useState<"1W" | "1M" | "3M" | "1Y" | "ALL">("1M");
   const [chartType, setChartType] = useState<"area" | "candle" | "line" | "bar">("area");
 
@@ -60,7 +61,12 @@ export function AdvancedStockChart({ symbol, data }: AdvancedStockChartProps) {
         return data;
     }
 
-    return data.filter((item) => new Date(item.date) >= startDate);
+    return data.filter((item) => {
+      // Check if date property exists, otherwise use timestamp
+      const itemDate = item.date ? new Date(item.date) : 
+                       (item.timestamp ? new Date(item.timestamp) : null);
+      return itemDate ? itemDate >= startDate : true;
+    });
   })();
 
   // Calculate price change
@@ -82,18 +88,59 @@ export function AdvancedStockChart({ symbol, data }: AdvancedStockChartProps) {
   // Format data for better visualization
   const formattedData = filteredData.map((item) => ({
     ...item,
-    // Format date based on time range
-    displayDate:
-      timeRange === "1W" || timeRange === "1M"
-        ? new Date(item.date).toLocaleDateString(undefined, {
+    // Format date based on time range and available properties
+    displayDate: (() => {
+      const itemDate = item.date ? new Date(item.date) : 
+                       (item.timestamp ? new Date(item.timestamp) : new Date());
+      
+      return timeRange === "1W" || timeRange === "1M"
+        ? itemDate.toLocaleDateString(undefined, {
             month: "short",
             day: "numeric",
           })
-        : new Date(item.date).toLocaleDateString(undefined, {
+        : itemDate.toLocaleDateString(undefined, {
             month: "short",
             year: "2-digit",
-          }),
+          });
+    })()
   }));
+
+  // If compact mode is enabled, reduce the UI complexity
+  if (compact) {
+    return (
+      <div className="h-[400px] w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={formattedData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+            <defs>
+              <linearGradient id="colorClose" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={colors.primary} stopOpacity={0.8} />
+                <stop offset="95%" stopColor={colors.primary} stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} />
+            <XAxis 
+              dataKey="displayDate" 
+              tick={{ fontSize: 12 }}
+              interval="preserveStartEnd"
+              tickMargin={10}
+            />
+            <YAxis domain={['auto', 'auto']} tick={{ fontSize: 12 }} />
+            <Tooltip
+              formatter={(value: any) => [`$${value}`, "Price"]}
+              labelFormatter={(label) => `Date: ${label}`}
+            />
+            <Area
+              type="monotone"
+              dataKey="close"
+              stroke={colors.primary}
+              fillOpacity={1}
+              fill="url(#colorClose)"
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+    );
+  }
 
   return (
     <Card className="w-full">

@@ -9,6 +9,11 @@ export interface MarketData {
   low: number;
   close: number;
   volume?: number;
+  // Adding these properties to match the type in types.ts
+  symbol?: string;
+  price?: number;
+  timestamp?: string;
+  type?: 'stock' | 'crypto' | 'forex';
 }
 
 // Demo market data for development and fallback
@@ -41,7 +46,12 @@ function generateDemoData(symbol: string, basePrice: number): MarketData[] {
       high: parseFloat((dayPrice * (1 + Math.random() * 0.02)).toFixed(2)),
       low: parseFloat((dayPrice * (1 - Math.random() * 0.02)).toFixed(2)),
       close: parseFloat(dayPrice.toFixed(2)),
-      volume: Math.round(Math.random() * 10000000)
+      volume: Math.round(Math.random() * 10000000),
+      // Adding these properties to match the type in types.ts
+      symbol: symbol,
+      price: parseFloat(dayPrice.toFixed(2)),
+      timestamp: date.toISOString(),
+      type: symbol.includes('BTC') || symbol.includes('ETH') ? 'crypto' : 'stock'
     });
   }
   
@@ -71,7 +81,11 @@ export class MarketDataService {
           open: item.open || item.price,
           high: item.high || item.price,
           low: item.low || item.price,
-          close: item.close || item.price
+          close: item.close || item.price,
+          symbol: item.symbol,
+          price: item.price,
+          timestamp: new Date(item.timestamp).toISOString(),
+          type: item.type
         }));
       }
       
@@ -161,6 +175,42 @@ export class MarketDataService {
       return {
         price: parseFloat((Math.random() * 1000 + 50).toFixed(2))
       };
+    }
+  }
+  
+  // Adding this method to match what's being called in the components
+  static async fetchMultipleLatestPrices(symbols: string[]): Promise<Array<{ symbol: string; price: number; change?: number }>> {
+    try {
+      console.log(`Fetching prices for multiple symbols: ${symbols.join(', ')}`);
+      
+      const result = await this.fetchMultipleStockPrices(symbols);
+      
+      // Convert the object format to an array format
+      return Object.entries(result).map(([symbol, data]) => ({
+        symbol,
+        price: data.price,
+        change: data.change
+      }));
+    } catch (error) {
+      console.error("Error in fetchMultipleLatestPrices:", error);
+      
+      // Fallback to generating demo data
+      return symbols.map(symbol => {
+        const demoData = demoMarketData[symbol as keyof typeof demoMarketData];
+        if (demoData) {
+          return {
+            symbol,
+            price: demoData[demoData.length - 1].close,
+            change: 0
+          };
+        }
+        
+        return {
+          symbol,
+          price: parseFloat((Math.random() * 200 + 50).toFixed(2)),
+          change: parseFloat((Math.random() * 10 - 5).toFixed(2))
+        };
+      });
     }
   }
   

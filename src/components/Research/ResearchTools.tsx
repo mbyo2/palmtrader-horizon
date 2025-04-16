@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { AlertCircle, LineChart } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { MarketDataService } from "@/services/MarketDataService";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 interface ResearchToolsProps {
   onSymbolChange?: (symbol: string) => void;
@@ -35,7 +36,7 @@ const ResearchTools = ({ onSymbolChange, initialSymbol = "AAPL" }: ResearchTools
 
   // Get current price
   const currentPrice = marketData && marketData.length > 0 
-    ? marketData[marketData.length - 1].price 
+    ? (marketData[marketData.length - 1].close || marketData[marketData.length - 1].price || 150.75) 
     : 150.75;
 
   const handleSymbolChange = () => {
@@ -71,12 +72,14 @@ const ResearchTools = ({ onSymbolChange, initialSymbol = "AAPL" }: ResearchTools
           </Button>
         </div>
         <div className="flex items-center gap-2">
-          <PriceAlertModal symbol={symbol} currentPrice={currentPrice}>
-            <Button size="sm" variant="outline" className="flex items-center gap-1">
-              <AlertCircle className="h-4 w-4" />
-              Set Alert
-            </Button>
-          </PriceAlertModal>
+          <TooltipProvider>
+            <PriceAlertModal symbol={symbol} currentPrice={currentPrice}>
+              <Button size="sm" variant="outline" className="flex items-center gap-1">
+                <AlertCircle className="h-4 w-4" />
+                Set Alert
+              </Button>
+            </PriceAlertModal>
+          </TooltipProvider>
           <WatchlistButton symbol={symbol} />
         </div>
       </div>
@@ -96,7 +99,7 @@ const ResearchTools = ({ onSymbolChange, initialSymbol = "AAPL" }: ResearchTools
         </TabsList>
 
         <TabsContent value="chart">
-          <AdvancedChart symbol={symbol} data={marketData || []} />
+          {marketData && <AdvancedChart symbol={symbol} data={marketData} />}
         </TabsContent>
         
         <TabsContent value="technical">

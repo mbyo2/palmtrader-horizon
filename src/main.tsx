@@ -5,6 +5,7 @@ import App from './App.tsx';
 import './index.css';
 import ErrorBoundary from './components/ErrorBoundary.tsx';
 import { logError } from './utils/errorHandling.ts';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
@@ -14,7 +15,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         logError(error, { componentStack: "Root level error" });
       }}
     >
-      <App />
+      <TooltipProvider>
+        <App />
+      </TooltipProvider>
     </ErrorBoundary>
   </React.StrictMode>,
 );
