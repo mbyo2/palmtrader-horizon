@@ -1,4 +1,4 @@
 
 // Export from the new modular structure
-export { MarketDataService, type MarketData } from './market/MarketDataService';
-
+export { MarketDataService } from './market/MarketDataService';
+export type { MarketData } from './market/types';

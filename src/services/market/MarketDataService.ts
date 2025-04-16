@@ -1,23 +1,8 @@
-
 import { supabase } from "@/integrations/supabase/client";
-
-// Define interfaces for market data types
-export interface MarketData {
-  date: string;
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-  volume?: number;
-  // Adding these properties to match the type in types.ts
-  symbol?: string;
-  price?: number;
-  timestamp?: string;
-  type?: 'stock' | 'crypto' | 'forex';
-}
+import { MarketData } from "./types";
 
 // Demo market data for development and fallback
-const demoMarketData = {
+const demoMarketData: Record<string, MarketData[]> = {
   'AAPL': generateDemoData('AAPL', 180),
   'MSFT': generateDemoData('MSFT', 320),
   'GOOGL': generateDemoData('GOOGL', 140),
@@ -41,17 +26,17 @@ function generateDemoData(symbol: string, basePrice: number): MarketData[] {
     const dayPrice = basePrice * (1 + changePercent);
     
     data.push({
-      date: date.toISOString().split('T')[0],
+      symbol: symbol,
+      timestamp: date.toISOString(),
+      price: parseFloat(dayPrice.toFixed(2)),
       open: parseFloat((dayPrice * (1 - Math.random() * 0.01)).toFixed(2)),
       high: parseFloat((dayPrice * (1 + Math.random() * 0.02)).toFixed(2)),
       low: parseFloat((dayPrice * (1 - Math.random() * 0.02)).toFixed(2)),
       close: parseFloat(dayPrice.toFixed(2)),
       volume: Math.round(Math.random() * 10000000),
-      // Adding these properties to match the type in types.ts
-      symbol: symbol,
-      price: parseFloat(dayPrice.toFixed(2)),
-      timestamp: date.toISOString(),
-      type: symbol.includes('BTC') || symbol.includes('ETH') ? 'crypto' : 'stock'
+      type: (symbol.includes('BTC') || symbol.includes('ETH')) ? 'crypto' : 'stock',
+      // Adding date for backward compatibility
+      date: date.toISOString().split('T')[0]
     });
   }
   
@@ -77,22 +62,24 @@ export class MarketDataService {
       // If we have data in the database, format and return it
       if (data && data.length > 0) {
         return data.map(item => ({
-          date: new Date(item.timestamp).toISOString().split('T')[0],
+          symbol: item.symbol,
+          timestamp: new Date(item.timestamp).toISOString(),
+          price: item.price,
           open: item.open || item.price,
           high: item.high || item.price,
           low: item.low || item.price,
           close: item.close || item.price,
-          symbol: item.symbol,
-          price: item.price,
-          timestamp: new Date(item.timestamp).toISOString(),
-          type: item.type
+          volume: item.volume,
+          type: (item.type === 'crypto' || item.type === 'forex') ? item.type : 'stock',
+          // Adding date for backward compatibility
+          date: new Date(item.timestamp).toISOString().split('T')[0]
         }));
       }
       
       // Fallback to demo data if available
-      if (demoMarketData[symbol as keyof typeof demoMarketData]) {
+      if (demoMarketData[symbol]) {
         console.log(`Using demo data for ${symbol}`);
-        return demoMarketData[symbol as keyof typeof demoMarketData].slice(-days);
+        return demoMarketData[symbol].slice(-days);
       }
       
       // If no demo data available, generate random data
@@ -102,8 +89,8 @@ export class MarketDataService {
       console.error("Error fetching historical data:", error);
       
       // Fallback to demo data in case of error
-      if (demoMarketData[symbol as keyof typeof demoMarketData]) {
-        return demoMarketData[symbol as keyof typeof demoMarketData].slice(-days);
+      if (demoMarketData[symbol]) {
+        return demoMarketData[symbol].slice(-days);
       }
       
       return generateDemoData(symbol, Math.random() * 200 + 50).slice(-days);
@@ -178,7 +165,6 @@ export class MarketDataService {
     }
   }
   
-  // Adding this method to match what's being called in the components
   static async fetchMultipleLatestPrices(symbols: string[]): Promise<Array<{ symbol: string; price: number; change?: number }>> {
     try {
       console.log(`Fetching prices for multiple symbols: ${symbols.join(', ')}`);

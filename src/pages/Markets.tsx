@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { AdvancedStockChart } from "@/components/Research/AdvancedStockChart";
 import AdvancedChart from "@/components/Research/AdvancedChart";
 import ResearchTools from "@/components/Research/ResearchTools";
-import { MarketDataService, MarketData } from "@/services/MarketDataService";
+import { MarketDataService } from "@/services/MarketDataService";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
@@ -16,6 +16,7 @@ import { TechnicalIndicatorService } from "@/services/TechnicalIndicatorService"
 import TechnicalIndicators from "@/components/TechnicalIndicators";
 import SocialShare from "@/components/Social/SocialShare";
 import Comments from "@/components/Social/Comments";
+import { MarketData } from "@/services/market/types";
 
 const Markets = () => {
   const [symbol, setSymbol] = useState("AAPL");

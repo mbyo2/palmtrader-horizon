@@ -17,6 +17,7 @@ import { AlertCircle, LineChart } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { MarketDataService } from "@/services/MarketDataService";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { MarketData } from "@/services/market/types";
 
 interface ResearchToolsProps {
   onSymbolChange?: (symbol: string) => void;
