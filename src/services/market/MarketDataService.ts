@@ -25,7 +25,7 @@ export class MarketDataService {
           symbol: data[0].symbol,
           price: data[0].price,
           change: 0, // We don't have change data yet
-          volume: data[0].volume || 0 // Use volume if exists, otherwise default to 0
+          volume: 0 // Default volume to 0 since it doesn't exist in the database schema
         };
       }
       
@@ -67,7 +67,19 @@ export class MarketDataService {
       
       // If we have enough data, return it
       if (data && data.length > 0) {
-        return data as MarketData[];
+        // Convert the data to match the MarketData interface
+        const formattedData: MarketData[] = data.map(item => ({
+          symbol: item.symbol,
+          timestamp: item.timestamp.toString(), // Convert timestamp to string as required by MarketData
+          price: item.price,
+          open: item.open,
+          high: item.high,
+          low: item.low,
+          close: item.close || item.price, // Use price as fallback
+          volume: 0, // Default volume since it doesn't exist in database schema
+          type: (item.type as 'stock' | 'crypto' | 'forex') || 'stock' // Use type from DB or default to 'stock'
+        }));
+        return formattedData;
       }
       
       // If not enough data in database, use demo data
@@ -113,7 +125,7 @@ export class MarketDataService {
               symbol: latestForSymbol.symbol,
               price: latestForSymbol.price,
               change: 0, // We don't have change data yet
-              volume: latestForSymbol.volume || 0 // Use volume if exists, otherwise default to 0
+              volume: 0 // Default volume since it doesn't exist in database schema
             });
           }
         });
