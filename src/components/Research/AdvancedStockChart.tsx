@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import {
   AreaChart,
@@ -62,16 +61,15 @@ export function AdvancedStockChart({ symbol, data, compact = false }: AdvancedSt
     }
 
     return data.filter((item) => {
-      // Check if date property exists, otherwise use timestamp
-      const itemDate = item.date ? new Date(item.date) : 
-                       (item.timestamp ? new Date(item.timestamp) : null);
-      return itemDate ? itemDate >= startDate : true;
+      // Use timestamp property for date filtering
+      const itemDate = new Date(item.timestamp);
+      return itemDate >= startDate;
     });
   })();
 
   // Calculate price change
-  const currentPrice = data.length > 0 ? data[data.length - 1].close : 0;
-  const initialPrice = filteredData.length > 0 ? filteredData[0].open : 0;
+  const currentPrice = data.length > 0 ? data[data.length - 1].close || data[data.length - 1].price : 0;
+  const initialPrice = filteredData.length > 0 ? filteredData[0].open || filteredData[0].price : 0;
   const priceChange = currentPrice - initialPrice;
   const percentChange = initialPrice > 0 ? (priceChange / initialPrice) * 100 : 0;
 
@@ -88,10 +86,9 @@ export function AdvancedStockChart({ symbol, data, compact = false }: AdvancedSt
   // Format data for better visualization
   const formattedData = filteredData.map((item) => ({
     ...item,
-    // Format date based on time range and available properties
+    // Format date based on time range
     displayDate: (() => {
-      const itemDate = item.date ? new Date(item.date) : 
-                       (item.timestamp ? new Date(item.timestamp) : new Date());
+      const itemDate = new Date(item.timestamp);
       
       return timeRange === "1W" || timeRange === "1M"
         ? itemDate.toLocaleDateString(undefined, {

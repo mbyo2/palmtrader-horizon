@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { MarketData } from "./types";
 
@@ -34,9 +35,7 @@ function generateDemoData(symbol: string, basePrice: number): MarketData[] {
       low: parseFloat((dayPrice * (1 - Math.random() * 0.02)).toFixed(2)),
       close: parseFloat(dayPrice.toFixed(2)),
       volume: Math.round(Math.random() * 10000000),
-      type: (symbol.includes('BTC') || symbol.includes('ETH')) ? 'crypto' : 'stock',
-      // Adding date for backward compatibility
-      date: date.toISOString().split('T')[0]
+      type: (symbol.includes('BTC') || symbol.includes('ETH')) ? 'crypto' : 'stock'
     });
   }
   
@@ -69,10 +68,9 @@ export class MarketDataService {
           high: item.high || item.price,
           low: item.low || item.price,
           close: item.close || item.price,
-          volume: item.volume,
-          type: (item.type === 'crypto' || item.type === 'forex') ? item.type : 'stock',
-          // Adding date for backward compatibility
-          date: new Date(item.timestamp).toISOString().split('T')[0]
+          volume: item.volume || 0,
+          type: (item.type === 'crypto' || item.type === 'forex') ? 
+            (item.type as 'crypto' | 'forex') : 'stock'
         }));
       }
       
@@ -222,7 +220,11 @@ export class MarketDataService {
         const latestBySymbol = symbols.reduce((acc, symbol) => {
           const latestForSymbol = data
             .filter(item => item.symbol === symbol)
-            .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+            .sort((a, b) => {
+              const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+              const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+              return dateB - dateA;
+            })[0];
           
           if (latestForSymbol) {
             acc[symbol] = { 
