@@ -68,7 +68,7 @@ export class MarketDataService {
           high: item.high || item.price,
           low: item.low || item.price,
           close: item.close || item.price,
-          volume: item.volume || 0,
+          volume: item.volume !== undefined ? item.volume : 0,
           type: (item.type === 'crypto' || item.type === 'forex') ? 
             (item.type as 'crypto' | 'forex') : 'stock'
         }));
