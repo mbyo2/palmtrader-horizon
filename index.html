@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     
     <!-- Primary Meta Tags -->
-    <title>Lovable App</title>
+    <title>PalmCacia - Investment Made Simple</title>
     <meta name="title" content="PalmCacia - Investment Made Simple">
     <meta name="description" content="Join thousands of Zambians building wealth through smart investments in stocks, bonds, and more with PalmCacia.">
     
@@ -15,9 +15,27 @@
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta http-equiv="X-Frame-Options" content="DENY">
     <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.gpteng.co; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.supabase.co https://api.coingecko.com;">
+    
+    <!-- iOS Specific Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    
+    <!-- Web Application Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- Theme color for browser chrome -->
+    <meta name="theme-color" content="#4F46E5">
   </head>
   <body>
     <div id="root"></div>
+    <noscript>
+      <div style="padding: 2rem; text-align: center; max-width: 40rem; margin: 0 auto;">
+        <h1>JavaScript Required</h1>
+        <p>We're sorry, but PalmCacia requires JavaScript to function properly. Please enable JavaScript in your browser settings to continue.</p>
+      </div>
+    </noscript>
     <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
     <script type="module" src="/src/main.tsx"></script>
   </body>

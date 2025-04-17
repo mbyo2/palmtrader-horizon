@@ -8,6 +8,8 @@ interface OptimizedImageProps extends React.ImgHTMLAttributes<HTMLImageElement> 
   className?: string;
   sizes?: string;
   priority?: boolean;
+  caption?: string;
+  decorative?: boolean;
 }
 
 const OptimizedImage = ({ 
@@ -16,6 +18,8 @@ const OptimizedImage = ({
   className, 
   sizes = "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw",
   priority = false,
+  caption,
+  decorative = false,
   ...props 
 }: OptimizedImageProps) => {
   const [isLoaded, setIsLoaded] = useState(false);
@@ -87,18 +91,69 @@ const OptimizedImage = ({
     }
   }, [priority, src]);
 
+  // Determine if we should omit alt text for decorative images
+  const imgAlt = decorative ? '' : (alt || 'Image');
+  
+  // Use aria-hidden for decorative images
+  const ariaHidden = decorative ? true : undefined;
+
+  // Wrap the image in a figure if it has a caption
+  if (caption) {
+    return (
+      <figure className={className}>
+        <div className="relative overflow-hidden">
+          {!isLoaded && !isError && (
+            <div 
+              className="absolute inset-0 blur-sm bg-cover bg-center animate-pulse" 
+              style={{ backgroundImage: `url(${getBlurPlaceholder(src)})` }}
+              aria-hidden="true"
+            />
+          )}
+          
+          <img
+            src={src}
+            alt={imgAlt}
+            className={cn(
+              "transition-opacity duration-300 w-full h-full object-cover",
+              isLoaded ? "opacity-100" : "opacity-0"
+            )}
+            loading={priority ? "eager" : "lazy"}
+            decoding="async"
+            onLoad={handleLoad}
+            onError={handleError}
+            srcSet={generateSrcSet(src)}
+            sizes={sizes}
+            aria-hidden={ariaHidden}
+            {...props}
+          />
+          
+          {isError && (
+            <div 
+              className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-800"
+              role="alert"
+            >
+              <span className="text-sm text-gray-500 dark:text-gray-400">Failed to load image</span>
+            </div>
+          )}
+        </div>
+        <figcaption className="mt-2 text-sm text-center text-muted-foreground">{caption}</figcaption>
+      </figure>
+    );
+  }
+
   return (
     <div className={cn("relative overflow-hidden", className)}>
       {!isLoaded && !isError && (
         <div 
           className="absolute inset-0 blur-sm bg-cover bg-center animate-pulse" 
           style={{ backgroundImage: `url(${getBlurPlaceholder(src)})` }}
+          aria-hidden="true"
         />
       )}
       
       <img
         src={src}
-        alt={alt}
+        alt={imgAlt}
         className={cn(
           "transition-opacity duration-300 w-full h-full object-cover",
           isLoaded ? "opacity-100" : "opacity-0",
@@ -110,11 +165,15 @@ const OptimizedImage = ({
         onError={handleError}
         srcSet={generateSrcSet(src)}
         sizes={sizes}
+        aria-hidden={ariaHidden}
         {...props}
       />
       
       {isError && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-800">
+        <div 
+          className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-800"
+          role="alert"
+        >
           <span className="text-sm text-gray-500 dark:text-gray-400">Failed to load image</span>
         </div>
       )}

@@ -6,9 +6,11 @@ import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { NotificationsProvider } from "./components/Notifications/NotificationsProvider";
-import ErrorBoundary from "./components/ErrorBoundary";
+import EnhancedErrorBoundary from "./components/EnhancedErrorBoundary";
 import { setupGlobalErrorHandlers } from "./utils/errorHandling";
 import OrderProcessorInitializer from "./components/OrderProcessorInitializer";
+import AccessibilityProvider from "./components/Accessibility/AccessibilityProvider";
+import ErrorPage from "./components/ErrorPage";
 
 // Components
 import Navbar from "./components/Navbar";
@@ -73,9 +75,13 @@ function App() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-screen flex items-center justify-center bg-background" aria-live="polite" aria-busy="true">
         <div className="text-center space-y-4">
-          <div className="w-16 h-16 mx-auto border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+          <div 
+            className="w-16 h-16 mx-auto border-4 border-primary border-t-transparent rounded-full animate-spin"
+            role="progressbar"
+            aria-label="Loading"
+          ></div>
           <p className="text-lg text-foreground/80">Loading Palm Cacia...</p>
         </div>
       </div>
@@ -87,40 +93,49 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <NotificationsProvider>
-            <div className="min-h-screen flex flex-col">
-              <Navbar />
-              <main className="flex-1">
-                <Toaster />
-                <Sonner />
-                <Suspense fallback={
-                  <div className="container py-6 flex items-center justify-center min-h-[60vh]">
-                    <div className="text-center space-y-4">
-                      <div className="w-12 h-12 mx-auto border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-                      <p className="text-foreground/80">Loading...</p>
+            <AccessibilityProvider>
+              <div className="min-h-screen flex flex-col">
+                <Navbar />
+                <main id="main" className="flex-1" tabIndex={-1}>
+                  <Toaster />
+                  <Sonner />
+                  <Suspense fallback={
+                    <div className="container py-6 flex items-center justify-center min-h-[60vh]" aria-live="polite" aria-busy="true">
+                      <div className="text-center space-y-4">
+                        <div 
+                          className="w-12 h-12 mx-auto border-4 border-primary border-t-transparent rounded-full animate-spin"
+                          role="progressbar"
+                          aria-label="Loading content"
+                        ></div>
+                        <p className="text-foreground/80">Loading...</p>
+                      </div>
                     </div>
-                  </div>
-                }>
-                  <ErrorBoundary>
-                    <Routes>
-                      <Route path="/" element={<Index />} />
-                      <Route path="/auth" element={<Auth />} />
-                      <Route path="/markets" element={<Markets />} />
-                      <Route path="/watchlist" element={<Watchlist />} />
-                      <Route path="/portfolio" element={<Portfolio />} />
-                      <Route path="/ipo" element={<IPO />} />
-                      <Route path="/ipo/:id" element={<IPODetails />} />
-                      <Route path="/crypto" element={<Crypto />} />
-                      <Route path="/onboarding" element={<Onboarding />} />
-                      <Route path="/settings" element={<AccountSettings />} />
-                      <Route path="/banking" element={<Banking />} />
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
-                  </ErrorBoundary>
-                </Suspense>
-                <OrderProcessorInitializer />
-              </main>
-              <Footer />
-            </div>
+                  }>
+                    <EnhancedErrorBoundary>
+                      <Routes>
+                        <Route path="/" element={<Index />} />
+                        <Route path="/auth" element={<Auth />} />
+                        <Route path="/markets" element={<Markets />} />
+                        <Route path="/watchlist" element={<Watchlist />} />
+                        <Route path="/portfolio" element={<Portfolio />} />
+                        <Route path="/ipo" element={<IPO />} />
+                        <Route path="/ipo/:id" element={<IPODetails />} />
+                        <Route path="/crypto" element={<Crypto />} />
+                        <Route path="/onboarding" element={<Onboarding />} />
+                        <Route path="/settings" element={<AccountSettings />} />
+                        <Route path="/banking" element={<Banking />} />
+                        <Route path="/404" element={<ErrorPage statusCode={404} title="Page Not Found" description="The page you are looking for doesn't exist or has been moved." />} />
+                        <Route path="/500" element={<ErrorPage statusCode={500} title="Server Error" description="We're experiencing some issues. Please try again later." />} />
+                        <Route path="/403" element={<ErrorPage statusCode={403} title="Access Denied" description="You don't have permission to access this resource." />} />
+                        <Route path="*" element={<ErrorPage statusCode={404} title="Page Not Found" description="The page you are looking for doesn't exist or has been moved." />} />
+                      </Routes>
+                    </EnhancedErrorBoundary>
+                  </Suspense>
+                  <OrderProcessorInitializer />
+                </main>
+                <Footer />
+              </div>
+            </AccessibilityProvider>
           </NotificationsProvider>
         </ThemeProvider>
       </QueryClientProvider>

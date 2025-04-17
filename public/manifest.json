@@ -1,0 +1,46 @@
+
+{
+  "name": "PalmCacia Investment Platform",
+  "short_name": "PalmCacia",
+  "description": "Smart investment platform for Zambians",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4F46E5",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "orientation": "portrait-primary",
+  "categories": ["finance", "investment", "business"],
+  "lang": "en-US",
+  "dir": "ltr",
+  "prefer_related_applications": false,
+  "related_applications": [],
+  "scope": "/",
+  "shortcuts": [
+    {
+      "name": "Portfolio",
+      "url": "/portfolio",
+      "description": "View your investment portfolio"
+    },
+    {
+      "name": "Markets",
+      "url": "/markets",
+      "description": "Explore market data"
+    }
+  ]
+}
