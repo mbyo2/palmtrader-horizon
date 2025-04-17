@@ -8,6 +8,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { NotificationsProvider } from "./components/Notifications/NotificationsProvider";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { setupGlobalErrorHandlers } from "./utils/errorHandling";
+import OrderProcessorInitializer from "./components/OrderProcessorInitializer";
 
 // Components
 import Navbar from "./components/Navbar";
@@ -27,9 +28,6 @@ const AccountSettings = lazy(() => import('./pages/AccountSettings'));
 const Banking = lazy(() => import('./pages/Banking'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
-// Custom hook for order processing
-const OrderProcessorInitializer = lazy(() => import('./components/OrderProcessorInitializer'));
-
 // Create query client with optimized settings
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -37,7 +35,7 @@ const queryClient = new QueryClient({
       retry: 1,
       refetchOnWindowFocus: false,
       staleTime: 1000 * 60 * 5, // 5 minutes
-      cacheTime: 1000 * 60 * 30, // 30 minutes
+      gcTime: 1000 * 60 * 30, // 30 minutes (replaced cacheTime)
     },
   },
 });
@@ -119,6 +117,7 @@ function App() {
                     </Routes>
                   </ErrorBoundary>
                 </Suspense>
+                <OrderProcessorInitializer />
               </main>
               <Footer />
             </div>
