@@ -1,4 +1,3 @@
-
 import React, { Suspense, useState, useEffect, lazy } from 'react';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
@@ -10,11 +9,9 @@ import EnhancedErrorBoundary from "./components/EnhancedErrorBoundary";
 import { setupGlobalErrorHandlers } from "./utils/errorHandling";
 import OrderProcessorInitializer from "./components/OrderProcessorInitializer";
 import AccessibilityProvider from "./components/Accessibility/AccessibilityProvider";
+import { FullPageLoader } from "./components/ui/full-page-loader";
+import { LoadingSpinner } from "./components/ui/loading-spinner";
 import ErrorPage from "./components/ErrorPage";
-
-// Components
-import Navbar from "./components/Navbar";
-import Footer from "./components/Footer";
 
 // Lazy-loaded Pages
 const Index = lazy(() => import('./pages/Index'));
@@ -29,6 +26,7 @@ const Onboarding = lazy(() => import('./pages/Onboarding'));
 const AccountSettings = lazy(() => import('./pages/AccountSettings'));
 const Banking = lazy(() => import('./pages/Banking'));
 const NotFound = lazy(() => import('./pages/NotFound'));
+const PrivacyPolicy = lazy(() => import('./components/legal/PrivacyPolicy'));
 
 // Create query client with optimized settings
 const queryClient = new QueryClient({
@@ -37,7 +35,7 @@ const queryClient = new QueryClient({
       retry: 1,
       refetchOnWindowFocus: false,
       staleTime: 1000 * 60 * 5, // 5 minutes
-      gcTime: 1000 * 60 * 30, // 30 minutes (replaced cacheTime)
+      gcTime: 1000 * 60 * 30, // 30 minutes
     },
   },
 });
@@ -74,18 +72,7 @@ function App() {
   }, []);
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background" aria-live="polite" aria-busy="true">
-        <div className="text-center space-y-4">
-          <div 
-            className="w-16 h-16 mx-auto border-4 border-primary border-t-transparent rounded-full animate-spin"
-            role="progressbar"
-            aria-label="Loading"
-          ></div>
-          <p className="text-lg text-foreground/80">Loading Palm Cacia...</p>
-        </div>
-      </div>
-    );
+    return <FullPageLoader />;
   }
 
   return (
@@ -96,19 +83,12 @@ function App() {
             <AccessibilityProvider>
               <div className="min-h-screen flex flex-col">
                 <Navbar />
-                <main id="main" className="flex-1" tabIndex={-1}>
+                <main id="main" className="flex-1 w-full max-w-[2000px] mx-auto px-4 sm:px-6 lg:px-8" tabIndex={-1}>
                   <Toaster />
                   <Sonner />
                   <Suspense fallback={
-                    <div className="container py-6 flex items-center justify-center min-h-[60vh]" aria-live="polite" aria-busy="true">
-                      <div className="text-center space-y-4">
-                        <div 
-                          className="w-12 h-12 mx-auto border-4 border-primary border-t-transparent rounded-full animate-spin"
-                          role="progressbar"
-                          aria-label="Loading content"
-                        ></div>
-                        <p className="text-foreground/80">Loading...</p>
-                      </div>
+                    <div className="container py-6 flex items-center justify-center min-h-[60vh]" aria-live="polite">
+                      <LoadingSpinner size="lg" />
                     </div>
                   }>
                     <EnhancedErrorBoundary>
@@ -127,7 +107,8 @@ function App() {
                         <Route path="/404" element={<ErrorPage statusCode={404} title="Page Not Found" description="The page you are looking for doesn't exist or has been moved." />} />
                         <Route path="/500" element={<ErrorPage statusCode={500} title="Server Error" description="We're experiencing some issues. Please try again later." />} />
                         <Route path="/403" element={<ErrorPage statusCode={403} title="Access Denied" description="You don't have permission to access this resource." />} />
-                        <Route path="*" element={<ErrorPage statusCode={404} title="Page Not Found" description="The page you are looking for doesn't exist or has been moved." />} />
+                        <Route path="/privacy" element={<PrivacyPolicy />} />
+                        <Route path="*" element={<NotFound />} />
                       </Routes>
                     </EnhancedErrorBoundary>
                   </Suspense>
