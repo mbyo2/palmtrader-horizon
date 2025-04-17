@@ -1,55 +1,64 @@
 
-import React, { Suspense, useState, useEffect } from 'react';
+import React, { Suspense, useState, useEffect, lazy } from 'react';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { NotificationsProvider } from "./components/Notifications/NotificationsProvider";
-import { toast } from "sonner";
 import ErrorBoundary from "./components/ErrorBoundary";
-import { useOrderProcessor } from './hooks/useOrderProcessor';
 import { setupGlobalErrorHandlers } from "./utils/errorHandling";
 
 // Components
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 
-// Pages
-import Index from "./pages/Index";
-import Auth from "./pages/Auth";
-import Markets from "./pages/Markets";
-import Watchlist from "./pages/Watchlist";
-import Portfolio from "./pages/Portfolio";
-import IPO from "./pages/IPO";
-import IPODetails from "./pages/IPODetails";
-import Crypto from "./pages/Crypto";
-import Onboarding from "./pages/Onboarding";
-import AccountSettings from "./pages/AccountSettings";
-import Banking from "./pages/Banking";
-import NotFound from "./pages/NotFound";
+// Lazy-loaded Pages
+const Index = lazy(() => import('./pages/Index'));
+const Auth = lazy(() => import('./pages/Auth'));
+const Markets = lazy(() => import('./pages/Markets'));
+const Watchlist = lazy(() => import('./pages/Watchlist'));
+const Portfolio = lazy(() => import('./pages/Portfolio'));
+const IPO = lazy(() => import('./pages/IPO'));
+const IPODetails = lazy(() => import('./pages/IPODetails'));
+const Crypto = lazy(() => import('./pages/Crypto'));
+const Onboarding = lazy(() => import('./pages/Onboarding'));
+const AccountSettings = lazy(() => import('./pages/AccountSettings'));
+const Banking = lazy(() => import('./pages/Banking'));
+const NotFound = lazy(() => import('./pages/NotFound'));
 
-// Create query client
+// Custom hook for order processing
+const OrderProcessorInitializer = lazy(() => import('./components/OrderProcessorInitializer'));
+
+// Create query client with optimized settings
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1,
       refetchOnWindowFocus: false,
       staleTime: 1000 * 60 * 5, // 5 minutes
+      cacheTime: 1000 * 60 * 30, // 30 minutes
     },
   },
 });
-
-// Component to initialize order processor
-const OrderProcessorInitializer = () => {
-  useOrderProcessor();
-  return null;
-};
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // Register service worker for caching and offline support
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+          .then(registration => {
+            console.log('Service Worker registered with scope:', registration.scope);
+          })
+          .catch(error => {
+            console.error('Service Worker registration failed:', error);
+          });
+      });
+    }
+
     // Simulate initial loading
     const timer = setTimeout(() => {
       setIsLoading(false);
@@ -94,7 +103,6 @@ function App() {
                   </div>
                 }>
                   <ErrorBoundary>
-                    <OrderProcessorInitializer />
                     <Routes>
                       <Route path="/" element={<Index />} />
                       <Route path="/auth" element={<Auth />} />
