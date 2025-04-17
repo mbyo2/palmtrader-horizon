@@ -43,20 +43,20 @@ const Navbar = () => {
   return (
     <header className="border-b sticky top-0 z-50 bg-background/80 backdrop-blur-sm">
       <div className="container flex h-14 max-w-screen-2xl items-center">
-        <div className="mr-4 flex">
+        <div className="mr-4 md:mr-6 flex">
           <Link to="/" className="flex items-center space-x-2">
-            <span className="text-xl font-bold">BullTrade</span>
+            <span className="text-lg md:text-xl font-bold">PalmCacia</span>
           </Link>
         </div>
         
         {!isMobile && (
           <div className="flex items-center justify-between flex-1 gap-4">
-            <nav className="flex items-center space-x-4 lg:space-x-6">
+            <nav className="flex items-center space-x-2 lg:space-x-6">
               {navLinks.map((link) => (
                 <Link
                   key={link.to}
                   to={link.to}
-                  className="text-sm font-medium transition-colors hover:text-primary flex items-center"
+                  className="text-sm font-medium transition-colors hover:text-primary flex items-center px-2 py-1 rounded-md hover:bg-accent/50"
                 >
                   {link.icon}
                   <span>{link.label}</span>
@@ -65,7 +65,9 @@ const Navbar = () => {
             </nav>
             
             <div className="flex flex-1 items-center justify-end space-x-2">
-              <SearchBar />
+              <div className="hidden lg:block w-[200px]">
+                <SearchBar />
+              </div>
               <CurrencySelector value={currency} onChange={setCurrency} />
               {user && <NotificationsIndicator />}
               <ThemeToggle />
@@ -125,19 +127,22 @@ const Navbar = () => {
         
         {isMobile && (
           <div className="flex flex-1 items-center justify-end space-x-2">
+            <div className="flex-1 max-w-[160px]">
+              <SearchBar />
+            </div>
             {user && <NotificationsIndicator />}
             <ThemeToggle />
             
             <Sheet open={isOpen} onOpenChange={setIsOpen}>
               <SheetTrigger asChild>
-                <Button variant="outline" size="icon" className="h-8 w-8 ml-1">
+                <Button variant="outline" size="icon" className="h-8 w-8">
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
               <SheetContent side="right" className="w-full max-w-[250px] sm:max-w-[300px]">
                 <div className="flex flex-col h-full">
                   <div className="flex justify-between items-center mb-6">
-                    <span className="text-lg font-bold">BullTrade</span>
+                    <span className="text-lg font-bold">PalmCacia</span>
                     <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
                       <X className="h-5 w-5" />
                     </Button>

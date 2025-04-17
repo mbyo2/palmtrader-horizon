@@ -1,4 +1,3 @@
-
 import { Copyright, Github, Twitter, Globe } from "lucide-react";
 import { Button } from "./ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
@@ -8,14 +7,14 @@ const Footer = () => {
 
   return (
     <footer className="w-full border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex flex-col items-center justify-between gap-4 py-10 md:h-24 md:flex-row md:py-0">
-        <div className="flex flex-col items-center gap-4 px-8 md:flex-row md:gap-2 md:px-0">
+      <div className="container flex flex-col items-center justify-between gap-4 py-6 md:h-24 md:flex-row md:py-0">
+        <div className="flex flex-col items-center gap-4 px-4 md:flex-row md:gap-2 md:px-0">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Copyright className="h-4 w-4" />
-            <span>{currentYear} Palm Cacia.</span>
+            <span>{currentYear} PalmCacia</span>
           </div>
           <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
-            Made by{" "}
+            Built with care by{" "}
             <a
               href="https://mabvutobanda.online"
               target="_blank"
@@ -38,7 +37,7 @@ const Footer = () => {
               Watchlist
             </a>
           </nav>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
             {/* GitHub */}
             <Tooltip>
               <TooltipTrigger asChild>
