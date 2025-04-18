@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { MarketData } from "./types";
 import { MockDataHelper } from "./mockDataHelper";
@@ -7,79 +6,84 @@ import { MockDataHelper } from "./mockDataHelper";
 const dataCache = new Map<string, { data: MarketData[]; timestamp: number }>();
 const priceCache = new Map<string, { price: number; timestamp: number }>();
 const CACHE_TTL = 60000; // 1 minute cache lifetime
+const BATCH_INTERVAL = 100; // Batch requests within 100ms
+
+// Batch processor for price updates
+let batchQueue: string[] = [];
+let batchTimeout: NodeJS.Timeout | null = null;
 
 export class MarketDataService {
   static async fetchLatestPrice(symbol: string): Promise<{ symbol: string; price: number; change?: number; volume?: number }> {
     try {
-      console.log(`Fetching latest price for ${symbol}`);
+      console.log(`Checking cache for ${symbol}`);
       
-      // Check cache first
       const now = Date.now();
       const cachedData = priceCache.get(symbol);
       if (cachedData && now - cachedData.timestamp < CACHE_TTL) {
         return {
           symbol,
           price: cachedData.price,
-          change: 0, // We don't have change data in cache
+          change: 0,
           volume: 0
         };
       }
-      
-      // Fetch from database
-      const { data, error } = await supabase
-        .from('market_data')
-        .select('*')
-        .eq('symbol', symbol)
-        .order('created_at', { ascending: false })
-        .limit(1);
-      
-      if (error) throw error;
-      
-      // If we have data, cache and return it
-      if (data && data.length > 0) {
-        const result = {
-          symbol: data[0].symbol,
-          price: data[0].price,
-          change: 0, // We don't have change data yet
-          volume: 0 // Default to 0 since volume might not exist in the response
-        };
+
+      // Add to batch queue
+      return new Promise((resolve) => {
+        batchQueue.push(symbol);
         
-        // Cache the result
-        priceCache.set(symbol, { 
-          price: result.price, 
-          timestamp: now 
-        });
-        
-        return result;
-      }
-      
-      // If no data in database, use demo data
-      const mockData = MockDataHelper.generateMockDataPoint(symbol);
-      const result = {
-        symbol: mockData.symbol,
-        price: mockData.price,
-        change: 0,
-        volume: mockData.volume || 0
-      };
-      
-      // Cache the mock result
-      priceCache.set(symbol, { 
-        price: result.price, 
-        timestamp: now 
+        if (!batchTimeout) {
+          batchTimeout = setTimeout(async () => {
+            const symbols = [...batchQueue];
+            batchQueue = [];
+            batchTimeout = null;
+            
+            try {
+              const { data, error } = await supabase
+                .from('market_data')
+                .select('*')
+                .in('symbol', symbols)
+                .order('created_at', { ascending: false });
+
+              if (error) throw error;
+
+              // Process results
+              const results = new Map();
+              if (data) {
+                data.forEach(item => {
+                  if (!results.has(item.symbol)) {
+                    results.set(item.symbol, {
+                      symbol: item.symbol,
+                      price: item.price,
+                      change: 0,
+                      volume: 0
+                    });
+                    
+                    // Update cache
+                    priceCache.set(item.symbol, {
+                      price: item.price,
+                      timestamp: now
+                    });
+                  }
+                });
+              }
+
+              // Resolve all pending promises
+              symbols.forEach(sym => {
+                const result = results.get(sym) || MockDataHelper.generateMockDataPoint(sym);
+                resolve(result);
+              });
+            } catch (error) {
+              console.error("Batch fetch error:", error);
+              const mockData = MockDataHelper.generateMockDataPoint(symbol);
+              resolve(mockData);
+            }
+          }, BATCH_INTERVAL);
+        }
       });
-      
-      return result;
     } catch (error) {
       console.error("Error fetching stock price:", error);
-      
-      // Fallback to demo data
-      const mockData = MockDataHelper.generateMockDataPoint(symbol);
-      return {
-        symbol: mockData.symbol,
-        price: mockData.price,
-        change: 0,
-        volume: mockData.volume || 0
-      };
+      return MockDataHelper.generateMockDataPoint(symbol);
     }
   }
   
@@ -144,13 +148,11 @@ export class MarketDataService {
 
   static async fetchMultipleLatestPrices(symbols: string[]): Promise<Array<{ symbol: string; price: number; change?: number; volume?: number }>> {
     try {
-      console.log(`Fetching prices for multiple symbols: ${symbols.join(', ')}`);
-      
       const now = Date.now();
       const result: Array<{ symbol: string; price: number; change?: number; volume?: number }> = [];
       const symbolsToFetch = [];
       
-      // Check cache first for each symbol
+      // Check cache first
       for (const symbol of symbols) {
         const cachedData = priceCache.get(symbol);
         if (cachedData && now - cachedData.timestamp < CACHE_TTL) {
@@ -165,12 +167,10 @@ export class MarketDataService {
         }
       }
       
-      // If all symbols are in cache, return them
       if (symbolsToFetch.length === 0) {
         return result;
       }
       
-      // Fetch remaining symbols from database in one query
       const { data, error } = await supabase
         .from('market_data')
         .select('*')
@@ -179,96 +179,45 @@ export class MarketDataService {
       
       if (error) throw error;
       
-      // Process database results
-      if (data && data.length > 0) {
-        // Create a map of the latest data for each symbol
-        const latestBySymbol = new Map();
-        
+      const latestBySymbol = new Map();
+      
+      if (data) {
         data.forEach(item => {
-          if (!latestBySymbol.has(item.symbol) || 
-              new Date(item.created_at) > new Date(latestBySymbol.get(item.symbol).created_at)) {
+          if (!latestBySymbol.has(item.symbol)) {
             latestBySymbol.set(item.symbol, item);
+            
+            // Update cache
+            priceCache.set(item.symbol, {
+              price: item.price,
+              timestamp: now
+            });
           }
         });
-        
-        // Add each symbol's latest data to the result
-        for (const symbol of symbolsToFetch) {
-          const latestForSymbol = latestBySymbol.get(symbol);
-          
-          if (latestForSymbol) {
-            result.push({ 
-              symbol: latestForSymbol.symbol,
-              price: latestForSymbol.price,
-              change: 0,
-              volume: latestForSymbol.volume || 0
-            });
-            
-            // Cache the result
-            priceCache.set(symbol, { 
-              price: latestForSymbol.price, 
-              timestamp: now 
-            });
-          } else {
-            // Generate mock data for missing symbols
-            const mockData = MockDataHelper.generateMockDataPoint(symbol);
-            result.push({
-              symbol,
-              price: mockData.price,
-              change: 0,
-              volume: mockData.volume || 0
-            });
-            
-            // Cache the mock result
-            priceCache.set(symbol, { 
-              price: mockData.price, 
-              timestamp: now 
-            });
-          }
-        }
-      } else {
-        // No data in database, generate mock data for all remaining symbols
-        for (const symbol of symbolsToFetch) {
-          const mockData = MockDataHelper.generateMockDataPoint(symbol);
-          result.push({
-            symbol,
-            price: mockData.price,
-            change: 0,
-            volume: mockData.volume || 0
-          });
-          
-          // Cache the mock result
-          priceCache.set(symbol, { 
-            price: mockData.price, 
-            timestamp: now 
-          });
-        }
       }
+      
+      symbolsToFetch.forEach(symbol => {
+        const data = latestBySymbol.get(symbol) || MockDataHelper.generateMockDataPoint(symbol);
+        result.push({
+          symbol: data.symbol,
+          price: data.price,
+          change: 0,
+          volume: 0
+        });
+      });
       
       return result;
     } catch (error) {
-      console.error("Error fetching multiple stock prices:", error);
-      
-      // Fallback to demo data for all symbols
-      return symbols.map(symbol => {
-        const mockData = MockDataHelper.generateMockDataPoint(symbol);
-        return {
-          symbol,
-          price: mockData.price,
-          change: 0,
-          volume: mockData.volume || 0
-        };
-      });
+      console.error("Error fetching multiple prices:", error);
+      return symbols.map(symbol => MockDataHelper.generateMockDataPoint(symbol));
     }
   }
   
-  // Utility to clear all caches
   static clearCache(): void {
     dataCache.clear();
     priceCache.clear();
     MockDataHelper.clearCache();
   }
   
-  // Clear cache for a specific symbol
   static clearSymbolCache(symbol: string): void {
     // Clear price cache
     priceCache.delete(symbol);
