@@ -8,7 +8,7 @@ export function useMarketDataQuery(symbol: string, options = {}) {
     queryKey: ["marketData", symbol],
     queryFn: () => MarketDataService.fetchHistoricalData(symbol),
     staleTime: 30000, // Data stays fresh for 30 seconds
-    cacheTime: 5 * 60 * 1000, // Cache persists for 5 minutes
+    gcTime: 5 * 60 * 1000, // Cache persists for 5 minutes (formerly cacheTime)
     refetchOnWindowFocus: false, // Don't refetch on window focus
     ...options
   });
@@ -22,4 +22,3 @@ export function useMarketPrice(symbol: string, options = {}) {
     ...options
   });
 }
-

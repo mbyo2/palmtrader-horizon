@@ -6,6 +6,7 @@ import { FixedSizeList as List } from "react-window";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useMarketPrice } from "@/hooks/useMarketDataQuery";
 import { Skeleton } from "@/components/ui/skeleton";
+import { finnhubSocket } from "@/utils/finnhubSocket";
 
 interface Stock {
   symbol: string;
