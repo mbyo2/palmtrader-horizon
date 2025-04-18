@@ -41,7 +41,7 @@ export class MarketDataService {
           symbol: data[0].symbol,
           price: data[0].price,
           change: 0, // We don't have change data yet
-          volume: data[0].volume || 0
+          volume: data[0].volume || 0 // Add fallback for volume
         };
         
         // Cache the result
@@ -117,7 +117,7 @@ export class MarketDataService {
           high: item.high,
           low: item.low,
           close: item.close || item.price,
-          volume: item.volume || 0,
+          volume: item.volume || 0, // Add fallback for volume
           type: (item.type as 'stock' | 'crypto' | 'forex') || 'stock'
         }));
         
