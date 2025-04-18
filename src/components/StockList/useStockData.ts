@@ -1,7 +1,8 @@
-
 import { useState, useEffect } from "react";
 import { finnhubSocket } from "@/utils/finnhubSocket";
 import { Stock } from "./StockCard";
+import { wsManager } from "@/services/market/WebSocketManager";
+import { nanoid } from "nanoid";
 
 // Initial stock data
 const initialStocks: Stock[] = [
@@ -23,6 +24,7 @@ export const useStockData = (searchQuery: string) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [stocks, setStocks] = useState<Stock[]>(initialStocks);
+  const subscriberId = nanoid();
 
   // Filter stocks based on search query
   const filteredStocks = stocks.filter(
@@ -31,19 +33,15 @@ export const useStockData = (searchQuery: string) => {
       stock.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Set up real-time data subscription
   useEffect(() => {
     try {
       console.log("Setting up stock data subscriptions");
       setLoading(true);
       
-      // After data is loaded, set loading to false
-      setLoading(false);
-      
-      // Subscribe to all stock symbols
+      // Subscribe to all stock symbols using the WebSocket manager
       stocks.forEach(stock => {
         try {
-          finnhubSocket.subscribe(stock.symbol);
+          wsManager.subscribe(stock.symbol, subscriberId);
         } catch (e) {
           console.error(`Error subscribing to ${stock.symbol}:`, e);
         }
@@ -71,12 +69,14 @@ export const useStockData = (searchQuery: string) => {
         );
       });
 
+      setLoading(false);
+
       // Cleanup subscriptions
       return () => {
         console.log("Cleaning up stock data subscriptions");
         stocks.forEach(stock => {
           try {
-            finnhubSocket.unsubscribe(stock.symbol);
+            wsManager.unsubscribe(stock.symbol, subscriberId);
           } catch (e) {
             console.error(`Error unsubscribing from ${stock.symbol}:`, e);
           }
