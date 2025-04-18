@@ -1,76 +1,106 @@
 
-import { MarketData } from './types';
+import { MarketData } from "./types";
 
-export const MockDataHelper = {
-  getBasePrice(symbol: string): number {
-    if (!symbol) return 100.00;
-    
-    // Return realistic baseline prices for common stocks
-    const prices: Record<string, number> = {
-      'AAPL': 180.25,
-      'MSFT': 350.50,
-      'AMZN': 145.75,
-      'GOOGL': 140.30,
-      'NVDA': 450.20,
-      'META': 330.15,
-      'TSLA': 200.10,
-      'V': 280.45,
-      'WMT': 68.90,
-      'JPM': 190.25
-    };
-    
-    return prices[symbol.toUpperCase()] || 100.00 + Math.random() * 100;
-  },
+// Cache for mock data to avoid regenerating it
+const mockDataCache = new Map<string, MarketData[]>();
+// Cache for the last price to ensure consistent data
+const lastPriceCache = new Map<string, number>();
 
-  generateMockData(symbol: string, days: number): MarketData[] {
-    if (!symbol) symbol = 'UNKNOWN';
+export class MockDataHelper {
+  static generateMockData(symbol: string, days: number): MarketData[] {
+    const cacheKey = `${symbol}-${days}`;
     
-    console.log(`Generating mock data for ${symbol} for demonstration purposes`);
-    const mockData: MarketData[] = [];
-    const basePrice = this.getBasePrice(symbol);
-    const now = new Date();
-    
-    for (let i = days; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(now.getDate() - i);
-      
-      // Create some random price movement
-      const randomFactor = 0.98 + Math.random() * 0.04; // Random between 0.98 and 1.02
-      const prevPrice = i === days ? basePrice : mockData[mockData.length - 1].price;
-      const price = prevPrice * randomFactor;
-      
-      mockData.push({
-        symbol: symbol.toUpperCase(),
-        timestamp: date.toISOString(),
-        price: parseFloat(price.toFixed(2)),
-        open: parseFloat((price * 0.99).toFixed(2)),
-        high: parseFloat((price * 1.01).toFixed(2)),
-        low: parseFloat((price * 0.98).toFixed(2)),
-        close: parseFloat(price.toFixed(2)),
-        volume: Math.floor(Math.random() * 10000000),
-        type: 'stock'
-      });
+    // Return cached data if we have it
+    if (mockDataCache.has(cacheKey)) {
+      return mockDataCache.get(cacheKey)!;
     }
     
-    return mockData;
-  },
-  
-  generateMockDataPoint(symbol: string): MarketData {
-    if (!symbol) symbol = 'UNKNOWN';
+    console.log(`Generating mock historical data for ${symbol}`);
+    const data: MarketData[] = [];
+    const endDate = new Date();
+    let currentDate = new Date();
+    currentDate.setDate(currentDate.getDate() - days);
     
-    console.log(`Generating mock data point for ${symbol} for demonstration purposes`);
-    const basePrice = this.getBasePrice(symbol);
+    // Get the last known price or generate a new one
+    let price = lastPriceCache.get(symbol) || Math.random() * 490 + 10;
+    
+    while (currentDate <= endDate) {
+      // Generate random price movement (-5% to +5%)
+      const priceChange = price * (Math.random() * 0.1 - 0.05);
+      price += priceChange;
+      price = Math.max(1, price); // Ensure price doesn't go below $1
+      
+      const open = price - (Math.random() * 2);
+      const close = price + (Math.random() * 2);
+      const high = Math.max(open, close) + (Math.random() * 3);
+      const low = Math.min(open, close) - (Math.random() * 3);
+      
+      data.push({
+        symbol,
+        timestamp: String(currentDate.getTime()),
+        price,
+        open,
+        high,
+        low,
+        close,
+        volume: Math.floor(Math.random() * 10000000),
+        type: 'stock',
+      });
+      
+      // Move to the next day
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    // Update the lastPriceCache with the final price
+    if (data.length > 0) {
+      lastPriceCache.set(symbol, data[data.length - 1].price);
+    }
+    
+    // Cache the result
+    mockDataCache.set(cacheKey, data);
+    
+    return data;
+  }
+  
+  static generateMockDataPoint(symbol: string): MarketData {
+    // Get the last known price or generate a new one
+    let price = lastPriceCache.get(symbol) || Math.random() * 490 + 10;
+    
+    // Add some random movement if we already had a price
+    if (lastPriceCache.has(symbol)) {
+      const priceChange = price * (Math.random() * 0.02 - 0.01); // Smaller change for a point
+      price += priceChange;
+      price = Math.max(1, price); // Ensure price doesn't go below $1
+    }
+    
+    // Update the cache
+    lastPriceCache.set(symbol, price);
     
     return {
-      symbol: symbol.toUpperCase(),
-      timestamp: new Date().toISOString(),
-      price: basePrice,
-      open: parseFloat((basePrice * 0.99).toFixed(2)),
-      high: parseFloat((basePrice * 1.01).toFixed(2)),
-      low: parseFloat((basePrice * 0.98).toFixed(2)),
-      close: basePrice,
-      volume: Math.floor(Math.random() * 10000000),
-      type: 'stock'
+      symbol,
+      timestamp: String(Date.now()),
+      price,
+      open: price * 0.99,
+      high: price * 1.01,
+      low: price * 0.98,
+      close: price,
+      volume: Math.floor(Math.random() * 1000000),
+      type: 'stock',
     };
   }
-};
+  
+  // Clear the cache to free up memory
+  static clearCache(): void {
+    mockDataCache.clear();
+  }
+  
+  // Clear cache for a specific symbol
+  static clearSymbolCache(symbol: string): void {
+    // Remove all entries for this symbol
+    for (const key of mockDataCache.keys()) {
+      if (key.startsWith(`${symbol}-`)) {
+        mockDataCache.delete(key);
+      }
+    }
+  }
+}
