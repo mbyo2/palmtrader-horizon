@@ -12,6 +12,8 @@ import AccessibilityProvider from "./components/Accessibility/AccessibilityProvi
 import { FullPageLoader } from "./components/ui/full-page-loader";
 import { LoadingSpinner } from "./components/ui/loading-spinner";
 import ErrorPage from "./components/ErrorPage";
+import Navbar from "./components/Navbar";
+import Footer from "./components/Footer";
 
 // Lazy-loaded Pages
 const Index = lazy(() => import('./pages/Index'));
