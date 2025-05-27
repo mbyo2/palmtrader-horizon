@@ -1,11 +1,13 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
+import { TradingService } from "@/services/TradingService";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useQuery } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { RefreshCw } from "lucide-react";
 
 interface Order {
   id: string;
@@ -25,20 +27,14 @@ interface Order {
 const OrderHistory = () => {
   const { user } = useAuth();
   
-  const { data: orders = [], isLoading } = useQuery({
-    queryKey: ['orders', user?.id],
+  const { data: orders = [], isLoading, refetch, isFetching } = useQuery({
+    queryKey: ['orderHistory', user?.id],
     queryFn: async () => {
       if (!user) return [];
-      const { data, error } = await supabase
-        .from('trades')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-        
-      if (error) throw error;
-      return data;
+      return await TradingService.getOrderHistory(user.id, 100);
     },
-    enabled: !!user
+    enabled: !!user,
+    refetchInterval: 30000, // Refresh every 30 seconds
   });
 
   const getOrderTypeDisplay = (order: Order) => {
@@ -58,9 +54,40 @@ const OrderHistory = () => {
     }
   };
 
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return 'default';
+      case 'pending':
+        return 'secondary';
+      case 'cancelled':
+        return 'destructive';
+      case 'failed':
+        return 'destructive';
+      default:
+        return 'secondary';
+    }
+  };
+
   return (
     <Card className="p-6">
-      <h2 className="text-xl font-semibold mb-4">Order History</h2>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-semibold">Order History</h2>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => refetch()}
+          disabled={isFetching}
+        >
+          {isFetching ? (
+            <RefreshCw className="h-4 w-4 mr-1 animate-spin" />
+          ) : (
+            <RefreshCw className="h-4 w-4 mr-1" />
+          )}
+          Refresh
+        </Button>
+      </div>
+      
       <ScrollArea className="h-[500px] pr-4">
         <div className="space-y-4">
           {isLoading ? (
@@ -83,15 +110,7 @@ const OrderHistory = () => {
                     >
                       {order.type.toUpperCase()}
                     </Badge>
-                    <Badge
-                      variant={
-                        order.status === 'completed'
-                          ? 'default'
-                          : order.status === 'pending'
-                          ? 'secondary'
-                          : 'destructive'
-                      }
-                    >
+                    <Badge variant={getStatusColor(order.status)}>
                       {order.status.toUpperCase()}
                     </Badge>
                   </div>
