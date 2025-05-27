@@ -17,6 +17,20 @@ export interface Order {
   total_amount: number;
 }
 
+export type OrderType = "market" | "limit" | "stop" | "stop_limit" | "trailing_stop";
+
+export interface OrderRequest {
+  userId: string;
+  symbol: string;
+  type: "buy" | "sell";
+  shares: number;
+  price: number;
+  orderType: OrderType;
+  limitPrice?: number;
+  stopPrice?: number;
+  isFractional?: boolean;
+}
+
 export class TradingService {
   static async createOrder(orderData: Omit<Order, "id" | "created_at">): Promise<{ success: boolean; orderId?: string; error?: string }> {
     try {
@@ -50,6 +64,31 @@ export class TradingService {
     }
   }
 
+  static async executeOrder(orderRequest: OrderRequest): Promise<{ success: boolean; orderId?: string; error?: string }> {
+    try {
+      const orderData = {
+        user_id: orderRequest.userId,
+        symbol: orderRequest.symbol,
+        type: orderRequest.type,
+        order_type: orderRequest.orderType,
+        shares: orderRequest.shares,
+        price: orderRequest.price,
+        limit_price: orderRequest.limitPrice,
+        stop_price: orderRequest.stopPrice,
+        status: orderRequest.orderType === "market" ? "completed" : "pending" as const,
+        total_amount: orderRequest.shares * orderRequest.price
+      };
+
+      return await this.createOrder(orderData);
+    } catch (error) {
+      console.error("Error executing order:", error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : "Failed to execute order"
+      };
+    }
+  }
+
   static async getOrderHistory(userId: string, limit: number = 50): Promise<Order[]> {
     try {
       const { data, error } = await supabase
@@ -65,14 +104,14 @@ export class TradingService {
         id: trade.id,
         user_id: trade.user_id,
         symbol: trade.symbol,
-        type: trade.type,
-        order_type: trade.order_type,
+        type: trade.type as "buy" | "sell",
+        order_type: trade.order_type as OrderType,
         shares: trade.shares,
         price: trade.price,
         limit_price: trade.limit_price,
         stop_price: trade.stop_price,
         trailing_percent: trade.trailing_percent,
-        status: trade.status,
+        status: trade.status as "pending" | "completed" | "cancelled" | "failed",
         created_at: trade.created_at,
         total_amount: trade.total_amount
       }));
@@ -105,7 +144,20 @@ export class TradingService {
     return this.updateOrderStatus(orderId, "cancelled");
   }
 
-  static async executeOrder(orderId: string): Promise<{ success: boolean; error?: string }> {
-    return this.updateOrderStatus(orderId, "completed");
+  static async processPendingOrders(userId: string): Promise<void> {
+    try {
+      const pendingOrders = await this.getOrderHistory(userId);
+      const pendingOnly = pendingOrders.filter(order => order.status === "pending");
+      
+      for (const order of pendingOnly) {
+        // Simple order processing logic - in a real system this would check market conditions
+        if (order.order_type === "market") {
+          await this.updateOrderStatus(order.id, "completed");
+        }
+        // For limit/stop orders, you would check if conditions are met
+      }
+    } catch (error) {
+      console.error("Error processing pending orders:", error);
+    }
   }
 }
