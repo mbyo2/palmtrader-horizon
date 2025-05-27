@@ -1,120 +1,56 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { finnhubSocket } from "@/utils/finnhubSocket";
-import { OrderExecutionEngine } from "./OrderExecutionEngine";
 
-// Order types
-export type OrderType = "market" | "limit" | "stop" | "stop_limit" | "trailing_stop";
-export type OrderAction = "buy" | "sell";
-
-// Order interface
-export interface TradeOrder {
-  userId: string;
+export interface Order {
+  id: string;
+  user_id: string;
   symbol: string;
-  type: OrderAction;
+  type: "buy" | "sell";
+  order_type: "market" | "limit" | "stop" | "stop_limit" | "trailing_stop";
   shares: number;
   price: number;
-  orderType: OrderType;
-  limitPrice?: number | null;
-  stopPrice?: number | null;
-  trailingPercent?: number | null;
-  isFractional?: boolean;
+  limit_price?: number;
+  stop_price?: number;
+  trailing_percent?: number;
+  status: "pending" | "completed" | "cancelled" | "failed";
+  created_at: string;
+  total_amount: number;
 }
 
 export class TradingService {
-  // Execute a trade order using the new OrderExecutionEngine
-  static async executeOrder(order: TradeOrder): Promise<{ success: boolean; orderId?: string; error?: string }> {
-    try {
-      console.log("Executing order:", order);
-      
-      const result = await OrderExecutionEngine.executeOrder({
-        userId: order.userId,
-        symbol: order.symbol,
-        type: order.type,
-        shares: order.shares,
-        price: order.price,
-        orderType: order.orderType,
-        limitPrice: order.limitPrice || undefined,
-        stopPrice: order.stopPrice || undefined,
-        isFractional: order.isFractional
-      });
-
-      if (result.success) {
-        if (order.orderType === "market") {
-          toast.success(`${order.type === 'buy' ? 'Bought' : 'Sold'} ${result.executedShares} shares of ${order.symbol} at $${result.executedPrice?.toFixed(2)}`);
-        } else {
-          toast.success(`${order.type === 'buy' ? 'Buy' : 'Sell'} order placed successfully`);
-        }
-      }
-
-      return {
-        success: result.success,
-        orderId: result.orderId,
-        error: result.error
-      };
-    } catch (error) {
-      console.error("Error executing trade:", error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : "Unknown error executing trade"
-      };
-    }
-  }
-  
-  // Get real-time price via socket
-  static fetchRealTimePrice(symbol: string): Promise<number> {
-    return new Promise((resolve, reject) => {
-      let timeoutId: ReturnType<typeof setTimeout>;
-      let resolved = false;
-      
-      // Subscribe to the symbol
-      finnhubSocket.subscribe(symbol);
-      
-      // Set up a timeout in case we don't get data quickly
-      timeoutId = setTimeout(() => {
-        if (!resolved) {
-          finnhubSocket.unsubscribe(symbol);
-          reject(new Error("Timeout waiting for real-time price"));
-        }
-      }, 3000);
-      
-      // Listen for market data
-      const unsubscribe = finnhubSocket.onMarketData((data) => {
-        if (data.symbol === symbol && data.price) {
-          resolved = true;
-          clearTimeout(timeoutId);
-          unsubscribe();
-          finnhubSocket.unsubscribe(symbol);
-          resolve(data.price);
-        }
-      });
-    });
-  }
-  
-  // Check order status
-  static async checkOrderStatus(orderId: string): Promise<{ completed: boolean; status: string }> {
+  static async createOrder(orderData: Omit<Order, "id" | "created_at">): Promise<{ success: boolean; orderId?: string; error?: string }> {
     try {
       const { data, error } = await supabase
         .from("trades")
-        .select("status")
-        .eq("id", orderId)
+        .insert([{
+          user_id: orderData.user_id,
+          symbol: orderData.symbol,
+          type: orderData.type,
+          order_type: orderData.order_type,
+          shares: orderData.shares,
+          price: orderData.price,
+          limit_price: orderData.limit_price,
+          stop_price: orderData.stop_price,
+          trailing_percent: orderData.trailing_percent,
+          status: orderData.status,
+          total_amount: orderData.total_amount
+        }])
+        .select()
         .single();
-        
+
       if (error) throw error;
-      
-      return {
-        completed: data.status === "completed",
-        status: data.status
-      };
+
+      return { success: true, orderId: data.id };
     } catch (error) {
-      console.error("Error checking order status:", error);
-      throw error;
+      console.error("Error creating order:", error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : "Failed to create order"
+      };
     }
   }
-  
-  // Get order history for a user
-  static async getOrderHistory(userId: string, limit: number = 50): Promise<any[]> {
+
+  static async getOrderHistory(userId: string, limit: number = 50): Promise<Order[]> {
     try {
       const { data, error } = await supabase
         .from("trades")
@@ -122,79 +58,54 @@ export class TradingService {
         .eq("user_id", userId)
         .order("created_at", { ascending: false })
         .limit(limit);
-        
+
       if (error) throw error;
-      return data || [];
+
+      return data.map(trade => ({
+        id: trade.id,
+        user_id: trade.user_id,
+        symbol: trade.symbol,
+        type: trade.type,
+        order_type: trade.order_type,
+        shares: trade.shares,
+        price: trade.price,
+        limit_price: trade.limit_price,
+        stop_price: trade.stop_price,
+        trailing_percent: trade.trailing_percent,
+        status: trade.status,
+        created_at: trade.created_at,
+        total_amount: trade.total_amount
+      }));
     } catch (error) {
       console.error("Error fetching order history:", error);
-      throw error;
+      return [];
     }
   }
 
-  // Process pending orders (for limit and stop orders)
-  static async processPendingOrders(userId: string): Promise<void> {
+  static async updateOrderStatus(orderId: string, status: Order["status"]): Promise<{ success: boolean; error?: string }> {
     try {
-      // Get all pending orders
-      const { data: pendingOrders, error } = await supabase
+      const { error } = await supabase
         .from("trades")
-        .select("*")
-        .eq("user_id", userId)
-        .eq("status", "pending");
-        
+        .update({ status, updated_at: new Date().toISOString() })
+        .eq("id", orderId);
+
       if (error) throw error;
-      
-      // Process each pending order
-      for (const order of pendingOrders || []) {
-        // Get current price
-        try {
-          const currentPrice = await this.fetchRealTimePrice(order.symbol);
-          
-          let shouldExecute = false;
-          let executionPrice = currentPrice;
-          
-          // Check if limit order should execute
-          if (order.order_type === "limit") {
-            if (order.type === "buy" && currentPrice <= order.limit_price) {
-              shouldExecute = true;
-              executionPrice = currentPrice;
-            } else if (order.type === "sell" && currentPrice >= order.limit_price) {
-              shouldExecute = true;
-              executionPrice = currentPrice;
-            }
-          }
-          
-          // Check if stop order should execute
-          else if (order.order_type === "stop") {
-            if (order.type === "buy" && currentPrice >= order.stop_price) {
-              shouldExecute = true;
-              executionPrice = currentPrice;
-            } else if (order.type === "sell" && currentPrice <= order.stop_price) {
-              shouldExecute = true;
-              executionPrice = currentPrice;
-            }
-          }
-          
-          // Execute the order if conditions are met
-          if (shouldExecute) {
-            const { error: updateError } = await supabase
-              .from("trades")
-              .update({ 
-                status: "completed",
-                price: executionPrice,
-                total_amount: order.shares * executionPrice
-              })
-              .eq("id", order.id);
-              
-            if (updateError) throw updateError;
-            
-            toast.success(`${order.type === 'buy' ? 'Buy' : 'Sell'} order for ${order.shares} shares of ${order.symbol} executed at $${executionPrice.toFixed(2)}`);
-          }
-        } catch (error) {
-          console.error(`Error processing order ${order.id}:`, error);
-        }
-      }
+
+      return { success: true };
     } catch (error) {
-      console.error("Error processing pending orders:", error);
+      console.error("Error updating order status:", error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : "Failed to update order status"
+      };
     }
+  }
+
+  static async cancelOrder(orderId: string): Promise<{ success: boolean; error?: string }> {
+    return this.updateOrderStatus(orderId, "cancelled");
+  }
+
+  static async executeOrder(orderId: string): Promise<{ success: boolean; error?: string }> {
+    return this.updateOrderStatus(orderId, "completed");
   }
 }
