@@ -66,7 +66,9 @@ export class TradingService {
 
   static async executeOrder(orderRequest: OrderRequest): Promise<{ success: boolean; orderId?: string; error?: string }> {
     try {
-      const orderData = {
+      const status: "pending" | "completed" = orderRequest.orderType === "market" ? "completed" : "pending";
+      
+      const orderData: Omit<Order, "id" | "created_at"> = {
         user_id: orderRequest.userId,
         symbol: orderRequest.symbol,
         type: orderRequest.type,
@@ -75,7 +77,7 @@ export class TradingService {
         price: orderRequest.price,
         limit_price: orderRequest.limitPrice,
         stop_price: orderRequest.stopPrice,
-        status: orderRequest.orderType === "market" ? "completed" : "pending" as const,
+        status: status,
         total_amount: orderRequest.shares * orderRequest.price
       };
 
