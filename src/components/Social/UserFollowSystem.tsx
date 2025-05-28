@@ -107,69 +107,97 @@ const UserFollowSystem = () => {
   const loadFollowing = async () => {
     if (!user) return;
     
-    const { data, error } = await supabase
-      .from('user_follows')
-      .select(`
-        following_id,
-        profiles!user_follows_following_id_fkey (
-          id,
-          username,
-          avatar_url
-        )
-      `)
-      .eq('follower_id', user.id);
+    try {
+      const { data: followData, error } = await supabase
+        .from('user_follows')
+        .select('following_id')
+        .eq('follower_id', user.id);
 
-    if (error) {
-      console.error('Error loading following:', error);
-      return;
+      if (error) {
+        console.error('Error loading following:', error);
+        return;
+      }
+
+      if (!followData || followData.length === 0) {
+        setFollowing([]);
+        return;
+      }
+
+      // Get profile data for followed users
+      const followingIds = followData.map(f => f.following_id);
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_url')
+        .in('id', followingIds);
+
+      if (profilesError) {
+        console.error('Error loading profiles:', profilesError);
+        return;
+      }
+
+      // Transform data and add mock stats
+      const followingUsers = (profilesData || []).map(profile => ({
+        id: profile.id,
+        username: profile.username || 'Unknown User',
+        avatar_url: profile.avatar_url,
+        follower_count: Math.floor(Math.random() * 1000),
+        following_count: Math.floor(Math.random() * 500),
+        post_count: Math.floor(Math.random() * 200),
+        isFollowing: true
+      }));
+
+      setFollowing(followingUsers);
+    } catch (error) {
+      console.error('Error in loadFollowing:', error);
     }
-
-    // Transform data and add mock stats
-    const followingUsers = data?.map(follow => ({
-      id: follow.following_id,
-      username: follow.profiles?.username || 'Unknown User',
-      avatar_url: follow.profiles?.avatar_url,
-      follower_count: Math.floor(Math.random() * 1000),
-      following_count: Math.floor(Math.random() * 500),
-      post_count: Math.floor(Math.random() * 200),
-      isFollowing: true
-    })) || [];
-
-    setFollowing(followingUsers);
   };
 
   const loadFollowers = async () => {
     if (!user) return;
 
-    const { data, error } = await supabase
-      .from('user_follows')
-      .select(`
-        follower_id,
-        profiles!user_follows_follower_id_fkey (
-          id,
-          username,
-          avatar_url
-        )
-      `)
-      .eq('following_id', user.id);
+    try {
+      const { data: followerData, error } = await supabase
+        .from('user_follows')
+        .select('follower_id')
+        .eq('following_id', user.id);
 
-    if (error) {
-      console.error('Error loading followers:', error);
-      return;
+      if (error) {
+        console.error('Error loading followers:', error);
+        return;
+      }
+
+      if (!followerData || followerData.length === 0) {
+        setFollowers([]);
+        return;
+      }
+
+      // Get profile data for followers
+      const followerIds = followerData.map(f => f.follower_id);
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_url')
+        .in('id', followerIds);
+
+      if (profilesError) {
+        console.error('Error loading profiles:', profilesError);
+        return;
+      }
+
+      // Transform data and add mock stats
+      const followerUsers = (profilesData || []).map(profile => ({
+        id: profile.id,
+        username: profile.username || 'Unknown User',
+        avatar_url: profile.avatar_url,
+        follower_count: Math.floor(Math.random() * 1000),
+        following_count: Math.floor(Math.random() * 500),
+        post_count: Math.floor(Math.random() * 200),
+        isFollowing: Math.random() > 0.5 // Random for demo
+      }));
+
+      setFollowers(followerUsers);
+    } catch (error) {
+      console.error('Error in loadFollowers:', error);
     }
-
-    // Transform data and add mock stats
-    const followerUsers = data?.map(follow => ({
-      id: follow.follower_id,
-      username: follow.profiles?.username || 'Unknown User',
-      avatar_url: follow.profiles?.avatar_url,
-      follower_count: Math.floor(Math.random() * 1000),
-      following_count: Math.floor(Math.random() * 500),
-      post_count: Math.floor(Math.random() * 200),
-      isFollowing: Math.random() > 0.5 // Random for demo
-    })) || [];
-
-    setFollowers(followerUsers);
   };
 
   const loadRecentActivity = async () => {
