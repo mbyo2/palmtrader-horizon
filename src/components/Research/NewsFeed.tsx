@@ -103,7 +103,7 @@ const NewsFeed = ({ defaultCategory = "general", limit = 10 }: NewsFeedProps) =>
     };
     
     return (
-      <Badge variant={variants[sentiment] || "outline"}>
+      <Badge variant={variants[sentiment] || "outline"} className="text-xs">
         {sentiment.charAt(0).toUpperCase() + sentiment.slice(1)}
       </Badge>
     );
@@ -112,8 +112,8 @@ const NewsFeed = ({ defaultCategory = "general", limit = 10 }: NewsFeedProps) =>
   return (
     <Card className="h-full">
       <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
             <Newspaper className="h-5 w-5" /> News Feed
           </CardTitle>
           <div className="flex gap-2">
@@ -121,6 +121,7 @@ const NewsFeed = ({ defaultCategory = "general", limit = 10 }: NewsFeedProps) =>
               variant={viewMode === "compact" ? "default" : "outline"}
               size="sm"
               onClick={() => setViewMode("compact")}
+              className="text-xs px-2 py-1"
             >
               Compact
             </Button>
@@ -128,6 +129,7 @@ const NewsFeed = ({ defaultCategory = "general", limit = 10 }: NewsFeedProps) =>
               variant={viewMode === "detailed" ? "default" : "outline"}
               size="sm"
               onClick={() => setViewMode("detailed")}
+              className="text-xs px-2 py-1"
             >
               Detailed
             </Button>
@@ -136,66 +138,70 @@ const NewsFeed = ({ defaultCategory = "general", limit = 10 }: NewsFeedProps) =>
       </CardHeader>
       
       <Tabs defaultValue={category} onValueChange={setCategory}>
-        <div className="px-6 pb-3">
-          <TabsList className="w-full">
-            <TabsTrigger value="general">Latest</TabsTrigger>
-            <TabsTrigger value="market">Markets</TabsTrigger>
-            <TabsTrigger value="crypto">Crypto</TabsTrigger>
-            <TabsTrigger value="ipo">IPOs</TabsTrigger>
+        <div className="px-3 sm:px-6 pb-3">
+          <TabsList className="w-full grid grid-cols-4 text-xs">
+            <TabsTrigger value="general" className="text-xs px-2">Latest</TabsTrigger>
+            <TabsTrigger value="market" className="text-xs px-2">Markets</TabsTrigger>
+            <TabsTrigger value="crypto" className="text-xs px-2">Crypto</TabsTrigger>
+            <TabsTrigger value="ipo" className="text-xs px-2">IPOs</TabsTrigger>
           </TabsList>
         </div>
         
-        <CardContent>
+        <CardContent className="px-3 sm:px-6">
           {isLoading ? (
             <div className="space-y-4">
               {Array(3).fill(0).map((_, i) => (
                 <div key={i} className="flex flex-col gap-2 pb-4 border-b border-border last:border-0">
-                  <Skeleton className="h-5 w-full" />
-                  <Skeleton className="h-4 w-2/3" />
-                  <Skeleton className="h-20 w-full" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-3 w-2/3" />
+                  {viewMode === "detailed" && <Skeleton className="h-16 w-full" />}
                 </div>
               ))}
             </div>
           ) : isError ? (
             <div className="text-center py-8">
-              <AlertCircle className="h-10 w-10 text-destructive mx-auto mb-2" />
-              <p className="text-muted-foreground">Unable to load news at this time</p>
-              <Button variant="outline" className="mt-4">Retry</Button>
+              <AlertCircle className="h-8 w-8 text-destructive mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">Unable to load news at this time</p>
+              <Button variant="outline" className="mt-4 text-xs" size="sm">Retry</Button>
             </div>
           ) : !news || news.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-muted-foreground">No news available for this category</p>
+              <p className="text-sm text-muted-foreground">No news available for this category</p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {news.map((item) => (
-                <div key={item.id} className="pb-4 border-b border-border last:border-0">
+                <div key={item.id} className="pb-3 sm:pb-4 border-b border-border last:border-0">
                   <a
                     href={item.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="block hover:text-primary"
+                    className="block hover:text-primary transition-colors"
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <h3 className="font-medium">{item.title}</h3>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                          <span>{item.source}</span>
-                          <span>•</span>
-                          <span>{formatDate(item.published_at)}</span>
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-3">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium text-sm sm:text-base leading-tight line-clamp-2 sm:line-clamp-3">
+                          {item.title}
+                        </h3>
+                        <div className="flex flex-wrap items-center gap-1 sm:gap-2 text-xs text-muted-foreground mt-1">
+                          <span className="truncate">{item.source}</span>
+                          <span className="hidden sm:inline">•</span>
+                          <span className="whitespace-nowrap">{formatDate(item.published_at)}</span>
                           {item.symbols && item.symbols.length > 0 && (
                             <>
-                              <span>•</span>
-                              <span>{item.symbols.join(", ")}</span>
+                              <span className="hidden sm:inline">•</span>
+                              <span className="truncate text-xs">{item.symbols.join(", ")}</span>
                             </>
                           )}
                         </div>
                       </div>
-                      {item.sentiment && getSentimentBadge(item.sentiment)}
+                      <div className="flex-shrink-0 self-start">
+                        {item.sentiment && getSentimentBadge(item.sentiment)}
+                      </div>
                     </div>
                     
                     {viewMode === "detailed" && item.summary && (
-                      <p className="text-sm text-muted-foreground mt-2 line-clamp-3">
+                      <p className="text-xs sm:text-sm text-muted-foreground mt-2 line-clamp-2 sm:line-clamp-3 leading-relaxed">
                         {item.summary}
                       </p>
                     )}

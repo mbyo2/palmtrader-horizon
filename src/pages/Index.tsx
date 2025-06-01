@@ -107,14 +107,14 @@ export default function Index() {
 
           {/* Latest News */}
           <section>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-3xl font-bold">Latest News</h2>
-              <Button variant="link" className="gap-2">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
+              <h2 className="text-2xl sm:text-3xl font-bold">Latest News</h2>
+              <Button variant="link" className="gap-2 self-start sm:self-auto">
                 More news <ArrowRight className="h-4 w-4" />
               </Button>
             </div>
-            <div className="grid gap-6 md:grid-cols-3">
-              <NewsFeed defaultCategory="general" limit={3} />
+            <div className="w-full">
+              <NewsFeed defaultCategory="general" limit={6} />
             </div>
           </section>
 
