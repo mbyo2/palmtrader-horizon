@@ -26,17 +26,8 @@ const createFinnhubSocket = async () => {
 // Export a promise that resolves to the socket instance
 export const finnhubSocket = await createFinnhubSocket();
 
-// Enable debug mode in development
+// Only enable debug mode in development, but disable simulations
 if (import.meta.env.DEV) {
   finnhubSocket.setDebug(true);
-  
-  // Start simulations for development
-  finnhubSocket.simulateMarketData('AAPL', 180);
-  finnhubSocket.simulateMarketData('MSFT', 320);
-  finnhubSocket.simulateMarketData('GOOGL', 140);
-  finnhubSocket.simulateMarketData('AMZN', 145);
-  finnhubSocket.simulateMarketData('NVDA', 450);
-  finnhubSocket.simulateMarketData('META', 330);
-  
-  console.log('Market data simulation started for development');
+  console.log('Finnhub socket initialized for development with real API data');
 }

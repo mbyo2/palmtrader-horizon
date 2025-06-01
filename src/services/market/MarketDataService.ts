@@ -1,54 +1,63 @@
 
-import { MarketData } from "./types";
-import { DataCache } from "./dataCache";
-import { DataFetcher } from "./dataFetcher";
+import { DataFetcher } from './dataFetcher';
+import { MarketData } from './types';
 
+/**
+ * Main service for fetching market data from real APIs
+ */
 export class MarketDataService {
   /**
-   * Fetch the latest price for a symbol
-   * @param symbol Stock symbol
-   * @returns Latest price data
+   * Fetch the latest price for a stock symbol from real market APIs
+   * @param symbol Stock symbol (e.g., 'AAPL', 'MSFT')
+   * @returns Promise resolving to latest price data
    */
   static async fetchLatestPrice(symbol: string): Promise<{ symbol: string; price: number; change?: number; volume?: number }> {
+    console.log(`MarketDataService: Fetching latest price for ${symbol}`);
     return DataFetcher.fetchLatestPrice(symbol);
   }
-  
+
   /**
-   * Fetch historical data for a symbol
+   * Fetch historical market data for a stock symbol
    * @param symbol Stock symbol
-   * @param days Number of days of historical data
-   * @returns Array of historical data points
+   * @param days Number of days of historical data (default: 30)
+   * @returns Promise resolving to array of historical market data
    */
   static async fetchHistoricalData(symbol: string, days: number = 30): Promise<MarketData[]> {
+    console.log(`MarketDataService: Fetching ${days} days of historical data for ${symbol}`);
     return DataFetcher.fetchHistoricalData(symbol, days);
   }
 
   /**
-   * Fetch latest prices for multiple symbols at once
+   * Fetch latest prices for multiple symbols
    * @param symbols Array of stock symbols
-   * @returns Array of price data
+   * @returns Promise resolving to array of price data
    */
   static async fetchMultipleLatestPrices(symbols: string[]): Promise<Array<{ symbol: string; price: number; change?: number; volume?: number }>> {
+    console.log(`MarketDataService: Fetching prices for ${symbols.length} symbols`);
     return DataFetcher.fetchMultipleLatestPrices(symbols);
   }
-  
+
   /**
-   * Clear all caches
+   * Validate that market data is recent and accurate
+   * @param data Market data to validate
+   * @returns boolean indicating if data is valid
    */
-  static clearCache(): void {
-    DataCache.clearAll();
-    MockDataHelper.clearCache();
-  }
-  
-  /**
-   * Clear cache for a specific symbol
-   * @param symbol Stock symbol
-   */
-  static clearSymbolCache(symbol: string): void {
-    DataCache.clearSymbol(symbol);
-    MockDataHelper.clearSymbolCache(symbol);
+  static validateMarketData(data: any): boolean {
+    if (!data || typeof data.price !== 'number' || data.price <= 0) {
+      return false;
+    }
+    
+    // Check if timestamp is recent (within last day for real-time data)
+    if (data.timestamp) {
+      const dataAge = Date.now() - (typeof data.timestamp === 'string' ? parseInt(data.timestamp) : data.timestamp);
+      const oneDayMs = 24 * 60 * 60 * 1000;
+      
+      if (dataAge > oneDayMs) {
+        console.warn(`Market data for ${data.symbol} is older than 1 day`);
+        return false;
+      }
+    }
+    
+    return true;
   }
 }
-
-// Import the mock data helper to avoid circular references
-import { MockDataHelper } from "./mockDataHelper";
