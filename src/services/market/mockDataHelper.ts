@@ -1,106 +1,86 @@
 
 import { MarketData } from "./types";
 
-// Cache for mock data to avoid regenerating it
-const mockDataCache = new Map<string, MarketData[]>();
-// Cache for the last price to ensure consistent data
-const lastPriceCache = new Map<string, number>();
-
 export class MockDataHelper {
-  static generateMockData(symbol: string, days: number): MarketData[] {
+  private static cache = new Map<string, MarketData[]>();
+  private static priceCache = new Map<string, number>();
+
+  static generateMockData(symbol: string, days: number = 30): MarketData[] {
     const cacheKey = `${symbol}-${days}`;
     
-    // Return cached data if we have it
-    if (mockDataCache.has(cacheKey)) {
-      return mockDataCache.get(cacheKey)!;
+    if (this.cache.has(cacheKey)) {
+      return this.cache.get(cacheKey)!;
     }
+
+    console.log(`Generating ${days} days of mock data for ${symbol}`);
     
-    console.log(`Generating mock historical data for ${symbol}`);
     const data: MarketData[] = [];
+    const basePrice = 50 + (symbol.charCodeAt(0) % 200); // Consistent base price per symbol
+    let currentPrice = basePrice;
+    
     const endDate = new Date();
-    let currentDate = new Date();
-    currentDate.setDate(currentDate.getDate() - days);
     
-    // Get the last known price or generate a new one
-    let price = lastPriceCache.get(symbol) || Math.random() * 490 + 10;
-    
-    while (currentDate <= endDate) {
-      // Generate random price movement (-5% to +5%)
-      const priceChange = price * (Math.random() * 0.1 - 0.05);
-      price += priceChange;
-      price = Math.max(1, price); // Ensure price doesn't go below $1
+    for (let i = days - 1; i >= 0; i--) {
+      const date = new Date(endDate);
+      date.setDate(date.getDate() - i);
       
-      const open = price - (Math.random() * 2);
-      const close = price + (Math.random() * 2);
-      const high = Math.max(open, close) + (Math.random() * 3);
-      const low = Math.min(open, close) - (Math.random() * 3);
+      // Generate realistic price movement (±3% daily max)
+      const change = (Math.random() - 0.5) * 0.06; // -3% to +3%
+      currentPrice = currentPrice * (1 + change);
+      
+      // Ensure price doesn't go below $1
+      currentPrice = Math.max(1, currentPrice);
+      
+      const high = currentPrice * (1 + Math.random() * 0.02);
+      const low = currentPrice * (1 - Math.random() * 0.02);
+      const open = i === days - 1 ? basePrice : data[data.length - 1]?.close || currentPrice;
       
       data.push({
         symbol,
-        timestamp: String(currentDate.getTime()),
-        price,
-        open,
-        high,
-        low,
-        close,
-        volume: Math.floor(Math.random() * 10000000),
-        type: 'stock',
+        timestamp: date.getTime().toString(),
+        price: Number(currentPrice.toFixed(2)),
+        open: Number(open.toFixed(2)),
+        high: Number(high.toFixed(2)),
+        low: Number(low.toFixed(2)),
+        close: Number(currentPrice.toFixed(2)),
+        volume: Math.floor(Math.random() * 2000000) + 500000,
+        type: 'stock'
       });
-      
-      // Move to the next day
-      currentDate.setDate(currentDate.getDate() + 1);
     }
     
-    // Update the lastPriceCache with the final price
-    if (data.length > 0) {
-      lastPriceCache.set(symbol, data[data.length - 1].price);
-    }
-    
-    // Cache the result
-    mockDataCache.set(cacheKey, data);
+    this.cache.set(cacheKey, data);
+    this.priceCache.set(symbol, currentPrice);
     
     return data;
   }
-  
-  static generateMockDataPoint(symbol: string): MarketData {
-    // Get the last known price or generate a new one
-    let price = lastPriceCache.get(symbol) || Math.random() * 490 + 10;
+
+  static generateMockDataPoint(symbol: string): { symbol: string; price: number; change?: number; volume?: number } {
+    const basePrice = this.priceCache.get(symbol) || (50 + (symbol.charCodeAt(0) % 200));
+    const change = (Math.random() - 0.5) * 0.04; // ±2%
+    const newPrice = basePrice * (1 + change);
     
-    // Add some random movement if we already had a price
-    if (lastPriceCache.has(symbol)) {
-      const priceChange = price * (Math.random() * 0.02 - 0.01); // Smaller change for a point
-      price += priceChange;
-      price = Math.max(1, price); // Ensure price doesn't go below $1
-    }
-    
-    // Update the cache
-    lastPriceCache.set(symbol, price);
+    this.priceCache.set(symbol, newPrice);
     
     return {
       symbol,
-      timestamp: String(Date.now()),
-      price,
-      open: price * 0.99,
-      high: price * 1.01,
-      low: price * 0.98,
-      close: price,
-      volume: Math.floor(Math.random() * 1000000),
-      type: 'stock',
+      price: Number(newPrice.toFixed(2)),
+      change: change * 100,
+      volume: Math.floor(Math.random() * 1000000) + 100000
     };
   }
-  
-  // Clear the cache to free up memory
+
   static clearCache(): void {
-    mockDataCache.clear();
+    this.cache.clear();
   }
-  
-  // Clear cache for a specific symbol
+
   static clearSymbolCache(symbol: string): void {
-    // Remove all entries for this symbol
-    for (const key of mockDataCache.keys()) {
-      if (key.startsWith(`${symbol}-`)) {
-        mockDataCache.delete(key);
+    const keysToDelete: string[] = [];
+    this.cache.forEach((_, key) => {
+      if (key.startsWith(symbol)) {
+        keysToDelete.push(key);
       }
-    }
+    });
+    keysToDelete.forEach(key => this.cache.delete(key));
+    this.priceCache.delete(symbol);
   }
 }

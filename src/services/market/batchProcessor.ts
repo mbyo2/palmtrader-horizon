@@ -1,109 +1,107 @@
 
-import { supabase } from "@/integrations/supabase/client";
-import { MockDataHelper } from "./mockDataHelper";
-
-type BatchQueueItem = {
+interface BatchRequest<T> {
   symbol: string;
-  resolve: (value: any) => void;
-};
+  resolve: (value: T) => void;
+  reject: (error: Error) => void;
+}
 
-// Settings for batching requests
-const BATCH_INTERVAL = 50; // Reduced from 100ms to 50ms for faster response
-const MAX_BATCH_SIZE = 20; // Maximum number of symbols to fetch in a single batch
+export class BatchProcessor {
+  private static batchQueue: BatchRequest<any>[] = [];
+  private static batchTimeout: NodeJS.Timeout | null = null;
+  private static readonly BATCH_SIZE = 5;
+  private static readonly BATCH_DELAY = 100; // milliseconds
 
-// Queue for batch processing
-let batchQueue: BatchQueueItem[] = [];
-let batchTimeout: NodeJS.Timeout | null = null;
-
-export const BatchProcessor = {
-  /**
-   * Add a request to the batch queue
-   * @param symbol Stock symbol
-   * @returns Promise that resolves with the data
-   */
-  addToBatch<T>(symbol: string): Promise<T> {
-    return new Promise((resolve) => {
-      // Add to batch queue
-      batchQueue.push({ symbol, resolve });
+  static async addToBatch<T>(symbol: string): Promise<T> {
+    return new Promise((resolve, reject) => {
+      this.batchQueue.push({ symbol, resolve, reject });
       
-      // Schedule batch processing if not already scheduled
-      if (!batchTimeout) {
-        batchTimeout = setTimeout(() => {
-          processBatch();
-        }, BATCH_INTERVAL);
+      if (this.batchQueue.length >= this.BATCH_SIZE) {
+        this.processBatch();
+      } else if (!this.batchTimeout) {
+        this.batchTimeout = setTimeout(() => {
+          this.processBatch();
+        }, this.BATCH_DELAY);
       }
     });
   }
-};
 
-/**
- * Process the batch queue
- */
-async function processBatch() {
-  try {
-    // Get items from the batch queue
-    const items = [...batchQueue];
-    batchQueue = [];
-    batchTimeout = null;
-    
-    if (items.length === 0) return;
-    
-    const symbols = items.map(item => item.symbol);
-    console.log(`Processing batch of ${symbols.length} symbols: ${symbols.join(', ')}`);
-    
-    // Split into smaller batches if necessary to avoid overwhelming the database
-    for (let i = 0; i < symbols.length; i += MAX_BATCH_SIZE) {
-      const batchSymbols = symbols.slice(i, i + MAX_BATCH_SIZE);
-      const batchItems = items.slice(i, i + MAX_BATCH_SIZE);
-      
-      // Fetch data for this batch
-      try {
-        const { data, error } = await supabase
-          .from('market_data')
-          .select('*')
-          .in('symbol', batchSymbols)
-          .order('created_at', { ascending: false });
-        
-        if (error) throw error;
-        
-        // Create a map of symbols to results
-        const results = new Map();
-        if (data) {
-          data.forEach(item => {
-            if (!results.has(item.symbol)) {
-              results.set(item.symbol, {
-                symbol: item.symbol,
-                price: item.price,
-                change: 0,
-                volume: 0
-              });
-            }
-          });
+  private static async processBatch() {
+    if (this.batchTimeout) {
+      clearTimeout(this.batchTimeout);
+      this.batchTimeout = null;
+    }
+
+    const batch = this.batchQueue.splice(0, this.BATCH_SIZE);
+    if (batch.length === 0) return;
+
+    const symbols = batch.map(req => req.symbol);
+    console.log(`Processing batch of ${symbols.length} symbols:`, symbols);
+
+    try {
+      // Fetch data for all symbols in the batch
+      const results = await Promise.allSettled(
+        symbols.map(symbol => this.fetchSymbolData(symbol))
+      );
+
+      // Resolve each request with its corresponding result
+      batch.forEach((request, index) => {
+        const result = results[index];
+        if (result.status === 'fulfilled') {
+          request.resolve(result.value);
+        } else {
+          request.reject(new Error(result.reason?.message || 'Batch processing failed'));
         }
-        
-        // Resolve all promises with the data
-        batchItems.forEach(item => {
-          const result = results.get(item.symbol) || MockDataHelper.generateMockDataPoint(item.symbol);
-          item.resolve(result);
-        });
-      } catch (error) {
-        console.error(`Error processing batch for symbols ${batchSymbols.join(', ')}:`, error);
-        
-        // Resolve with mock data in case of error
-        batchItems.forEach(item => {
-          const mockData = MockDataHelper.generateMockDataPoint(item.symbol);
-          item.resolve(mockData);
-        });
+      });
+
+    } catch (error) {
+      // If batch processing fails completely, reject all requests
+      batch.forEach(request => {
+        request.reject(error as Error);
+      });
+    }
+  }
+
+  private static async fetchSymbolData(symbol: string) {
+    try {
+      // Try to fetch from Finnhub first
+      const response = await fetch('/api/finnhub-websocket', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'get_quote', symbol })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.c) { // Current price exists
+          return {
+            symbol,
+            price: data.c,
+            change: data.d || 0,
+            volume: data.v || 0
+          };
+        }
       }
+
+      // Fallback: generate mock data
+      return this.generateMockData(symbol);
+
+    } catch (error) {
+      console.error(`Error fetching data for ${symbol}:`, error);
+      return this.generateMockData(symbol);
     }
-  } catch (error) {
-    console.error("Unexpected error in processBatch:", error);
+  }
+
+  private static generateMockData(symbol: string) {
+    // Generate consistent mock data based on symbol
+    const basePrice = 50 + (symbol.charCodeAt(0) % 200);
+    const variation = (Math.random() - 0.5) * 0.1; // ±5% variation
+    const price = basePrice * (1 + variation);
     
-    // Clear the batch queue and timeout in case of error
-    batchQueue = [];
-    if (batchTimeout) {
-      clearTimeout(batchTimeout);
-      batchTimeout = null;
-    }
+    return {
+      symbol,
+      price: Number(price.toFixed(2)),
+      change: variation * 100,
+      volume: Math.floor(Math.random() * 1000000) + 100000
+    };
   }
 }

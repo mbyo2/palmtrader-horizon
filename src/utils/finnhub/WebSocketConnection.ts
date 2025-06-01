@@ -1,104 +1,129 @@
 
 export class WebSocketConnection {
-  private socket: WebSocket | null = null;
+  private ws: WebSocket | null = null;
   private apiKey: string;
   private reconnectAttempts: number = 0;
   private maxReconnectAttempts: number = 5;
-  private reconnectInterval: number = 5000;
-  private connectionPromise: Promise<void> | null = null;
-  private connected: boolean = false;
-  private onOpenCallback?: () => void;
-  private onCloseCallback?: (event: CloseEvent) => void;
-  private onErrorCallback?: (event: Event) => void;
-  private onMessageCallback?: (event: MessageEvent) => void;
+  private reconnectDelay: number = 1000;
+  private isConnecting: boolean = false;
+  private messageHandlers: Array<(event: MessageEvent) => void> = [];
+  private openHandlers: Array<() => void> = [];
+  private closeHandlers: Array<(event: CloseEvent) => void> = [];
+  private errorHandlers: Array<(event: Event) => void> = [];
 
   constructor(apiKey: string = "demo") {
     this.apiKey = apiKey;
   }
 
-  public connect(): Promise<void> {
-    if (this.connectionPromise) return this.connectionPromise;
+  async connect(): Promise<void> {
+    if (this.isConnecting || this.isOpen()) {
+      return;
+    }
 
-    this.connectionPromise = new Promise((resolve, reject) => {
-      try {
-        this.socket = new WebSocket(`wss://ws.finnhub.io?token=${this.apiKey}`);
+    this.isConnecting = true;
 
-        this.socket.onopen = () => {
-          this.connected = true;
-          this.reconnectAttempts = 0;
-          this.onOpenCallback?.();
-          resolve();
-        };
+    try {
+      // Get API key from edge function if not provided
+      if (this.apiKey === "demo") {
+        const response = await fetch('/api/finnhub-websocket', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'get_api_key' })
+        });
         
-        this.socket.onclose = (event) => {
-          this.connected = false;
-          this.connectionPromise = null;
-          this.onCloseCallback?.(event);
-          this.scheduleReconnect();
-        };
-        
-        this.socket.onerror = (event) => {
-          this.onErrorCallback?.(event);
-          reject(new Error("WebSocket connection failed"));
-        };
-        
-        this.socket.onmessage = (event) => {
-          this.onMessageCallback?.(event);
-        };
-      } catch (error) {
-        this.scheduleReconnect();
-        reject(error);
+        if (response.ok) {
+          const data = await response.json();
+          this.apiKey = data.apiKey;
+        }
       }
-    });
 
-    return this.connectionPromise;
-  }
+      const wsUrl = `wss://ws.finnhub.io?token=${this.apiKey}`;
+      console.log('Connecting to Finnhub WebSocket...');
+      
+      this.ws = new WebSocket(wsUrl);
+      
+      this.ws.onopen = () => {
+        console.log('Finnhub WebSocket connected');
+        this.isConnecting = false;
+        this.reconnectAttempts = 0;
+        this.openHandlers.forEach(handler => handler());
+      };
 
-  private scheduleReconnect() {
-    if (this.reconnectAttempts < this.maxReconnectAttempts) {
-      this.reconnectAttempts++;
-      setTimeout(() => this.connect(), this.reconnectInterval);
+      this.ws.onmessage = (event) => {
+        this.messageHandlers.forEach(handler => handler(event));
+      };
+
+      this.ws.onclose = (event) => {
+        console.log('Finnhub WebSocket closed:', event.code, event.reason);
+        this.isConnecting = false;
+        this.ws = null;
+        this.closeHandlers.forEach(handler => handler(event));
+        
+        if (event.code !== 1000 && this.reconnectAttempts < this.maxReconnectAttempts) {
+          this.scheduleReconnect();
+        }
+      };
+
+      this.ws.onerror = (event) => {
+        console.error('Finnhub WebSocket error:', event);
+        this.isConnecting = false;
+        this.errorHandlers.forEach(handler => handler(event));
+      };
+
+    } catch (error) {
+      console.error('Failed to connect to Finnhub WebSocket:', error);
+      this.isConnecting = false;
+      throw error;
     }
   }
 
-  public send(data: string) {
-    if (this.socket?.readyState === WebSocket.OPEN) {
-      this.socket.send(data);
+  private scheduleReconnect() {
+    this.reconnectAttempts++;
+    const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
+    
+    console.log(`Scheduling reconnect attempt ${this.reconnectAttempts} in ${delay}ms`);
+    
+    setTimeout(() => {
+      this.connect().catch(console.error);
+    }, delay);
+  }
+
+  send(data: string): boolean {
+    if (this.isOpen()) {
+      this.ws!.send(data);
       return true;
     }
     return false;
   }
 
-  public close() {
-    if (this.socket) {
-      this.socket.close();
-      this.socket = null;
-      this.connected = false;
-      this.connectionPromise = null;
+  close() {
+    if (this.ws) {
+      this.ws.close(1000, 'Client disconnect');
+      this.ws = null;
     }
   }
 
-  public isConnected(): boolean {
-    return this.connected;
+  isOpen(): boolean {
+    return this.ws?.readyState === WebSocket.OPEN;
   }
 
-  public isOpen(): boolean {
-    return this.socket?.readyState === WebSocket.OPEN;
+  isConnected(): boolean {
+    return this.ws !== null && !this.isConnecting;
   }
 
-  public onOpen(callback: () => void) {
-    this.onOpenCallback = callback;
+  onMessage(handler: (event: MessageEvent) => void) {
+    this.messageHandlers.push(handler);
   }
 
-  public onClose(callback: (event: CloseEvent) => void) {
-    this.onCloseCallback = callback;
+  onOpen(handler: () => void) {
+    this.openHandlers.push(handler);
   }
 
-  public onError(callback: (event: Event) => void) {
-    this.onErrorCallback = callback;
+  onClose(handler: (event: CloseEvent) => void) {
+    this.closeHandlers.push(handler);
   }
 
-  public onMessage(callback: (event: MessageEvent) => void) {
-    this.onMessageCallback = callback;
+  onError(handler: (event: Event) => void) {
+    this.errorHandlers.push(handler);
   }
 }
