@@ -1,244 +1,260 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Copy, TrendingUp, TrendingDown, Users, Star, Award, Target } from "lucide-react";
+import { Users, TrendingUp, Copy, Star, Award, Target } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
-interface Trader {
+interface TopTrader {
   id: string;
   username: string;
   avatar_url?: string;
+  returnPercentage: number;
+  followers: number;
+  trades: number;
+  winRate: number;
+  riskScore: number;
   verified: boolean;
-  performance: {
-    totalReturn: number;
-    returnPercentage: number;
-    winRate: number;
-    sharpeRatio: number;
-    maxDrawdown: number;
-    totalTrades: number;
-    followers: number;
-    copiers: number;
-  };
-  recentTrades: Trade[];
-  riskLevel: 'conservative' | 'moderate' | 'aggressive';
-  specialties: string[];
-  bio: string;
+  specialization?: string;
 }
 
-interface Trade {
+interface CopyTrade {
   id: string;
+  originalTrader: TopTrader;
   symbol: string;
-  type: 'buy' | 'sell';
-  price: number;
-  quantity: number;
+  action: 'buy' | 'sell';
+  amount: number;
   timestamp: Date;
-  pnl: number;
-  pnlPercentage: number;
-}
-
-interface CopyTradingPosition {
-  traderId: string;
-  traderName: string;
-  amountAllocated: number;
-  currentValue: number;
-  pnl: number;
-  pnlPercentage: number;
-  isActive: boolean;
+  status: 'pending' | 'executed' | 'failed';
 }
 
 const SocialTradingFeatures = () => {
-  const [topTraders] = useState<Trader[]>([
-    {
-      id: '1',
-      username: 'TechGuru2024',
-      verified: true,
-      performance: {
-        totalReturn: 125000,
-        returnPercentage: 45.2,
-        winRate: 68,
-        sharpeRatio: 1.8,
-        maxDrawdown: -12.5,
-        totalTrades: 156,
-        followers: 2340,
-        copiers: 890
+  const { user } = useAuth();
+  const [topTraders, setTopTraders] = useState<TopTrader[]>([]);
+  const [copiedTrades, setCopiedTrades] = useState<CopyTrade[]>([]);
+  const [following, setFollowing] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    loadTopTraders();
+    loadCopiedTrades();
+  }, []);
+
+  const loadTopTraders = async () => {
+    // Mock data for top traders
+    const mockTraders: TopTrader[] = [
+      {
+        id: '1',
+        username: 'StockMaster2024',
+        returnPercentage: 127.5,
+        followers: 15420,
+        trades: 342,
+        winRate: 78.3,
+        riskScore: 6.2,
+        verified: true,
+        specialization: 'Tech Stocks'
       },
-      recentTrades: [
-        {
-          id: '1',
-          symbol: 'NVDA',
-          type: 'buy',
-          price: 450.50,
-          quantity: 100,
-          timestamp: new Date(Date.now() - 1000 * 60 * 30),
-          pnl: 2250,
-          pnlPercentage: 5.2
-        }
-      ],
-      riskLevel: 'moderate',
-      specialties: ['Tech Stocks', 'Growth', 'AI/ML'],
-      bio: 'Technology sector specialist with 8+ years experience. Focus on AI and semiconductor companies.'
-    },
-    {
-      id: '2',
-      username: 'DividendMaster',
-      verified: true,
-      performance: {
-        totalReturn: 89000,
-        returnPercentage: 22.8,
-        winRate: 78,
-        sharpeRatio: 2.1,
-        maxDrawdown: -8.2,
-        totalTrades: 98,
-        followers: 1890,
-        copiers: 1250
+      {
+        id: '2',
+        username: 'DividendKing',
+        returnPercentage: 89.2,
+        followers: 8930,
+        trades: 156,
+        winRate: 83.1,
+        riskScore: 3.8,
+        verified: true,
+        specialization: 'Dividend Growth'
       },
-      recentTrades: [
-        {
-          id: '2',
-          symbol: 'JNJ',
-          type: 'buy',
-          price: 165.75,
-          quantity: 200,
-          timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2),
-          pnl: 1120,
-          pnlPercentage: 3.4
-        }
-      ],
-      riskLevel: 'conservative',
-      specialties: ['Dividend Stocks', 'Value Investing', 'Blue Chips'],
-      bio: 'Conservative dividend growth investor. Building steady wealth through quality companies.'
-    }
-  ]);
-
-  const [copyPositions] = useState<CopyTradingPosition[]>([
-    {
-      traderId: '1',
-      traderName: 'TechGuru2024',
-      amountAllocated: 5000,
-      currentValue: 5675,
-      pnl: 675,
-      pnlPercentage: 13.5,
-      isActive: true
-    },
-    {
-      traderId: '2',
-      traderName: 'DividendMaster',
-      amountAllocated: 3000,
-      currentValue: 3240,
-      pnl: 240,
-      pnlPercentage: 8.0,
-      isActive: true
-    }
-  ]);
-
-  const handleCopyTrader = (traderId: string, amount: number) => {
-    toast.success(`Started copying trader with $${amount.toLocaleString()}`);
+      {
+        id: '3',
+        username: 'ValueHunter',
+        returnPercentage: 156.8,
+        followers: 12100,
+        trades: 289,
+        winRate: 71.2,
+        riskScore: 7.5,
+        verified: false,
+        specialization: 'Value Investing'
+      },
+      {
+        id: '4',
+        username: 'CryptoQueen',
+        returnPercentage: 234.6,
+        followers: 22500,
+        trades: 567,
+        winRate: 68.9,
+        riskScore: 8.9,
+        verified: true,
+        specialization: 'Cryptocurrency'
+      }
+    ];
+    setTopTraders(mockTraders);
   };
 
-  const handleStopCopying = (traderId: string) => {
-    toast.success('Stopped copying trader');
+  const loadCopiedTrades = async () => {
+    // Mock copied trades data
+    const mockCopiedTrades: CopyTrade[] = [
+      {
+        id: '1',
+        originalTrader: topTraders[0],
+        symbol: 'AAPL',
+        action: 'buy',
+        amount: 500,
+        timestamp: new Date(Date.now() - 1000 * 60 * 30),
+        status: 'executed'
+      },
+      {
+        id: '2',
+        originalTrader: topTraders[1],
+        symbol: 'MSFT',
+        action: 'buy',
+        amount: 750,
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2),
+        status: 'pending'
+      }
+    ];
+    setCopiedTrades(mockCopiedTrades);
   };
 
-  const getRiskColor = (riskLevel: string) => {
-    switch (riskLevel) {
-      case 'conservative': return 'text-green-500';
-      case 'moderate': return 'text-yellow-500';
-      case 'aggressive': return 'text-red-500';
-      default: return 'text-gray-500';
+  const handleFollowTrader = async (traderId: string) => {
+    if (!user) {
+      toast.error('Please log in to follow traders');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Mock API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      if (following.includes(traderId)) {
+        setFollowing(prev => prev.filter(id => id !== traderId));
+        toast.success('Unfollowed trader');
+      } else {
+        setFollowing(prev => [...prev, traderId]);
+        toast.success('Now following trader');
+      }
+    } catch (error) {
+      toast.error('Failed to update following status');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const getRiskBadgeVariant = (riskLevel: string) => {
-    switch (riskLevel) {
-      case 'conservative': return 'default';
-      case 'moderate': return 'secondary';
-      case 'aggressive': return 'destructive';
-      default: return 'outline';
+  const handleCopyTrade = async (traderId: string) => {
+    if (!user) {
+      toast.error('Please log in to copy trades');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Mock API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      toast.success('Copy trading enabled for this trader');
+    } catch (error) {
+      toast.error('Failed to enable copy trading');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const TraderCard = ({ trader }: { trader: Trader }) => (
-    <Card className="p-6">
-      <div className="flex items-start gap-4">
-        <Avatar className="h-12 w-12">
+  const getRiskColor = (riskScore: number) => {
+    if (riskScore <= 3) return 'text-green-600';
+    if (riskScore <= 6) return 'text-yellow-600';
+    return 'text-red-600';
+  };
+
+  const getRiskLabel = (riskScore: number) => {
+    if (riskScore <= 3) return 'Low Risk';
+    if (riskScore <= 6) return 'Medium Risk';
+    return 'High Risk';
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(amount);
+  };
+
+  const TraderCard = ({ trader }: { trader: TopTrader }) => (
+    <Card className="p-4">
+      <div className="flex items-start gap-3">
+        <Avatar>
           <AvatarImage src={trader.avatar_url} />
           <AvatarFallback>{trader.username.charAt(0).toUpperCase()}</AvatarFallback>
         </Avatar>
         
         <div className="flex-1">
-          <div className="flex items-center gap-2 mb-2">
-            <h3 className="font-semibold text-lg">{trader.username}</h3>
-            {trader.verified && <Star className="h-4 w-4 text-yellow-500" />}
-            <Badge variant={getRiskBadgeVariant(trader.riskLevel)}>
-              {trader.riskLevel}
-            </Badge>
-          </div>
-          
-          <p className="text-sm text-muted-foreground mb-3">{trader.bio}</p>
-          
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-            <div className="text-center">
-              <div className={`text-lg font-bold ${trader.performance.returnPercentage >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                {trader.performance.returnPercentage >= 0 ? '+' : ''}{trader.performance.returnPercentage}%
-              </div>
-              <div className="text-xs text-muted-foreground">Total Return</div>
-            </div>
-            <div className="text-center">
-              <div className="text-lg font-bold">{trader.performance.winRate}%</div>
-              <div className="text-xs text-muted-foreground">Win Rate</div>
-            </div>
-            <div className="text-center">
-              <div className="text-lg font-bold">{trader.performance.sharpeRatio}</div>
-              <div className="text-xs text-muted-foreground">Sharpe Ratio</div>
-            </div>
-            <div className="text-center">
-              <div className="text-lg font-bold">{trader.performance.copiers}</div>
-              <div className="text-xs text-muted-foreground">Copiers</div>
-            </div>
-          </div>
-          
-          <div className="flex flex-wrap gap-1 mb-4">
-            {trader.specialties.map(specialty => (
-              <Badge key={specialty} variant="outline" className="text-xs">
-                {specialty}
+          <div className="flex items-center gap-2 mb-1">
+            <h3 className="font-semibold">{trader.username}</h3>
+            {trader.verified && (
+              <Badge variant="secondary" className="text-xs">
+                <Award className="h-3 w-3 mr-1" />
+                Verified
               </Badge>
-            ))}
+            )}
+          </div>
+          
+          {trader.specialization && (
+            <p className="text-sm text-muted-foreground mb-2">
+              Specializes in {trader.specialization}
+            </p>
+          )}
+          
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            <div>
+              <p className="text-xs text-muted-foreground">12M Return</p>
+              <p className="font-semibold text-green-600">+{trader.returnPercentage}%</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Win Rate</p>
+              <p className="font-semibold">{trader.winRate}%</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Followers</p>
+              <p className="font-semibold">{trader.followers.toLocaleString()}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Trades</p>
+              <p className="font-semibold">{trader.trades}</p>
+            </div>
+          </div>
+          
+          <div className="mb-3">
+            <div className="flex justify-between text-xs mb-1">
+              <span>Risk Level</span>
+              <span className={getRiskColor(trader.riskScore)}>
+                {getRiskLabel(trader.riskScore)}
+              </span>
+            </div>
+            <Progress value={trader.riskScore * 10} className="h-2" />
           </div>
           
           <div className="flex gap-2">
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button className="flex-1">
-                  <Copy className="h-4 w-4 mr-2" />
-                  Copy Trader
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Copy {trader.username}</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    You will automatically copy all future trades from this trader. 
-                    Choose how much you want to allocate for copy trading.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={() => handleCopyTrader(trader.id, 1000)}>
-                    Copy with $1,000
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-            
-            <Button variant="outline">
-              <Users className="h-4 w-4 mr-2" />
-              Follow
+            <Button
+              size="sm"
+              variant={following.includes(trader.id) ? "outline" : "default"}
+              onClick={() => handleFollowTrader(trader.id)}
+              disabled={isLoading}
+            >
+              <Users className="h-3 w-3 mr-1" />
+              {following.includes(trader.id) ? 'Following' : 'Follow'}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => handleCopyTrade(trader.id)}
+              disabled={isLoading}
+            >
+              <Copy className="h-3 w-3 mr-1" />
+              Copy
             </Button>
           </div>
         </div>
@@ -247,131 +263,114 @@ const SocialTradingFeatures = () => {
   );
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Target className="h-5 w-5" />
-            Social Trading
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="discover" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="discover">Discover Traders</TabsTrigger>
-              <TabsTrigger value="copying">My Copy Positions</TabsTrigger>
-              <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
-            </TabsList>
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Users className="h-5 w-5" />
+          Social Trading
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Tabs defaultValue="traders">
+          <TabsList className="mb-4">
+            <TabsTrigger value="traders">Top Traders</TabsTrigger>
+            <TabsTrigger value="copied">Copied Trades</TabsTrigger>
+            <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
+          </TabsList>
 
-            <TabsContent value="discover" className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold">Top Performing Traders</h3>
-                <Badge variant="outline">Updated every hour</Badge>
+          <TabsContent value="traders" className="space-y-4">
+            {topTraders.map(trader => (
+              <TraderCard key={trader.id} trader={trader} />
+            ))}
+          </TabsContent>
+
+          <TabsContent value="copied" className="space-y-4">
+            {copiedTrades.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Copy className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p>No copied trades yet</p>
+                <p className="text-sm">Start following traders to see copied trades here</p>
               </div>
-              
-              {topTraders.map(trader => (
-                <TraderCard key={trader.id} trader={trader} />
-              ))}
-            </TabsContent>
-
-            <TabsContent value="copying" className="space-y-4">
-              <h3 className="text-lg font-semibold">Active Copy Positions</h3>
-              
-              {copyPositions.length === 0 ? (
-                <Card className="p-8 text-center">
-                  <Target className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <h3 className="font-semibold mb-2">No Copy Positions</h3>
-                  <p className="text-muted-foreground mb-4">
-                    You're not currently copying any traders. Discover top performers to start copy trading.
-                  </p>
-                  <Button>Discover Traders</Button>
-                </Card>
-              ) : (
-                copyPositions.map(position => (
-                  <Card key={position.traderId} className="p-4">
-                    <div className="flex items-center justify-between">
+            ) : (
+              copiedTrades.map(trade => (
+                <Card key={trade.id} className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={trade.originalTrader.avatar_url} />
+                        <AvatarFallback>
+                          {trade.originalTrader.username.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
                       <div>
-                        <h4 className="font-semibold">{position.traderName}</h4>
+                        <p className="font-medium">
+                          {trade.action.toUpperCase()} {trade.symbol}
+                        </p>
                         <p className="text-sm text-muted-foreground">
-                          Allocated: ${position.amountAllocated.toLocaleString()}
+                          Copied from @{trade.originalTrader.username}
                         </p>
                       </div>
-                      
-                      <div className="text-right">
-                        <div className="font-semibold">
-                          ${position.currentValue.toLocaleString()}
-                        </div>
-                        <div className={`text-sm ${position.pnl >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                          {position.pnl >= 0 ? '+' : ''}${position.pnl.toLocaleString()} ({position.pnlPercentage >= 0 ? '+' : ''}{position.pnlPercentage}%)
-                        </div>
-                      </div>
-                      
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleStopCopying(position.traderId)}
-                      >
-                        Stop Copying
-                      </Button>
                     </div>
-                    
-                    <div className="mt-4">
-                      <div className="flex justify-between text-sm mb-1">
-                        <span>Performance</span>
-                        <span>{position.pnlPercentage >= 0 ? '+' : ''}{position.pnlPercentage}%</span>
-                      </div>
-                      <Progress 
-                        value={Math.min(Math.max(position.pnlPercentage + 50, 0), 100)} 
-                        className="h-2"
-                      />
-                    </div>
-                  </Card>
-                ))
-              )}
-            </TabsContent>
-
-            <TabsContent value="leaderboard" className="space-y-4">
-              <h3 className="text-lg font-semibold">Top Traders This Month</h3>
-              
-              {topTraders.map((trader, index) => (
-                <Card key={trader.id} className="p-4">
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold">
-                      {index + 1}
-                    </div>
-                    
-                    <Avatar>
-                      <AvatarImage src={trader.avatar_url} />
-                      <AvatarFallback>{trader.username.charAt(0).toUpperCase()}</AvatarFallback>
-                    </Avatar>
-                    
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold">{trader.username}</span>
-                        {trader.verified && <Star className="h-4 w-4 text-yellow-500" />}
-                        {index === 0 && <Award className="h-4 w-4 text-yellow-500" />}
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        {trader.performance.totalTrades} trades • {trader.performance.winRate}% win rate
-                      </p>
-                    </div>
-                    
                     <div className="text-right">
-                      <div className={`font-bold ${trader.performance.returnPercentage >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                        {trader.performance.returnPercentage >= 0 ? '+' : ''}{trader.performance.returnPercentage}%
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        {trader.performance.copiers} copiers
-                      </div>
+                      <p className="font-medium">{formatCurrency(trade.amount)}</p>
+                      <Badge 
+                        variant={
+                          trade.status === 'executed' ? 'default' :
+                          trade.status === 'pending' ? 'secondary' : 'destructive'
+                        }
+                      >
+                        {trade.status}
+                      </Badge>
                     </div>
                   </div>
                 </Card>
-              ))}
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
-    </div>
+              ))
+            )}
+          </TabsContent>
+
+          <TabsContent value="leaderboard" className="space-y-4">
+            <div className="space-y-3">
+              {topTraders
+                .sort((a, b) => b.returnPercentage - a.returnPercentage)
+                .map((trader, index) => (
+                  <Card key={trader.id} className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold text-sm">
+                        {index + 1}
+                      </div>
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={trader.avatar_url} />
+                        <AvatarFallback>
+                          {trader.username.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold">{trader.username}</h3>
+                          {trader.verified && (
+                            <Award className="h-4 w-4 text-yellow-500" />
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          {trader.specialization}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-green-600 text-lg">
+                          +{trader.returnPercentage}%
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {trader.followers.toLocaleString()} followers
+                        </p>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+            </div>
+          </TabsContent>
+        </Tabs>
+      </CardContent>
+    </Card>
   );
 };
 

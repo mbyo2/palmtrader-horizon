@@ -1,405 +1,302 @@
 
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TrendingUp, TrendingDown, DollarSign, BarChart3, PieChart, Calculator } from "lucide-react";
+import { TrendingUp, TrendingDown, BarChart3, DollarSign, Percent } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface FundamentalData {
+  id: string;
   symbol: string;
   name: string;
   sector: string;
-  marketCap: number;
-  peRatio: number;
-  pegRatio: number;
-  priceToBook: number;
-  priceToSales: number;
-  roe: number;
-  roa: number;
-  grossMargin: number;
-  operatingMargin: number;
-  netMargin: number;
-  debtToEquity: number;
-  currentRatio: number;
-  quickRatio: number;
+  industry: string;
+  market_cap: number;
+  pe_ratio: number;
+  dividend_yield: number;
+  eps: number;
   revenue: number;
-  revenueGrowth: number;
-  earningsGrowth: number;
-  freeCashFlow: number;
-  dividendYield: number;
-  payoutRatio: number;
-  analystRating: 'Strong Buy' | 'Buy' | 'Hold' | 'Sell' | 'Strong Sell';
-  targetPrice: number;
-  fairValue: number;
+  profit_margin: number;
+  debt_to_equity: number;
 }
 
 interface FundamentalAnalysisProps {
-  data: FundamentalData;
-  currentPrice: number;
+  symbol: string;
 }
 
-const FundamentalAnalysis = ({ data, currentPrice }: FundamentalAnalysisProps) => {
-  const getValuationScore = () => {
-    let score = 0;
-    if (data.peRatio < 15) score += 20;
-    else if (data.peRatio < 25) score += 10;
-    
-    if (data.pegRatio < 1) score += 20;
-    else if (data.pegRatio < 1.5) score += 10;
-    
-    if (data.priceToBook < 1.5) score += 20;
-    else if (data.priceToBook < 3) score += 10;
-    
-    if (data.priceToSales < 2) score += 20;
-    else if (data.priceToSales < 5) score += 10;
-    
-    if (currentPrice < data.fairValue) score += 20;
-    
-    return Math.min(score, 100);
-  };
+const FundamentalAnalysis = ({ symbol }: FundamentalAnalysisProps) => {
+  const [analysisScore, setAnalysisScore] = useState(0);
 
-  const getProfitabilityScore = () => {
-    let score = 0;
-    if (data.roe > 15) score += 25;
-    else if (data.roe > 10) score += 15;
-    
-    if (data.roa > 10) score += 25;
-    else if (data.roa > 5) score += 15;
-    
-    if (data.grossMargin > 40) score += 25;
-    else if (data.grossMargin > 25) score += 15;
-    
-    if (data.netMargin > 15) score += 25;
-    else if (data.netMargin > 8) score += 15;
-    
-    return Math.min(score, 100);
-  };
+  const { data: fundamentals, isLoading } = useQuery({
+    queryKey: ['fundamentals', symbol],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('company_fundamentals')
+        .select('*')
+        .eq('symbol', symbol)
+        .single();
 
-  const getFinancialHealthScore = () => {
-    let score = 0;
-    if (data.debtToEquity < 0.3) score += 30;
-    else if (data.debtToEquity < 0.6) score += 20;
-    else if (data.debtToEquity < 1) score += 10;
-    
-    if (data.currentRatio > 2) score += 25;
-    else if (data.currentRatio > 1.5) score += 15;
-    else if (data.currentRatio > 1) score += 10;
-    
-    if (data.quickRatio > 1.5) score += 25;
-    else if (data.quickRatio > 1) score += 15;
-    else if (data.quickRatio > 0.8) score += 10;
-    
-    if (data.freeCashFlow > 0) score += 20;
-    
-    return Math.min(score, 100);
-  };
+      if (error) {
+        console.error('Error fetching fundamentals:', error);
+        return null;
+      }
 
-  const getGrowthScore = () => {
-    let score = 0;
-    if (data.revenueGrowth > 20) score += 30;
-    else if (data.revenueGrowth > 10) score += 20;
-    else if (data.revenueGrowth > 5) score += 10;
-    
-    if (data.earningsGrowth > 25) score += 30;
-    else if (data.earningsGrowth > 15) score += 20;
-    else if (data.earningsGrowth > 8) score += 10;
-    
-    if (data.pegRatio < 1) score += 40;
-    else if (data.pegRatio < 1.5) score += 20;
-    
-    return Math.min(score, 100);
-  };
+      return data as FundamentalData;
+    },
+    staleTime: 1000 * 60 * 5 // 5 minutes
+  });
 
-  const getRatingColor = (rating: string) => {
-    switch (rating) {
-      case 'Strong Buy': return 'text-green-600';
-      case 'Buy': return 'text-green-500';
-      case 'Hold': return 'text-yellow-500';
-      case 'Sell': return 'text-red-500';
-      case 'Strong Sell': return 'text-red-600';
-      default: return 'text-gray-500';
+  useEffect(() => {
+    if (fundamentals) {
+      calculateAnalysisScore();
     }
+  }, [fundamentals]);
+
+  const calculateAnalysisScore = () => {
+    if (!fundamentals) return;
+
+    let score = 50; // Base score
+
+    // P/E Ratio scoring
+    if (fundamentals.pe_ratio) {
+      if (fundamentals.pe_ratio < 15) score += 15;
+      else if (fundamentals.pe_ratio < 25) score += 10;
+      else if (fundamentals.pe_ratio > 35) score -= 10;
+    }
+
+    // Profit margin scoring
+    if (fundamentals.profit_margin) {
+      if (fundamentals.profit_margin > 20) score += 15;
+      else if (fundamentals.profit_margin > 10) score += 10;
+      else if (fundamentals.profit_margin < 5) score -= 10;
+    }
+
+    // Debt to equity scoring
+    if (fundamentals.debt_to_equity !== null) {
+      if (fundamentals.debt_to_equity < 0.3) score += 10;
+      else if (fundamentals.debt_to_equity > 1.0) score -= 15;
+    }
+
+    // Dividend yield scoring
+    if (fundamentals.dividend_yield) {
+      if (fundamentals.dividend_yield > 3) score += 5;
+    }
+
+    setAnalysisScore(Math.max(0, Math.min(100, score)));
   };
 
-  const formatCurrency = (value: number) => {
-    if (value >= 1e9) return `$${(value / 1e9).toFixed(1)}B`;
-    if (value >= 1e6) return `$${(value / 1e6).toFixed(1)}M`;
-    if (value >= 1e3) return `$${(value / 1e3).toFixed(1)}K`;
-    return `$${value.toFixed(2)}`;
+  const formatCurrency = (amount: number) => {
+    if (amount >= 1e12) return `$${(amount / 1e12).toFixed(1)}T`;
+    if (amount >= 1e9) return `$${(amount / 1e9).toFixed(1)}B`;
+    if (amount >= 1e6) return `$${(amount / 1e6).toFixed(1)}M`;
+    return `$${amount.toFixed(2)}`;
   };
 
-  const formatPercent = (value: number) => `${value.toFixed(1)}%`;
+  const formatPercentage = (value: number) => {
+    return `${value.toFixed(2)}%`;
+  };
+
+  const getScoreColor = (score: number) => {
+    if (score >= 70) return "text-green-600";
+    if (score >= 50) return "text-yellow-600";
+    return "text-red-600";
+  };
+
+  const getScoreBadge = (score: number) => {
+    if (score >= 80) return { variant: "default" as const, label: "Strong Buy" };
+    if (score >= 70) return { variant: "default" as const, label: "Buy" };
+    if (score >= 50) return { variant: "secondary" as const, label: "Hold" };
+    if (score >= 30) return { variant: "destructive" as const, label: "Weak Sell" };
+    return { variant: "destructive" as const, label: "Sell" };
+  };
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="animate-pulse space-y-4">
+            <div className="h-4 bg-muted rounded w-1/3"></div>
+            <div className="h-8 bg-muted rounded w-full"></div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="h-16 bg-muted rounded"></div>
+              <div className="h-16 bg-muted rounded"></div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!fundamentals) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <p className="text-muted-foreground text-center">
+            No fundamental data available for {symbol}
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const scoreBadge = getScoreBadge(analysisScore);
 
   return (
-    <Card className="w-full">
+    <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Calculator className="h-5 w-5" />
-          Fundamental Analysis - {data.symbol}
-        </CardTitle>
-        <div className="flex items-center gap-2">
-          <Badge variant="outline">{data.sector}</Badge>
-          <Badge className={getRatingColor(data.analystRating)} variant="outline">
-            {data.analystRating}
+        <CardTitle className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <BarChart3 className="h-5 w-5" />
+            Fundamental Analysis - {fundamentals.symbol}
+          </div>
+          <Badge variant={scoreBadge.variant}>
+            {scoreBadge.label}
           </Badge>
-        </div>
+        </CardTitle>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+        <Tabs defaultValue="overview">
+          <TabsList className="mb-4">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="valuation">Valuation</TabsTrigger>
-            <TabsTrigger value="profitability">Profitability</TabsTrigger>
             <TabsTrigger value="financial">Financial Health</TabsTrigger>
-            <TabsTrigger value="growth">Growth</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold">{formatCurrency(data.marketCap)}</div>
-                <div className="text-sm text-muted-foreground">Market Cap</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold">{formatCurrency(data.revenue)}</div>
-                <div className="text-sm text-muted-foreground">Revenue (TTM)</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold">{data.peRatio.toFixed(1)}</div>
-                <div className="text-sm text-muted-foreground">P/E Ratio</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold">{formatPercent(data.dividendYield)}</div>
-                <div className="text-sm text-muted-foreground">Dividend Yield</div>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-semibold">{fundamentals.name}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {fundamentals.sector} • {fundamentals.industry}
+                </p>
               </div>
             </div>
 
-            <div className="space-y-4">
-              <div>
-                <div className="flex justify-between mb-2">
-                  <span>Overall Score</span>
-                  <span className="font-medium">
-                    {Math.round((getValuationScore() + getProfitabilityScore() + getFinancialHealthScore() + getGrowthScore()) / 4)}/100
-                  </span>
-                </div>
-                <Progress value={(getValuationScore() + getProfitabilityScore() + getFinancialHealthScore() + getGrowthScore()) / 4} />
+            <div className="mb-4">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm font-medium">Analysis Score</span>
+                <span className={`font-bold ${getScoreColor(analysisScore)}`}>
+                  {analysisScore}/100
+                </span>
               </div>
+              <Progress value={analysisScore} className="h-3" />
+            </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex justify-between">
-                  <span>Current Price:</span>
-                  <span className="font-medium">{formatCurrency(currentPrice)}</span>
+            <div className="grid grid-cols-2 gap-4">
+              <Card className="p-3">
+                <div className="flex items-center gap-2">
+                  <DollarSign className="h-4 w-4 text-blue-500" />
+                  <span className="text-sm text-muted-foreground">Market Cap</span>
                 </div>
-                <div className="flex justify-between">
-                  <span>Fair Value:</span>
-                  <span className="font-medium">{formatCurrency(data.fairValue)}</span>
+                <p className="text-lg font-semibold">
+                  {formatCurrency(fundamentals.market_cap)}
+                </p>
+              </Card>
+
+              <Card className="p-3">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-green-500" />
+                  <span className="text-sm text-muted-foreground">EPS</span>
                 </div>
-                <div className="flex justify-between">
-                  <span>Target Price:</span>
-                  <span className="font-medium">{formatCurrency(data.targetPrice)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Upside:</span>
-                  <span className={`font-medium ${data.targetPrice > currentPrice ? 'text-green-500' : 'text-red-500'}`}>
-                    {formatPercent(((data.targetPrice - currentPrice) / currentPrice) * 100)}
-                  </span>
-                </div>
-              </div>
+                <p className="text-lg font-semibold">
+                  ${fundamentals.eps?.toFixed(2) || 'N/A'}
+                </p>
+              </Card>
             </div>
           </TabsContent>
 
           <TabsContent value="valuation" className="space-y-4">
-            <div>
-              <div className="flex justify-between mb-2">
-                <span>Valuation Score</span>
-                <span className="font-medium">{getValuationScore()}/100</span>
-              </div>
-              <Progress value={getValuationScore()} />
-            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Card className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-muted-foreground">P/E Ratio</span>
+                  {fundamentals.pe_ratio && fundamentals.pe_ratio < 20 ? (
+                    <TrendingUp className="h-4 w-4 text-green-500" />
+                  ) : (
+                    <TrendingDown className="h-4 w-4 text-red-500" />
+                  )}
+                </div>
+                <p className="text-2xl font-bold">
+                  {fundamentals.pe_ratio?.toFixed(2) || 'N/A'}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {fundamentals.pe_ratio && fundamentals.pe_ratio < 15 
+                    ? 'Undervalued' 
+                    : fundamentals.pe_ratio && fundamentals.pe_ratio > 30 
+                    ? 'Overvalued' 
+                    : 'Fair Value'}
+                </p>
+              </Card>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span>P/E Ratio:</span>
-                  <span className="font-medium">{data.peRatio.toFixed(1)}</span>
+              <Card className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-muted-foreground">Dividend Yield</span>
+                  <Percent className="h-4 w-4 text-blue-500" />
                 </div>
-                <div className="flex justify-between">
-                  <span>PEG Ratio:</span>
-                  <span className="font-medium">{data.pegRatio.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Price/Book:</span>
-                  <span className="font-medium">{data.priceToBook.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Price/Sales:</span>
-                  <span className="font-medium">{data.priceToSales.toFixed(2)}</span>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  {data.peRatio < 15 ? <TrendingUp className="h-4 w-4 text-green-500" /> : <TrendingDown className="h-4 w-4 text-red-500" />}
-                  <span className="text-sm">P/E Ratio</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  {data.pegRatio < 1 ? <TrendingUp className="h-4 w-4 text-green-500" /> : <TrendingDown className="h-4 w-4 text-red-500" />}
-                  <span className="text-sm">PEG Ratio</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  {data.priceToBook < 1.5 ? <TrendingUp className="h-4 w-4 text-green-500" /> : <TrendingDown className="h-4 w-4 text-red-500" />}
-                  <span className="text-sm">Price/Book</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  {data.priceToSales < 2 ? <TrendingUp className="h-4 w-4 text-green-500" /> : <TrendingDown className="h-4 w-4 text-red-500" />}
-                  <span className="text-sm">Price/Sales</span>
-                </div>
-              </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="profitability" className="space-y-4">
-            <div>
-              <div className="flex justify-between mb-2">
-                <span>Profitability Score</span>
-                <span className="font-medium">{getProfitabilityScore()}/100</span>
-              </div>
-              <Progress value={getProfitabilityScore()} />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span>ROE:</span>
-                  <span className="font-medium">{formatPercent(data.roe)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>ROA:</span>
-                  <span className="font-medium">{formatPercent(data.roa)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Gross Margin:</span>
-                  <span className="font-medium">{formatPercent(data.grossMargin)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Net Margin:</span>
-                  <span className="font-medium">{formatPercent(data.netMargin)}</span>
-                </div>
-              </div>
-              <div className="space-y-4">
-                <div>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span>Gross Margin</span>
-                    <span>{formatPercent(data.grossMargin)}</span>
-                  </div>
-                  <Progress value={Math.min(data.grossMargin, 100)} />
-                </div>
-                <div>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span>Operating Margin</span>
-                    <span>{formatPercent(data.operatingMargin)}</span>
-                  </div>
-                  <Progress value={Math.min(Math.max(data.operatingMargin, 0), 100)} />
-                </div>
-                <div>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span>Net Margin</span>
-                    <span>{formatPercent(data.netMargin)}</span>
-                  </div>
-                  <Progress value={Math.min(Math.max(data.netMargin, 0), 100)} />
-                </div>
-              </div>
+                <p className="text-2xl font-bold">
+                  {fundamentals.dividend_yield ? formatPercentage(fundamentals.dividend_yield) : 'N/A'}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {fundamentals.dividend_yield && fundamentals.dividend_yield > 3 
+                    ? 'High Yield' 
+                    : 'Standard Yield'}
+                </p>
+              </Card>
             </div>
           </TabsContent>
 
           <TabsContent value="financial" className="space-y-4">
-            <div>
-              <div className="flex justify-between mb-2">
-                <span>Financial Health Score</span>
-                <span className="font-medium">{getFinancialHealthScore()}/100</span>
-              </div>
-              <Progress value={getFinancialHealthScore()} />
-            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Card className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-muted-foreground">Revenue</span>
+                  <DollarSign className="h-4 w-4 text-green-500" />
+                </div>
+                <p className="text-2xl font-bold">
+                  {formatCurrency(fundamentals.revenue)}
+                </p>
+              </Card>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span>Debt/Equity:</span>
-                  <span className="font-medium">{data.debtToEquity.toFixed(2)}</span>
+              <Card className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-muted-foreground">Profit Margin</span>
+                  <Percent className="h-4 w-4 text-blue-500" />
                 </div>
-                <div className="flex justify-between">
-                  <span>Current Ratio:</span>
-                  <span className="font-medium">{data.currentRatio.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Quick Ratio:</span>
-                  <span className="font-medium">{data.quickRatio.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Free Cash Flow:</span>
-                  <span className="font-medium">{formatCurrency(data.freeCashFlow)}</span>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  {data.debtToEquity < 0.6 ? <TrendingUp className="h-4 w-4 text-green-500" /> : <TrendingDown className="h-4 w-4 text-red-500" />}
-                  <span className="text-sm">Low Debt</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  {data.currentRatio > 1.5 ? <TrendingUp className="h-4 w-4 text-green-500" /> : <TrendingDown className="h-4 w-4 text-red-500" />}
-                  <span className="text-sm">Liquidity</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  {data.freeCashFlow > 0 ? <TrendingUp className="h-4 w-4 text-green-500" /> : <TrendingDown className="h-4 w-4 text-red-500" />}
-                  <span className="text-sm">Cash Generation</span>
-                </div>
-              </div>
-            </div>
-          </TabsContent>
+                <p className="text-2xl font-bold">
+                  {fundamentals.profit_margin ? formatPercentage(fundamentals.profit_margin) : 'N/A'}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {fundamentals.profit_margin && fundamentals.profit_margin > 15 
+                    ? 'Excellent' 
+                    : fundamentals.profit_margin && fundamentals.profit_margin < 5 
+                    ? 'Poor' 
+                    : 'Good'}
+                </p>
+              </Card>
 
-          <TabsContent value="growth" className="space-y-4">
-            <div>
-              <div className="flex justify-between mb-2">
-                <span>Growth Score</span>
-                <span className="font-medium">{getGrowthScore()}/100</span>
-              </div>
-              <Progress value={getGrowthScore()} />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span>Revenue Growth:</span>
-                  <span className={`font-medium ${data.revenueGrowth >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                    {formatPercent(data.revenueGrowth)}
-                  </span>
+              <Card className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-muted-foreground">Debt-to-Equity</span>
+                  {fundamentals.debt_to_equity !== null && fundamentals.debt_to_equity < 0.5 ? (
+                    <TrendingUp className="h-4 w-4 text-green-500" />
+                  ) : (
+                    <TrendingDown className="h-4 w-4 text-red-500" />
+                  )}
                 </div>
-                <div className="flex justify-between">
-                  <span>Earnings Growth:</span>
-                  <span className={`font-medium ${data.earningsGrowth >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                    {formatPercent(data.earningsGrowth)}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span>PEG Ratio:</span>
-                  <span className="font-medium">{data.pegRatio.toFixed(2)}</span>
-                </div>
-              </div>
-              <div className="space-y-4">
-                <div>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span>Revenue Growth</span>
-                    <span>{formatPercent(data.revenueGrowth)}</span>
-                  </div>
-                  <Progress value={Math.min(Math.max(data.revenueGrowth + 20, 0), 100)} />
-                </div>
-                <div>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span>Earnings Growth</span>
-                    <span>{formatPercent(data.earningsGrowth)}</span>
-                  </div>
-                  <Progress value={Math.min(Math.max(data.earningsGrowth + 20, 0), 100)} />
-                </div>
-              </div>
+                <p className="text-2xl font-bold">
+                  {fundamentals.debt_to_equity?.toFixed(2) || 'N/A'}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {fundamentals.debt_to_equity !== null && fundamentals.debt_to_equity < 0.3 
+                    ? 'Low Risk' 
+                    : fundamentals.debt_to_equity !== null && fundamentals.debt_to_equity > 1.0 
+                    ? 'High Risk' 
+                    : 'Moderate Risk'}
+                </p>
+              </Card>
             </div>
           </TabsContent>
         </Tabs>

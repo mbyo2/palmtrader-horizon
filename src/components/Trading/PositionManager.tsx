@@ -1,243 +1,212 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { TrendingUp, TrendingDown, Target, Shield, X, Zap } from "lucide-react";
+import { AlertTriangle, TrendingUp, TrendingDown, DollarSign, Percent } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { PositionService, Position } from "@/services/PositionService";
+import { toast } from "sonner";
 
-interface Position {
-  id: string;
-  symbol: string;
-  shares: number;
-  averagePrice: number;
-  currentPrice: number;
-  marketValue: number;
-  unrealizedPnL: number;
-  unrealizedPnLPercent: number;
-  dayChange: number;
-  dayChangePercent: number;
-  exposure: number;
-  riskLevel: 'low' | 'medium' | 'high';
-}
-
-interface PositionManagerProps {
-  positions: Position[];
-  onClosePosition: (positionId: string) => void;
-  onTrimPosition: (positionId: string, percentage: number) => void;
-  onAddToPosition: (positionId: string) => void;
-  onSetStopLoss: (positionId: string, price: number) => void;
-}
-
-const PositionManager = ({ 
-  positions, 
-  onClosePosition, 
-  onTrimPosition, 
-  onAddToPosition, 
-  onSetStopLoss 
-}: PositionManagerProps) => {
+const PositionManager = () => {
+  const { user } = useAuth();
+  const [positions, setPositions] = useState<Position[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedPosition, setSelectedPosition] = useState<Position | null>(null);
 
-  const totalPortfolioValue = positions.reduce((sum, pos) => sum + pos.marketValue, 0);
-  const totalUnrealizedPnL = positions.reduce((sum, pos) => sum + pos.unrealizedPnL, 0);
-  const totalDayChange = positions.reduce((sum, pos) => sum + pos.dayChange, 0);
+  useEffect(() => {
+    if (user) {
+      loadPositions();
+    }
+  }, [user]);
 
-  const getPositionRiskColor = (riskLevel: string) => {
-    switch (riskLevel) {
-      case 'low': return 'text-green-500';
-      case 'medium': return 'text-yellow-500';
-      case 'high': return 'text-red-500';
-      default: return 'text-gray-500';
+  const loadPositions = async () => {
+    if (!user) return;
+    
+    setIsLoading(true);
+    try {
+      const userPositions = await PositionService.getUserPositions(user.id);
+      setPositions(userPositions);
+    } catch (error) {
+      console.error('Error loading positions:', error);
+      toast.error('Failed to load positions');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const getRiskBadgeVariant = (riskLevel: string) => {
-    switch (riskLevel) {
-      case 'low': return 'default';
-      case 'medium': return 'secondary';
-      case 'high': return 'destructive';
-      default: return 'outline';
+  const handleClosePosition = async (positionId: string) => {
+    try {
+      await PositionService.closePosition(positionId);
+      toast.success('Position closed successfully');
+      loadPositions();
+    } catch (error) {
+      console.error('Error closing position:', error);
+      toast.error('Failed to close position');
     }
   };
 
-  return (
-    <div className="space-y-6">
-      {/* Portfolio Summary */}
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(amount);
+  };
+
+  const formatPercentage = (value: number) => {
+    return `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`;
+  };
+
+  if (isLoading) {
+    return (
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Target className="h-5 w-5" />
-            Position Summary
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold">${totalPortfolioValue.toLocaleString()}</div>
-              <div className="text-sm text-muted-foreground">Total Portfolio Value</div>
-            </div>
-            <div className="text-center">
-              <div className={`text-2xl font-bold ${totalUnrealizedPnL >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                {totalUnrealizedPnL >= 0 ? '+' : ''}${totalUnrealizedPnL.toLocaleString()}
-              </div>
-              <div className="text-sm text-muted-foreground">Unrealized P&L</div>
-            </div>
-            <div className="text-center">
-              <div className={`text-2xl font-bold ${totalDayChange >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                {totalDayChange >= 0 ? '+' : ''}${totalDayChange.toLocaleString()}
-              </div>
-              <div className="text-sm text-muted-foreground">Day Change</div>
-            </div>
+        <CardContent className="p-6">
+          <div className="animate-pulse space-y-4">
+            <div className="h-4 bg-muted rounded w-1/4"></div>
+            <div className="h-20 bg-muted rounded"></div>
+            <div className="h-20 bg-muted rounded"></div>
           </div>
         </CardContent>
       </Card>
+    );
+  }
 
-      {/* Positions List */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Open Positions ({positions.length})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="all" className="w-full">
-            <TabsList>
-              <TabsTrigger value="all">All Positions</TabsTrigger>
-              <TabsTrigger value="winners">Winners</TabsTrigger>
-              <TabsTrigger value="losers">Losers</TabsTrigger>
-              <TabsTrigger value="high-risk">High Risk</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="all" className="space-y-4">
-              {positions.map((position) => (
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <DollarSign className="h-5 w-5" />
+          Position Manager
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Tabs defaultValue="active">
+          <TabsList>
+            <TabsTrigger value="active">Active Positions</TabsTrigger>
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="active" className="space-y-4">
+            {positions.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                No active positions
+              </div>
+            ) : (
+              positions.map((position) => (
                 <Card key={position.id} className="p-4">
-                  <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-center">
+                  <div className="flex items-center justify-between mb-3">
                     <div>
-                      <div className="font-semibold text-lg">{position.symbol}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {position.shares} shares @ ${position.averagePrice.toFixed(2)}
-                      </div>
+                      <h3 className="font-semibold text-lg">{position.symbol}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {position.shares} shares @ {formatCurrency(position.averagePrice)}
+                      </p>
                     </div>
-                    
-                    <div>
-                      <div className="font-medium">${position.currentPrice.toFixed(2)}</div>
-                      <div className={`text-sm ${position.dayChangePercent >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                        {position.dayChangePercent >= 0 ? '+' : ''}{position.dayChangePercent.toFixed(2)}%
+                    <div className="text-right">
+                      <div className="flex items-center gap-2">
+                        <Badge variant={position.unrealizedPL >= 0 ? "default" : "destructive"}>
+                          {position.unrealizedPL >= 0 ? (
+                            <TrendingUp className="h-3 w-3 mr-1" />
+                          ) : (
+                            <TrendingDown className="h-3 w-3 mr-1" />
+                          )}
+                          {formatCurrency(position.unrealizedPL)}
+                        </Badge>
                       </div>
-                    </div>
-                    
-                    <div>
-                      <div className="font-medium">${position.marketValue.toLocaleString()}</div>
-                      <div className="text-sm text-muted-foreground">Market Value</div>
-                    </div>
-                    
-                    <div>
-                      <div className={`font-medium ${position.unrealizedPnL >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                        {position.unrealizedPnL >= 0 ? '+' : ''}${position.unrealizedPnL.toLocaleString()}
-                      </div>
-                      <div className={`text-sm ${position.unrealizedPnLPercent >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                        {position.unrealizedPnLPercent >= 0 ? '+' : ''}{position.unrealizedPnLPercent.toFixed(2)}%
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <Badge variant={getRiskBadgeVariant(position.riskLevel)}>
-                        {position.riskLevel.toUpperCase()}
-                      </Badge>
-                      <Progress 
-                        value={(position.exposure / totalPortfolioValue) * 100} 
-                        className="mt-1 h-2"
-                      />
-                      <div className="text-xs text-muted-foreground mt-1">
-                        {((position.exposure / totalPortfolioValue) * 100).toFixed(1)}% of portfolio
-                      </div>
-                    </div>
-                    
-                    <div className="flex gap-2">
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => onAddToPosition(position.id)}
-                      >
-                        <Zap className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => onTrimPosition(position.id, 50)}
-                      >
-                        <Shield className="h-4 w-4" />
-                      </Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button size="sm" variant="destructive">
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Close Position</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Are you sure you want to close your entire {position.symbol} position?
-                              This will sell all {position.shares} shares at the current market price.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction 
-                              onClick={() => onClosePosition(position.id)}
-                              className="bg-destructive text-destructive-foreground"
-                            >
-                              Close Position
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {formatPercentage(position.percentChange)}
+                      </p>
                     </div>
                   </div>
+                  
+                  <div className="grid grid-cols-2 gap-4 mb-3">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Market Value</p>
+                      <p className="font-medium">{formatCurrency(position.marketValue)}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Cost Basis</p>
+                      <p className="font-medium">{formatCurrency(position.costBasis)}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="mb-3">
+                    <div className="flex justify-between text-sm mb-1">
+                      <span>Risk Level</span>
+                      <span>{position.riskLevel}/10</span>
+                    </div>
+                    <Progress value={position.riskLevel * 10} className="h-2" />
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => setSelectedPosition(position)}
+                    >
+                      View Details
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="destructive"
+                      onClick={() => handleClosePosition(position.id)}
+                    >
+                      Close Position
+                    </Button>
+                  </div>
+                  
+                  {position.riskLevel >= 7 && (
+                    <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded flex items-center gap-2">
+                      <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                      <span className="text-sm text-yellow-800">High risk position - consider review</span>
+                    </div>
+                  )}
                 </Card>
-              ))}
-            </TabsContent>
-            
-            <TabsContent value="winners">
-              {positions.filter(p => p.unrealizedPnL > 0).map((position) => (
-                <div key={position.id} className="p-4 border rounded-lg bg-green-50 dark:bg-green-950/20">
-                  <div className="flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5 text-green-500" />
-                    <span className="font-semibold">{position.symbol}</span>
-                    <Badge variant="default">+{position.unrealizedPnLPercent.toFixed(2)}%</Badge>
-                  </div>
+              ))
+            )}
+          </TabsContent>
+          
+          <TabsContent value="analytics" className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card className="p-4">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-green-500" />
+                  <span className="text-sm text-muted-foreground">Total P&L</span>
                 </div>
-              ))}
-            </TabsContent>
-            
-            <TabsContent value="losers">
-              {positions.filter(p => p.unrealizedPnL < 0).map((position) => (
-                <div key={position.id} className="p-4 border rounded-lg bg-red-50 dark:bg-red-950/20">
-                  <div className="flex items-center gap-2">
-                    <TrendingDown className="h-5 w-5 text-red-500" />
-                    <span className="font-semibold">{position.symbol}</span>
-                    <Badge variant="destructive">{position.unrealizedPnLPercent.toFixed(2)}%</Badge>
-                  </div>
+                <p className="text-2xl font-bold">
+                  {formatCurrency(positions.reduce((sum, pos) => sum + pos.unrealizedPL, 0))}
+                </p>
+              </Card>
+              
+              <Card className="p-4">
+                <div className="flex items-center gap-2">
+                  <DollarSign className="h-4 w-4 text-blue-500" />
+                  <span className="text-sm text-muted-foreground">Total Value</span>
                 </div>
-              ))}
-            </TabsContent>
-            
-            <TabsContent value="high-risk">
-              {positions.filter(p => p.riskLevel === 'high').map((position) => (
-                <div key={position.id} className="p-4 border rounded-lg bg-yellow-50 dark:bg-yellow-950/20">
-                  <div className="flex items-center gap-2">
-                    <Shield className="h-5 w-5 text-yellow-500" />
-                    <span className="font-semibold">{position.symbol}</span>
-                    <Badge variant="secondary">HIGH RISK</Badge>
-                  </div>
+                <p className="text-2xl font-bold">
+                  {formatCurrency(positions.reduce((sum, pos) => sum + pos.marketValue, 0))}
+                </p>
+              </Card>
+              
+              <Card className="p-4">
+                <div className="flex items-center gap-2">
+                  <Percent className="h-4 w-4 text-purple-500" />
+                  <span className="text-sm text-muted-foreground">Avg. Return</span>
                 </div>
-              ))}
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
-    </div>
+                <p className="text-2xl font-bold">
+                  {formatPercentage(
+                    positions.length > 0 
+                      ? positions.reduce((sum, pos) => sum + pos.percentChange, 0) / positions.length
+                      : 0
+                  )}
+                </p>
+              </Card>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </CardContent>
+    </Card>
   );
 };
 
