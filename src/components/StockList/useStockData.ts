@@ -1,30 +1,112 @@
+
 import { useState, useEffect } from "react";
 import { finnhubSocket } from "@/utils/finnhubSocket";
 import { Stock } from "./StockCard";
 import { wsManager } from "@/services/market/WebSocketManager";
+import { supabase } from "@/integrations/supabase/client";
 import { nanoid } from "nanoid";
-
-// Initial stock data
-const initialStocks: Stock[] = [
-  { symbol: "ZCCM.ZM", name: "ZCCM Investments Holdings Plc", price: "24.50", change: "+2.3%" },
-  { symbol: "CEC.ZM", name: "Copperbelt Energy Corporation Plc", price: "12.75", change: "-0.8%" },
-  { symbol: "ZSUG.ZM", name: "Zambia Sugar Plc", price: "8.90", change: "+1.5%" },
-  { symbol: "PUMA.ZM", name: "Puma Energy Zambia Plc", price: "15.30", change: "-0.4%" },
-  { symbol: "REIZ.ZM", name: "Real Estate Investments Zambia Plc", price: "5.45", change: "+1.2%" },
-  { symbol: "PRIMA.ZM", name: "Prima Reinsurance Plc", price: "2.80", change: "-0.6%" },
-  { symbol: "BATZ.ZM", name: "British American Tobacco Zambia Plc", price: "22.15", change: "+0.9%" },
-  { symbol: "ZNCO.ZM", name: "Zambia National Commercial Bank Plc", price: "1.95", change: "-0.3%" },
-  { symbol: "AECI.ZM", name: "AECI Mining Chemicals Limited", price: "18.40", change: "+1.1%" },
-  { symbol: "LAFZ.ZM", name: "Lafarge Zambia Plc", price: "4.75", change: "-0.2%" },
-  { symbol: "SHOP.ZM", name: "Shoprite Holdings Limited", price: "45.60", change: "+0.7%" },
-  { symbol: "MCEL.ZM", name: "Madison Financial Services Plc", price: "3.15", change: "-0.5%" }
-];
 
 export const useStockData = (searchQuery: string) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  const [stocks, setStocks] = useState<Stock[]>(initialStocks);
+  const [stocks, setStocks] = useState<Stock[]>([]);
   const subscriberId = nanoid();
+
+  // Fetch dynamic stock list from database or popular symbols
+  useEffect(() => {
+    const fetchStockList = async () => {
+      try {
+        setLoading(true);
+        
+        // Try to get stocks from watchlists and trades to make it dynamic
+        const { data: watchlistStocks } = await supabase
+          .from('watchlists')
+          .select('symbol')
+          .limit(20);
+
+        const { data: tradedStocks } = await supabase
+          .from('trades')
+          .select('symbol')
+          .limit(20);
+
+        // Combine and deduplicate symbols
+        const allSymbols = new Set<string>();
+        
+        watchlistStocks?.forEach(item => allSymbols.add(item.symbol));
+        tradedStocks?.forEach(item => allSymbols.add(item.symbol));
+
+        // If we don't have enough dynamic data, add some popular symbols
+        const popularSymbols = [
+          "AAPL", "MSFT", "GOOGL", "AMZN", "META", "TSLA", "NVDA",
+          "JPM", "V", "UNH", "HD", "PG", "MA", "DIS", "PYPL", "ADBE"
+        ];
+
+        popularSymbols.forEach(symbol => allSymbols.add(symbol));
+
+        // Convert to stock objects with initial data
+        const stockList: Stock[] = Array.from(allSymbols).slice(0, 20).map(symbol => ({
+          symbol,
+          name: `${symbol} Inc.`,
+          price: "0.00",
+          change: "+0.0%"
+        }));
+
+        setStocks(stockList);
+        
+        // Subscribe to real-time updates for all stocks
+        stockList.forEach(stock => {
+          try {
+            wsManager.subscribe(stock.symbol, subscriberId);
+          } catch (e) {
+            console.error(`Error subscribing to ${stock.symbol}:`, e);
+          }
+        });
+
+        // Set up data handler
+        const unsubscribe = finnhubSocket.onMarketData(({ symbol, price }) => {
+          if (!symbol || !price) return;
+          
+          setStocks(prevStocks => 
+            prevStocks.map(stock => {
+              if (stock.symbol === symbol) {
+                const prevPrice = parseFloat(stock.price);
+                const percentChange = prevPrice > 0 ? ((price - prevPrice) / prevPrice * 100).toFixed(2) : "0.00";
+                
+                return {
+                  ...stock,
+                  previousPrice: stock.price,
+                  price: price.toFixed(2),
+                  change: `${percentChange.startsWith('-') ? '' : '+'}${percentChange}%`
+                };
+              }
+              return stock;
+            })
+          );
+        });
+
+        setLoading(false);
+
+        // Cleanup function
+        return () => {
+          console.log("Cleaning up stock data subscriptions");
+          stockList.forEach(stock => {
+            try {
+              wsManager.unsubscribe(stock.symbol, subscriberId);
+            } catch (e) {
+              console.error(`Error unsubscribing from ${stock.symbol}:`, e);
+            }
+          });
+          unsubscribe();
+        };
+      } catch (err) {
+        console.error("Error in useStockData:", err);
+        setError(err instanceof Error ? err : new Error('Unknown error'));
+        setLoading(false);
+      }
+    };
+
+    fetchStockList();
+  }, []);
 
   // Filter stocks based on search query
   const filteredStocks = stocks.filter(
@@ -32,63 +114,6 @@ export const useStockData = (searchQuery: string) => {
       stock.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
       stock.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-  useEffect(() => {
-    try {
-      console.log("Setting up stock data subscriptions");
-      setLoading(true);
-      
-      // Subscribe to all stock symbols using the WebSocket manager
-      stocks.forEach(stock => {
-        try {
-          wsManager.subscribe(stock.symbol, subscriberId);
-        } catch (e) {
-          console.error(`Error subscribing to ${stock.symbol}:`, e);
-        }
-      });
-
-      // Set up data handler
-      const unsubscribe = finnhubSocket.onMarketData(({ symbol, price }) => {
-        if (!symbol || !price) return;
-        
-        setStocks(prevStocks => 
-          prevStocks.map(stock => {
-            if (stock.symbol === symbol) {
-              const prevPrice = parseFloat(stock.price);
-              const percentChange = ((price - prevPrice) / prevPrice * 100).toFixed(2);
-              
-              return {
-                ...stock,
-                previousPrice: stock.price,
-                price: price.toFixed(2),
-                change: `${percentChange.startsWith('-') ? '' : '+'}${percentChange}%`
-              };
-            }
-            return stock;
-          })
-        );
-      });
-
-      setLoading(false);
-
-      // Cleanup subscriptions
-      return () => {
-        console.log("Cleaning up stock data subscriptions");
-        stocks.forEach(stock => {
-          try {
-            wsManager.unsubscribe(stock.symbol, subscriberId);
-          } catch (e) {
-            console.error(`Error unsubscribing from ${stock.symbol}:`, e);
-          }
-        });
-        unsubscribe();
-      };
-    } catch (err) {
-      console.error("Error in useStockData:", err);
-      setError(err instanceof Error ? err : new Error('Unknown error'));
-      setLoading(false);
-    }
-  }, []);
 
   return { filteredStocks, loading, error };
 };

@@ -3,11 +3,25 @@ export class DataCache {
   private static cache = new Map<string, { data: any; timestamp: number; ttl: number }>();
   private static priceCache = new Map<string, { price: number; timestamp: number }>();
 
-  static set<T>(key: string, data: T, ttl: number = 60000): void {
+  // Dynamic TTL based on market hours
+  static getDynamicTTL(type: 'price' | 'historical' = 'price'): number {
+    const now = new Date();
+    const hour = now.getHours();
+    const isMarketHours = hour >= 9 && hour <= 16; // NYSE hours (9:30 AM - 4:00 PM EST)
+    
+    if (type === 'price') {
+      return isMarketHours ? 15000 : 60000; // 15s during market hours, 1min after hours
+    } else {
+      return isMarketHours ? 180000 : 600000; // 3min during market hours, 10min after hours
+    }
+  }
+
+  static set<T>(key: string, data: T, ttl?: number): void {
+    const actualTTL = ttl || this.getDynamicTTL('historical');
     this.cache.set(key, {
       data,
       timestamp: Date.now(),
-      ttl
+      ttl: actualTTL
     });
   }
 
@@ -33,12 +47,14 @@ export class DataCache {
     });
   }
 
-  static getPrice(symbol: string, maxAge: number = 30000): number | null {
+  static getPrice(symbol: string, maxAge?: number): number | null {
     const item = this.priceCache.get(symbol);
     if (!item) return null;
 
     const age = Date.now() - item.timestamp;
-    if (age > maxAge) {
+    const ttl = maxAge || this.getDynamicTTL('price');
+    
+    if (age > ttl) {
       this.priceCache.delete(symbol);
       return null;
     }
