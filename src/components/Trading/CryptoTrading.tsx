@@ -5,20 +5,20 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { MarketDataService } from '@/services/MarketDataService';
 import { toast } from "sonner";
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { TradingService } from '@/services/TradingService';
 import { Loader2 } from 'lucide-react';
+import { useCryptoData } from '@/hooks/useCryptoData';
 
 const POPULAR_CRYPTOS = [
-  { symbol: 'BTC', name: 'Bitcoin' },
-  { symbol: 'ETH', name: 'Ethereum' },
-  { symbol: 'SOL', name: 'Solana' },
-  { symbol: 'XRP', name: 'Ripple' },
-  { symbol: 'ADA', name: 'Cardano' },
-  { symbol: 'DOT', name: 'Polkadot' },
+  { symbol: 'bitcoin', name: 'Bitcoin', ticker: 'BTC' },
+  { symbol: 'ethereum', name: 'Ethereum', ticker: 'ETH' },
+  { symbol: 'solana', name: 'Solana', ticker: 'SOL' },
+  { symbol: 'ripple', name: 'XRP', ticker: 'XRP' },
+  { symbol: 'cardano', name: 'Cardano', ticker: 'ADA' },
+  { symbol: 'polkadot', name: 'Polkadot', ticker: 'DOT' },
 ];
 
 export default function CryptoTrading() {
@@ -29,21 +29,18 @@ export default function CryptoTrading() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = useAuth();
 
-  const { data: cryptoPrice, isLoading } = useQuery({
-    queryKey: ['cryptoPrice', selectedCrypto.symbol],
-    queryFn: async () => await MarketDataService.fetchLatestPrice(selectedCrypto.symbol),
-    refetchInterval: 30000, // Refetch every 30 seconds
-  });
+  // Use real-time crypto data
+  const { price: cryptoPrice, isLoading: priceLoading } = useCryptoData(selectedCrypto.symbol);
 
   const { data: cryptoPortfolio, refetch: refetchPortfolio } = useQuery({
-    queryKey: ['cryptoPortfolio', user?.id, selectedCrypto.symbol],
+    queryKey: ['cryptoPortfolio', user?.id, selectedCrypto.ticker],
     queryFn: async () => {
       if (!user) return null;
       const { data } = await supabase
         .from('portfolio')
         .select('*')
         .eq('user_id', user.id)
-        .eq('symbol', selectedCrypto.symbol)
+        .eq('symbol', selectedCrypto.ticker)
         .maybeSingle();
       return data;
     },
@@ -52,7 +49,7 @@ export default function CryptoTrading() {
 
   useEffect(() => {
     if (cryptoPrice && amount > 0) {
-      setQuantity(amount / cryptoPrice.price);
+      setQuantity(amount / cryptoPrice);
     } else {
       setQuantity(0);
     }
@@ -82,7 +79,7 @@ export default function CryptoTrading() {
     // For sell orders, make sure the user has enough crypto
     if (orderType === 'sell') {
       if (!cryptoPortfolio || cryptoPortfolio.shares < quantity) {
-        toast.error(`You don't have enough ${selectedCrypto.symbol} to sell`);
+        toast.error(`You don't have enough ${selectedCrypto.ticker} to sell`);
         return;
       }
     }
@@ -93,17 +90,17 @@ export default function CryptoTrading() {
       // Use the TradingService to execute the crypto order
       const { success, error } = await TradingService.executeOrder({
         userId: user.id,
-        symbol: selectedCrypto.symbol,
+        symbol: selectedCrypto.ticker,
         type: orderType,
         shares: quantity,
-        price: cryptoPrice.price,
+        price: cryptoPrice,
         orderType: "market", // Crypto orders are always market orders in this implementation
         isFractional: true,  // Crypto is always fractional
       });
 
       if (!success) throw new Error(error);
 
-      toast.success(`${orderType === 'buy' ? 'Bought' : 'Sold'} ${quantity.toFixed(8)} ${selectedCrypto.symbol} for $${amount.toFixed(2)}`);
+      toast.success(`${orderType === 'buy' ? 'Bought' : 'Sold'} ${quantity.toFixed(8)} ${selectedCrypto.ticker} for $${amount.toFixed(2)}`);
       
       // Refetch portfolio data
       refetchPortfolio();
@@ -123,7 +120,7 @@ export default function CryptoTrading() {
     <Card className="w-full">
       <CardHeader>
         <CardTitle>Crypto Trading</CardTitle>
-        <CardDescription>Buy and sell cryptocurrencies instantly</CardDescription>
+        <CardDescription>Buy and sell cryptocurrencies with real-time prices</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
@@ -135,9 +132,9 @@ export default function CryptoTrading() {
                   key={crypto.symbol}
                   variant={selectedCrypto.symbol === crypto.symbol ? "default" : "outline"}
                   onClick={() => setSelectedCrypto(crypto)}
-                  className="w-full"
+                  className="w-full text-xs"
                 >
-                  {crypto.symbol}
+                  {crypto.ticker}
                 </Button>
               ))}
             </div>
@@ -146,19 +143,20 @@ export default function CryptoTrading() {
           <div className="flex items-center justify-between border rounded-md p-3">
             <div>
               <h3 className="font-medium">{selectedCrypto.name}</h3>
-              <p className="text-sm text-muted-foreground">{selectedCrypto.symbol}</p>
+              <p className="text-sm text-muted-foreground">{selectedCrypto.ticker}</p>
             </div>
             <div className="text-right">
               <p className="font-medium">
-                {isLoading ? (
+                {priceLoading ? (
                   <Loader2 className="h-4 w-4 animate-spin inline mr-1" />
                 ) : (
-                  `$${cryptoPrice?.price.toFixed(2) || "N/A"}`
+                  `$${cryptoPrice?.toFixed(2) || "N/A"}`
                 )}
               </p>
+              <p className="text-xs text-green-500">● Live Price</p>
               {cryptoPortfolio?.shares && (
                 <p className="text-sm text-muted-foreground">
-                  You own: {cryptoPortfolio.shares.toFixed(8)} {selectedCrypto.symbol}
+                  You own: {cryptoPortfolio.shares.toFixed(8)} {selectedCrypto.ticker}
                 </p>
               )}
             </div>
@@ -199,9 +197,9 @@ export default function CryptoTrading() {
           </div>
 
           <div>
-            <Label htmlFor="quantity">Quantity ({selectedCrypto.symbol})</Label>
+            <Label htmlFor="quantity">Quantity ({selectedCrypto.ticker})</Label>
             <p className="mt-1 p-2 border rounded-md bg-muted">
-              {quantity ? quantity.toFixed(8) : '0.00000000'} {selectedCrypto.symbol}
+              {quantity ? quantity.toFixed(8) : '0.00000000'} {selectedCrypto.ticker}
             </p>
           </div>
         </div>
@@ -210,11 +208,11 @@ export default function CryptoTrading() {
         <Button 
           onClick={handleSubmitOrder} 
           className="w-full" 
-          disabled={isLoading || amount <= 0 || isSubmitting}
+          disabled={priceLoading || amount <= 0 || isSubmitting || !cryptoPrice}
           variant={orderType === 'buy' ? "default" : "destructive"}
         >
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {orderType === 'buy' ? 'Buy' : 'Sell'} {selectedCrypto.symbol}
+          {orderType === 'buy' ? 'Buy' : 'Sell'} {selectedCrypto.ticker}
         </Button>
       </CardFooter>
     </Card>

@@ -3,47 +3,45 @@ import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
-import { MarketDataService } from "@/services/MarketDataService";
 import { AdvancedStockChart } from "@/components/Research/AdvancedStockChart";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { TooltipProvider } from "@/components/ui/tooltip";
-
-// Create the missing CryptoTrading component
-const CryptoTrading = () => {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Crypto Trading</CardTitle>
-        <CardDescription>Buy and sell cryptocurrencies</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="text-center py-4">
-          <p>Trading functionality coming soon!</p>
-          <p className="text-sm text-muted-foreground mt-2">
-            We're working on integrating crypto trading capabilities.
-          </p>
-        </div>
-      </CardContent>
-    </Card>
-  );
-};
+import CryptoTrading from "@/components/Trading/CryptoTrading";
+import { useCryptoData } from "@/hooks/useCryptoData";
 
 const popularCryptos = [
-  { symbol: "BTC", name: "Bitcoin" },
-  { symbol: "ETH", name: "Ethereum" },
-  { symbol: "SOL", name: "Solana" },
-  { symbol: "XRP", name: "Ripple" },
-  { symbol: "ADA", name: "Cardano" },
-  { symbol: "DOT", name: "Polkadot" },
+  { symbol: "bitcoin", name: "Bitcoin", ticker: "BTC" },
+  { symbol: "ethereum", name: "Ethereum", ticker: "ETH" },
+  { symbol: "solana", name: "Solana", ticker: "SOL" },
+  { symbol: "ripple", name: "XRP", ticker: "XRP" },
+  { symbol: "cardano", name: "Cardano", ticker: "ADA" },
+  { symbol: "polkadot", name: "Polkadot", ticker: "DOT" },
 ];
 
 const Crypto = () => {
-  const [selectedCrypto, setSelectedCrypto] = useState("BTC");
+  const [selectedCrypto, setSelectedCrypto] = useState(popularCryptos[0]);
   
   const { data: cryptoData, isLoading } = useQuery({
-    queryKey: ['cryptoData', selectedCrypto],
-    queryFn: () => MarketDataService.fetchHistoricalData(selectedCrypto, 30),
+    queryKey: ['cryptoHistorical', selectedCrypto.symbol],
+    queryFn: async () => {
+      const response = await fetch(
+        `https://api.coingecko.com/api/v3/coins/${selectedCrypto.symbol}/market_chart?vs_currency=usd&days=30&interval=daily`
+      );
+      const data = await response.json();
+      
+      // Convert CoinGecko format to our MarketData format
+      if (data.prices) {
+        return data.prices.map(([timestamp, price]: [number, number]) => ({
+          symbol: selectedCrypto.ticker,
+          timestamp: timestamp.toString(),
+          price,
+          close: price,
+          type: 'crypto' as const
+        }));
+      }
+      return [];
+    },
     staleTime: 5 * 60 * 1000 // 5 minutes
   });
   
@@ -55,15 +53,17 @@ const Crypto = () => {
         {popularCryptos.map((crypto) => (
           <Card 
             key={crypto.symbol}
-            className={`cursor-pointer transition-all ${selectedCrypto === crypto.symbol ? 'ring-2 ring-primary' : ''}`}
-            onClick={() => setSelectedCrypto(crypto.symbol)}
+            className={`cursor-pointer transition-all hover:shadow-md ${
+              selectedCrypto.symbol === crypto.symbol ? 'ring-2 ring-primary' : ''
+            }`}
+            onClick={() => setSelectedCrypto(crypto)}
           >
             <CardHeader className="p-4">
               <CardTitle className="flex justify-between">
                 {crypto.name}
-                <span className="text-muted-foreground">{crypto.symbol}</span>
+                <span className="text-muted-foreground">{crypto.ticker}</span>
               </CardTitle>
-              <PriceTicker symbol={crypto.symbol} />
+              <PriceTicker cryptoId={crypto.symbol} />
             </CardHeader>
           </Card>
         ))}
@@ -73,7 +73,7 @@ const Crypto = () => {
         <div className="lg:col-span-2">
           <Card>
             <CardHeader>
-              <CardTitle>{selectedCrypto} Chart</CardTitle>
+              <CardTitle>{selectedCrypto.name} Chart</CardTitle>
               <CardDescription>
                 Cryptocurrency price chart and technical analysis
               </CardDescription>
@@ -83,11 +83,11 @@ const Crypto = () => {
                 <Skeleton className="h-[400px] w-full" />
               ) : cryptoData && cryptoData.length > 0 ? (
                 <TooltipProvider>
-                  <AdvancedStockChart symbol={selectedCrypto} data={cryptoData} />
+                  <AdvancedStockChart symbol={selectedCrypto.ticker} data={cryptoData} />
                 </TooltipProvider>
               ) : (
                 <div className="h-[400px] flex items-center justify-center text-muted-foreground">
-                  No data available for {selectedCrypto}
+                  No data available for {selectedCrypto.name}
                 </div>
               )}
             </CardContent>
@@ -115,16 +115,8 @@ const Crypto = () => {
   );
 };
 
-const PriceTicker = ({ symbol }: { symbol: string }) => {
-  const { data, isLoading } = useQuery({
-    queryKey: ['cryptoPrice', symbol],
-    queryFn: async () => await MarketDataService.fetchLatestPrice(symbol),
-    refetchInterval: 30000, // Refetch every 30 seconds
-  });
-  
-  const priceChange = Math.random() > 0.5 ? 
-    Math.random() * 5 : 
-    -Math.random() * 5;
+const PriceTicker = ({ cryptoId }: { cryptoId: string }) => {
+  const { price, change, isLoading } = useCryptoData(cryptoId);
   
   return (
     <div className="flex justify-between items-center mt-2">
@@ -132,11 +124,15 @@ const PriceTicker = ({ symbol }: { symbol: string }) => {
         {isLoading ? (
           <Skeleton className="h-6 w-24" />
         ) : (
-          `$${data?.price.toFixed(2) || "0.00"}`
+          `$${price?.toFixed(2) || "0.00"}`
         )}
       </div>
-      <div className={`${priceChange >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-        {priceChange >= 0 ? '+' : ''}{priceChange.toFixed(2)}%
+      <div className={`${change && change >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+        {isLoading ? (
+          <Skeleton className="h-4 w-16" />
+        ) : (
+          `${change && change >= 0 ? '+' : ''}${change?.toFixed(2) || '0.00'}%`
+        )}
       </div>
     </div>
   );
@@ -153,7 +149,7 @@ const CryptoPortfolio = () => {
         .from("portfolio")
         .select("*")
         .eq("user_id", user.id)
-        .in("symbol", popularCryptos.map(c => c.symbol));
+        .in("symbol", popularCryptos.map(c => c.ticker));
         
       if (error) throw error;
       return data || [];
@@ -179,7 +175,7 @@ const CryptoPortfolio = () => {
           ))
         ) : portfolio && portfolio.length > 0 ? (
           portfolio.map((item) => {
-            const crypto = popularCryptos.find(c => c.symbol === item.symbol);
+            const crypto = popularCryptos.find(c => c.ticker === item.symbol);
             return (
               <div key={item.id} className="flex justify-between py-2 border-b">
                 <div>
