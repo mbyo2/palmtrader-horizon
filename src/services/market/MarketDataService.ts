@@ -39,6 +39,37 @@ export class MarketDataService {
     }
   }
 
+  static async fetchMultipleLatestPrices(symbols: string[]): Promise<Array<{ symbol: string; price: number; change?: number }>> {
+    try {
+      if (!symbols.length) return [];
+
+      console.log(`Fetching prices for ${symbols.length} symbols:`, symbols);
+
+      // Fetch prices in parallel
+      const results = await Promise.allSettled(
+        symbols.map(async (symbol) => {
+          const data = await this.fetchLatestPrice(symbol);
+          if (data) {
+            return {
+              symbol,
+              price: data.price,
+              change: data.change
+            };
+          }
+          return null;
+        })
+      );
+
+      // Filter out failed requests and return successful ones
+      return results
+        .filter(result => result.status === 'fulfilled' && result.value !== null)
+        .map(result => (result as PromiseFulfilledResult<{ symbol: string; price: number; change?: number }>).value);
+    } catch (error) {
+      console.error('Error fetching multiple prices:', error);
+      return [];
+    }
+  }
+
   static async fetchHistoricalData(symbol: string, days: number = 30): Promise<MarketData[]> {
     try {
       const cacheKey = `historical_${symbol}_${days}`;
