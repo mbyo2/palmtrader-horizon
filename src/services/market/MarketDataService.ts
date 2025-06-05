@@ -1,63 +1,111 @@
 
-import { DataFetcher } from './dataFetcher';
-import { MarketData } from './types';
+import { supabase } from "@/integrations/supabase/client";
+import { DataCache } from "./dataCache";
+import { MarketData } from "./types";
 
-/**
- * Main service for fetching market data from real APIs
- */
 export class MarketDataService {
-  /**
-   * Fetch the latest price for a stock symbol from real market APIs
-   * @param symbol Stock symbol (e.g., 'AAPL', 'MSFT')
-   * @returns Promise resolving to latest price data
-   */
-  static async fetchLatestPrice(symbol: string): Promise<{ symbol: string; price: number; change?: number; volume?: number }> {
-    console.log(`MarketDataService: Fetching latest price for ${symbol}`);
-    return DataFetcher.fetchLatestPrice(symbol);
+  private static readonly CACHE_TTL = 300000; // 5 minutes
+  private static readonly PRICE_CACHE_TTL = 30000; // 30 seconds
+
+  static async fetchLatestPrice(symbol: string): Promise<{ price: number; change: number } | null> {
+    try {
+      // Check cache first
+      const cachedPrice = DataCache.getPrice(symbol);
+      if (cachedPrice !== null) {
+        return { price: cachedPrice, change: 0 };
+      }
+
+      // Fetch from Finnhub via edge function
+      const { data, error } = await supabase.functions.invoke('finnhub-websocket', {
+        body: { action: 'get_quote', symbol }
+      });
+
+      if (error) throw error;
+
+      if (data && typeof data.c === 'number') {
+        const price = data.c;
+        const change = data.dp || 0;
+        
+        // Cache the price
+        DataCache.setPrice(symbol, price);
+        
+        return { price, change };
+      }
+
+      return null;
+    } catch (error) {
+      console.error(`Error fetching price for ${symbol}:`, error);
+      return null;
+    }
   }
 
-  /**
-   * Fetch historical market data for a stock symbol
-   * @param symbol Stock symbol
-   * @param days Number of days of historical data (default: 30)
-   * @returns Promise resolving to array of historical market data
-   */
   static async fetchHistoricalData(symbol: string, days: number = 30): Promise<MarketData[]> {
-    console.log(`MarketDataService: Fetching ${days} days of historical data for ${symbol}`);
-    return DataFetcher.fetchHistoricalData(symbol, days);
+    try {
+      const cacheKey = `historical_${symbol}_${days}`;
+      const cached = DataCache.get<MarketData[]>(cacheKey);
+      if (cached) return cached;
+
+      // Fetch from Alpha Vantage via edge function
+      const { data, error } = await supabase.functions.invoke('alpha-vantage', {
+        body: { 
+          function: 'TIME_SERIES_DAILY',
+          symbol,
+          outputsize: days > 100 ? 'full' : 'compact'
+        }
+      });
+
+      if (error) throw error;
+
+      const timeSeries = data['Time Series (Daily)'];
+      if (!timeSeries) {
+        console.warn(`No historical data found for ${symbol}`);
+        return [];
+      }
+
+      const marketData: MarketData[] = [];
+      const dates = Object.keys(timeSeries)
+        .sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
+        .slice(-days);
+
+      for (const date of dates) {
+        const dayData = timeSeries[date];
+        marketData.push({
+          symbol,
+          timestamp: new Date(date).getTime().toString(),
+          price: parseFloat(dayData['4. close']),
+          close: parseFloat(dayData['4. close']),
+          type: 'stock'
+        });
+      }
+
+      // Cache the result
+      DataCache.set(cacheKey, marketData);
+      return marketData;
+    } catch (error) {
+      console.error(`Error fetching historical data for ${symbol}:`, error);
+      
+      // Return empty array instead of throwing
+      return [];
+    }
   }
 
-  /**
-   * Fetch latest prices for multiple symbols
-   * @param symbols Array of stock symbols
-   * @returns Promise resolving to array of price data
-   */
-  static async fetchMultipleLatestPrices(symbols: string[]): Promise<Array<{ symbol: string; price: number; change?: number; volume?: number }>> {
-    console.log(`MarketDataService: Fetching prices for ${symbols.length} symbols`);
-    return DataFetcher.fetchMultipleLatestPrices(symbols);
-  }
-
-  /**
-   * Validate that market data is recent and accurate
-   * @param data Market data to validate
-   * @returns boolean indicating if data is valid
-   */
-  static validateMarketData(data: any): boolean {
-    if (!data || typeof data.price !== 'number' || data.price <= 0) {
+  static async validateSymbol(symbol: string): Promise<boolean> {
+    try {
+      const price = await this.fetchLatestPrice(symbol);
+      return price !== null;
+    } catch (error) {
+      console.error(`Error validating symbol ${symbol}:`, error);
       return false;
     }
-    
-    // Check if timestamp is recent (within last day for real-time data)
-    if (data.timestamp) {
-      const dataAge = Date.now() - (typeof data.timestamp === 'string' ? parseInt(data.timestamp) : data.timestamp);
-      const oneDayMs = 24 * 60 * 60 * 1000;
-      
-      if (dataAge > oneDayMs) {
-        console.warn(`Market data for ${data.symbol} is older than 1 day`);
-        return false;
-      }
+  }
+
+  static clearCache(symbol?: string): void {
+    if (symbol) {
+      DataCache.clearSymbol(symbol);
+    } else {
+      DataCache.clearAll();
     }
-    
-    return true;
   }
 }
+
+export type { MarketData };

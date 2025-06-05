@@ -14,11 +14,16 @@ export const logError = (error: Error, info: { componentStack: string }) => {
   console.error("Error stack:", formattedStack);
   console.groupEnd();
   
-  // Log to your analytics service here
-  // You could add code to send to a service like Sentry, LogRocket, etc.
-  
-  // Show user-friendly message
-  toast.error("Something went wrong. Our team has been notified.");
+  // Show user-friendly message based on error type
+  if (error.message.includes('Failed to fetch') || error.message.includes('network')) {
+    toast.error("Network error. Please check your internet connection.");
+  } else if (error.message.includes('rate limit') || error.message.includes('429')) {
+    toast.error("API rate limit exceeded. Please wait a moment and try again.");
+  } else if (error.message.includes('auth') || error.message.includes('unauthorized')) {
+    toast.error("Authentication error. Please sign in again.");
+  } else {
+    toast.error("Something went wrong. Please try again.");
+  }
 };
 
 export const handleRejection = (event: PromiseRejectionEvent) => {
@@ -27,12 +32,17 @@ export const handleRejection = (event: PromiseRejectionEvent) => {
   // Log detailed information about the rejection
   if (event.reason instanceof Error) {
     console.error("Rejection stack:", event.reason.stack);
+    
+    // Handle specific promise rejection types
+    if (event.reason.message.includes('Failed to fetch')) {
+      toast.error("Network error occurred. Please check your connection.");
+    } else if (event.reason.message.includes('AbortError')) {
+      // Don't show error for intentional request cancellations
+      return;
+    }
   }
   
-  // Add appropriate user feedback
-  toast.error("An operation failed. Please try again.");
-  
-  // Prevent the default handling
+  // Prevent the default handling for handled cases
   event.preventDefault();
 };
 
@@ -49,12 +59,15 @@ export const setupGlobalErrorHandlers = () => {
     console.error("Error object:", event.error);
     console.groupEnd();
     
-    toast.error("Something went wrong. Please try refreshing the page.");
-    
-    // Only prevent default for errors we can handle
-    if (event.error && !(event.error instanceof SyntaxError)) {
-      event.preventDefault();
+    // Don't show toast for script loading errors or syntax errors
+    if (event.error instanceof SyntaxError || 
+        event.message.includes('Script error') ||
+        event.filename?.includes('extension')) {
+      return;
     }
+    
+    toast.error("An unexpected error occurred. Please refresh the page.");
+    event.preventDefault();
   };
 
   // Add event listeners for uncaught errors
@@ -86,5 +99,34 @@ export const handleApiError = (error: unknown): string => {
   if (typeof error === 'string') {
     return error;
   }
+  if (error && typeof error === 'object' && 'message' in error) {
+    return String(error.message);
+  }
   return 'An unknown error occurred';
+};
+
+// Retry utility for failed operations
+export const retryOperation = async <T>(
+  operation: () => Promise<T>,
+  maxRetries: number = 3,
+  delay: number = 1000
+): Promise<T> => {
+  let lastError: unknown;
+  
+  for (let i = 0; i <= maxRetries; i++) {
+    try {
+      return await operation();
+    } catch (error) {
+      lastError = error;
+      
+      if (i === maxRetries) {
+        break;
+      }
+      
+      // Exponential backoff
+      await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, i)));
+    }
+  }
+  
+  throw lastError;
 };
