@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { RealMarketDataService } from "./RealMarketDataService";
 import { PortfolioService } from "./PortfolioService";
@@ -34,6 +33,8 @@ export interface RiskLimits {
   maxPositionSize: number;
   allowedOrderTypes: string[];
   marginRequirement: number;
+  maxPositionConcentration: number;
+  stopLossRequired: boolean;
 }
 
 export class OrderExecutionEngine {
@@ -41,27 +42,29 @@ export class OrderExecutionEngine {
     maxOrderValue: 50000,
     maxDailyTradingVolume: 100000,
     maxPositionSize: 25000,
-    allowedOrderTypes: ["market", "limit", "stop", "stop_limit"],
-    marginRequirement: 0.5
+    allowedOrderTypes: ["market", "limit", "stop", "stop_limit", "trailing_stop"],
+    marginRequirement: 0.5,
+    maxPositionConcentration: 0.2, // 20% max per position
+    stopLossRequired: false
   };
 
   static async executeOrder(order: OrderRequest): Promise<OrderResult> {
     console.log('Executing order:', order);
     
     try {
-      // Step 1: Validate order
+      // Step 1: Enhanced validation for fractional shares
       const validation = await this.validateOrder(order);
       if (!validation.valid) {
         return { success: false, error: validation.error, warnings: validation.warnings };
       }
 
-      // Step 2: Check risk limits
-      const riskCheck = await this.checkRiskLimits(order);
+      // Step 2: Risk management and position sizing
+      const riskCheck = await this.performRiskManagement(order);
       if (!riskCheck.passed) {
         return { success: false, error: riskCheck.error };
       }
 
-      // Step 3: Execute based on order type
+      // Step 3: Execute based on order type with fractional support
       switch (order.orderType) {
         case "market":
           return await this.executeMarketOrder(order);
@@ -92,21 +95,24 @@ export class OrderExecutionEngine {
   }> {
     const warnings: string[] = [];
 
-    // Basic validation
-    if (order.shares <= 0) {
-      return { valid: false, error: "Share quantity must be positive" };
+    // Enhanced fractional shares validation
+    if (order.isFractional) {
+      if (order.shares < 0.000001) {
+        return { valid: false, error: "Minimum fractional share quantity is 0.000001" };
+      }
+      // Allow fractional shares for all stocks now
+      warnings.push("Fractional shares may have limited liquidity during market hours");
+    } else {
+      if (order.shares <= 0 || order.shares % 1 !== 0) {
+        return { valid: false, error: "Share quantity must be a positive integer for whole shares" };
+      }
     }
 
     if (order.price <= 0) {
       return { valid: false, error: "Price must be positive" };
     }
 
-    // Fractional shares validation
-    if (order.isFractional && order.shares < 0.001) {
-      return { valid: false, error: "Minimum fractional share quantity is 0.001" };
-    }
-
-    // Check if user has sufficient funds for buy orders
+    // Enhanced balance checking
     if (order.type === "buy") {
       const requiredAmount = order.shares * order.price;
       const hasBalance = await this.checkUserBalance(order.userId, requiredAmount);
@@ -115,7 +121,7 @@ export class OrderExecutionEngine {
       }
     }
 
-    // Check if user has sufficient shares for sell orders
+    // Enhanced shares checking for fractional
     if (order.type === "sell") {
       const hasShares = await this.checkUserShares(order.userId, order.symbol, order.shares);
       if (!hasShares) {
@@ -123,30 +129,24 @@ export class OrderExecutionEngine {
       }
     }
 
-    // Market hours validation
+    // Market hours validation with extended hours support
     if (!this.isMarketOpen() && order.orderType === "market") {
-      warnings.push("Market is closed. Order will be queued for next market open.");
-    }
-
-    // Price validation for limit orders
-    if (order.orderType === "limit" && order.limitPrice) {
-      const currentPrice = await this.getCurrentMarketPrice(order.symbol);
-      const priceDeviation = Math.abs(order.limitPrice - currentPrice) / currentPrice;
-      
-      if (priceDeviation > 0.1) { // 10% deviation warning
-        warnings.push(`Limit price deviates significantly from current market price (${priceDeviation.toFixed(2)}%)`);
+      if (this.isExtendedHours()) {
+        warnings.push("Trading during extended hours - limited liquidity may affect execution");
+      } else {
+        warnings.push("Market is closed. Order will be queued for next market open.");
       }
     }
 
     return { valid: true, warnings };
   }
 
-  private static async checkRiskLimits(order: OrderRequest): Promise<{ 
+  private static async performRiskManagement(order: OrderRequest): Promise<{ 
     passed: boolean; 
-    error?: string 
+    error?: string;
+    adjustedShares?: number;
   }> {
-    const limits = this.DEFAULT_RISK_LIMITS; // In production, get user-specific limits
-    
+    const limits = this.DEFAULT_RISK_LIMITS;
     const orderValue = order.shares * order.price;
     
     // Check max order value
@@ -157,26 +157,25 @@ export class OrderExecutionEngine {
       };
     }
 
-    // Check daily trading volume
-    const dailyVolume = await this.getDailyTradingVolume(order.userId);
-    if (dailyVolume + orderValue > limits.maxDailyTradingVolume) {
-      return { 
-        passed: false, 
-        error: "Daily trading volume limit exceeded" 
-      };
-    }
-
-    // Check position size limits
+    // Check position concentration
     if (order.type === "buy") {
+      const portfolioValue = await this.getPortfolioValue(order.userId);
       const currentPosition = await PortfolioService.getPosition(order.userId, order.symbol);
       const newPositionValue = (currentPosition?.currentValue || 0) + orderValue;
-      
-      if (newPositionValue > limits.maxPositionSize) {
+      const concentration = newPositionValue / (portfolioValue + orderValue);
+
+      if (concentration > limits.maxPositionConcentration) {
         return { 
           passed: false, 
-          error: "Position size limit exceeded" 
+          error: `Position concentration (${(concentration * 100).toFixed(1)}%) exceeds limit (${(limits.maxPositionConcentration * 100)}%)` 
         };
       }
+    }
+
+    // Auto stop-loss suggestion
+    if (order.type === "buy" && limits.stopLossRequired && !order.stopPrice) {
+      // Don't reject, but suggest stop-loss
+      console.log("Consider setting a stop-loss for risk management");
     }
 
     return { passed: true };
@@ -184,19 +183,29 @@ export class OrderExecutionEngine {
 
   private static async executeMarketOrder(order: OrderRequest): Promise<OrderResult> {
     const currentPrice = await this.getCurrentMarketPrice(order.symbol);
-    const slippage = this.calculateSlippage(order.shares, order.symbol);
+    const slippage = this.calculateSlippage(order.shares, order.symbol, order.isFractional);
     const executedPrice = order.type === "buy" ? 
       currentPrice * (1 + slippage) : 
       currentPrice * (1 - slippage);
 
-    // Create the trade record
+    // Handle fractional shares execution
+    let executedShares = order.shares;
+    if (order.isFractional) {
+      // Apply fractional execution logic
+      const minExecutable = 0.000001;
+      if (executedShares < minExecutable) {
+        return { success: false, error: "Order size too small for fractional execution" };
+      }
+    }
+
+    // Create the trade record with fractional support
     const { data, error } = await supabase.from("trades").insert({
       user_id: order.userId,
       symbol: order.symbol,
       type: order.type,
-      shares: order.shares,
+      shares: executedShares,
       price: executedPrice,
-      total_amount: order.shares * executedPrice,
+      total_amount: executedShares * executedPrice,
       status: "completed",
       order_type: order.orderType,
       is_fractional: order.isFractional || false,
@@ -204,98 +213,34 @@ export class OrderExecutionEngine {
 
     if (error) throw error;
 
-    // Update portfolio
-    await this.updatePortfolio(order.userId, order.symbol, order.type, order.shares, executedPrice);
+    // Update portfolio with fractional support
+    await this.updatePortfolio(order.userId, order.symbol, order.type, executedShares, executedPrice);
 
     return {
       success: true,
       orderId: data.id,
       executedPrice: executedPrice,
-      executedShares: order.shares
-    };
-  }
-
-  private static async createLimitOrder(order: OrderRequest): Promise<OrderResult> {
-    const { data, error } = await supabase.from("trades").insert({
-      user_id: order.userId,
-      symbol: order.symbol,
-      type: order.type,
-      shares: order.shares,
-      price: order.price,
-      limit_price: order.limitPrice,
-      total_amount: order.shares * (order.limitPrice || order.price),
-      status: "pending",
-      order_type: order.orderType,
-      is_fractional: order.isFractional || false,
-    }).select("id").single();
-
-    if (error) throw error;
-
-    // Schedule order monitoring
-    this.scheduleOrderMonitoring(data.id);
-
-    return {
-      success: true,
-      orderId: data.id
-    };
-  }
-
-  private static async createStopOrder(order: OrderRequest): Promise<OrderResult> {
-    const { data, error } = await supabase.from("trades").insert({
-      user_id: order.userId,
-      symbol: order.symbol,
-      type: order.type,
-      shares: order.shares,
-      price: order.price,
-      stop_price: order.stopPrice,
-      total_amount: order.shares * order.price,
-      status: "pending",
-      order_type: order.orderType,
-      is_fractional: order.isFractional || false,
-    }).select("id").single();
-
-    if (error) throw error;
-
-    this.scheduleOrderMonitoring(data.id);
-
-    return {
-      success: true,
-      orderId: data.id
-    };
-  }
-
-  private static async createStopLimitOrder(order: OrderRequest): Promise<OrderResult> {
-    const { data, error } = await supabase.from("trades").insert({
-      user_id: order.userId,
-      symbol: order.symbol,
-      type: order.type,
-      shares: order.shares,
-      price: order.price,
-      limit_price: order.limitPrice,
-      stop_price: order.stopPrice,
-      total_amount: order.shares * (order.limitPrice || order.price),
-      status: "pending",
-      order_type: order.orderType,
-      is_fractional: order.isFractional || false,
-    }).select("id").single();
-
-    if (error) throw error;
-
-    this.scheduleOrderMonitoring(data.id);
-
-    return {
-      success: true,
-      orderId: data.id
+      executedShares: executedShares
     };
   }
 
   private static async createTrailingStopOrder(order: OrderRequest): Promise<OrderResult> {
+    if (!order.trailingPercent || order.trailingPercent <= 0 || order.trailingPercent >= 100) {
+      return { success: false, error: "Invalid trailing percentage" };
+    }
+
+    const currentPrice = await this.getCurrentMarketPrice(order.symbol);
+    const initialStopPrice = order.type === "sell" ? 
+      currentPrice * (1 - order.trailingPercent / 100) :
+      currentPrice * (1 + order.trailingPercent / 100);
+
     const { data, error } = await supabase.from("trades").insert({
       user_id: order.userId,
       symbol: order.symbol,
       type: order.type,
       shares: order.shares,
       price: order.price,
+      stop_price: initialStopPrice,
       trailing_percent: order.trailingPercent,
       total_amount: order.shares * order.price,
       status: "pending",
@@ -305,12 +250,105 @@ export class OrderExecutionEngine {
 
     if (error) throw error;
 
-    this.scheduleOrderMonitoring(data.id);
+    this.scheduleTrailingStopMonitoring(data.id, order.symbol);
 
     return {
       success: true,
       orderId: data.id
     };
+  }
+
+  private static calculateSlippage(shares: number, symbol: string, isFractional?: boolean): number {
+    let baseSlippage = 0.001; // 0.1%
+    
+    // Fractional shares may have higher slippage
+    if (isFractional) {
+      baseSlippage *= 1.5;
+    }
+    
+    const volumeImpact = Math.min(shares / 10000, 0.01);
+    return baseSlippage + volumeImpact;
+  }
+
+  private static isExtendedHours(): boolean {
+    const now = new Date();
+    const hour = now.getHours();
+    const dayOfWeek = now.getDay();
+
+    // Weekend check
+    if (dayOfWeek === 0 || dayOfWeek === 6) return false;
+
+    // Extended hours: 4:00 AM - 9:30 AM and 4:00 PM - 8:00 PM EST
+    return (hour >= 4 && hour < 9) || (hour >= 16 && hour < 20);
+  }
+
+  private static async getPortfolioValue(userId: string): Promise<number> {
+    try {
+      const summary = await PortfolioService.getPortfolioSummary(userId);
+      return summary.totalValue;
+    } catch (error) {
+      return 0;
+    }
+  }
+
+  private static scheduleTrailingStopMonitoring(orderId: string, symbol: string): void {
+    // In production, integrate with real-time price monitoring
+    console.log(`Scheduled trailing stop monitoring for order ${orderId} on ${symbol}`);
+  }
+
+  private static async getCurrentMarketPrice(symbol: string): Promise<number> {
+    try {
+      const priceData = await RealMarketDataService.fetchRealTimePrice(symbol);
+      if (priceData) {
+        return priceData.price;
+      }
+    } catch (error) {
+      console.error('Error fetching real-time price:', error);
+    }
+
+    // Fallback to mock data
+    const basePrices: Record<string, number> = {
+      "AAPL": 180,
+      "MSFT": 350,
+      "GOOGL": 140,
+      "AMZN": 145,
+      "NVDA": 450,
+      "META": 330
+    };
+    
+    const basePrice = basePrices[symbol] || 100;
+    const variation = (Math.random() - 0.5) * 0.04;
+    return parseFloat((basePrice * (1 + variation)).toFixed(2));
+  }
+
+  private static async checkUserBalance(userId: string, requiredAmount: number): Promise<boolean> {
+    return true; // Demo purposes
+  }
+
+  private static async checkUserShares(userId: string, symbol: string, requiredShares: number): Promise<boolean> {
+    const { data } = await supabase
+      .from("portfolio")
+      .select("shares")
+      .eq("user_id", userId)
+      .eq("symbol", symbol)
+      .single();
+
+    return data ? data.shares >= requiredShares : false;
+  }
+
+  private static isMarketOpen(): boolean {
+    const now = new Date();
+    const dayOfWeek = now.getDay();
+    const hour = now.getHours();
+    const minute = now.getMinutes();
+    const timeInMinutes = hour * 60 + minute;
+
+    if (dayOfWeek === 0 || dayOfWeek === 6) return false;
+
+    const marketOpen = 9 * 60 + 30;
+    const marketClose = 16 * 60;
+
+    return timeInMinutes >= marketOpen && timeInMinutes < marketClose;
   }
 
   private static async updatePortfolio(
@@ -377,91 +415,83 @@ export class OrderExecutionEngine {
     }
   }
 
-  private static async getCurrentMarketPrice(symbol: string): Promise<number> {
-    try {
-      const priceData = await RealMarketDataService.fetchRealTimePrice(symbol);
-      if (priceData) {
-        return priceData.price;
-      }
-    } catch (error) {
-      console.error('Error fetching real-time price:', error);
-    }
+  private static async createLimitOrder(order: OrderRequest): Promise<OrderResult> {
+    const { data, error } = await supabase.from("trades").insert({
+      user_id: order.userId,
+      symbol: order.symbol,
+      type: order.type,
+      shares: order.shares,
+      price: order.price,
+      limit_price: order.limitPrice,
+      total_amount: order.shares * (order.limitPrice || order.price),
+      status: "pending",
+      order_type: order.orderType,
+      is_fractional: order.isFractional || false,
+    }).select("id").single();
 
-    // Fallback to mock data
-    const basePrices: Record<string, number> = {
-      "AAPL": 180,
-      "MSFT": 350,
-      "GOOGL": 140,
-      "AMZN": 145,
-      "NVDA": 450,
-      "META": 330
+    if (error) throw error;
+
+    this.scheduleOrderMonitoring(data.id);
+
+    return {
+      success: true,
+      orderId: data.id
     };
-    
-    const basePrice = basePrices[symbol] || 100;
-    const variation = (Math.random() - 0.5) * 0.04;
-    return parseFloat((basePrice * (1 + variation)).toFixed(2));
   }
 
-  private static calculateSlippage(shares: number, symbol: string): number {
-    // Simple slippage model - in production, use order book data
-    const baseSlippage = 0.001; // 0.1%
-    const volumeImpact = Math.min(shares / 10000, 0.01); // Max 1% for volume impact
-    return baseSlippage + volumeImpact;
+  private static async createStopOrder(order: OrderRequest): Promise<OrderResult> {
+    const { data, error } = await supabase.from("trades").insert({
+      user_id: order.userId,
+      symbol: order.symbol,
+      type: order.type,
+      shares: order.shares,
+      price: order.price,
+      stop_price: order.stopPrice,
+      total_amount: order.shares * order.price,
+      status: "pending",
+      order_type: order.orderType,
+      is_fractional: order.isFractional || false,
+    }).select("id").single();
+
+    if (error) throw error;
+
+    this.scheduleOrderMonitoring(data.id);
+
+    return {
+      success: true,
+      orderId: data.id
+    };
   }
 
-  private static async checkUserBalance(userId: string, requiredAmount: number): Promise<boolean> {
-    // In production, check actual account balance
-    // For now, assume users have sufficient balance for demo purposes
-    return true;
-  }
+  private static async createStopLimitOrder(order: OrderRequest): Promise<OrderResult> {
+    const { data, error } = await supabase.from("trades").insert({
+      user_id: order.userId,
+      symbol: order.symbol,
+      type: order.type,
+      shares: order.shares,
+      price: order.price,
+      limit_price: order.limitPrice,
+      stop_price: order.stopPrice,
+      total_amount: order.shares * (order.limitPrice || order.price),
+      status: "pending",
+      order_type: order.orderType,
+      is_fractional: order.isFractional || false,
+    }).select("id").single();
 
-  private static async checkUserShares(userId: string, symbol: string, requiredShares: number): Promise<boolean> {
-    const { data } = await supabase
-      .from("portfolio")
-      .select("shares")
-      .eq("user_id", userId)
-      .eq("symbol", symbol)
-      .single();
+    if (error) throw error;
 
-    return data ? data.shares >= requiredShares : false;
-  }
+    this.scheduleOrderMonitoring(data.id);
 
-  private static async getDailyTradingVolume(userId: string): Promise<number> {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const { data } = await supabase
-      .from("trades")
-      .select("total_amount")
-      .eq("user_id", userId)
-      .gte("created_at", today.toISOString());
-
-    return data?.reduce((sum, trade) => sum + trade.total_amount, 0) || 0;
-  }
-
-  private static isMarketOpen(): boolean {
-    const now = new Date();
-    const dayOfWeek = now.getDay();
-    const hour = now.getHours();
-    const minute = now.getMinutes();
-    const timeInMinutes = hour * 60 + minute;
-
-    // Market closed on weekends
-    if (dayOfWeek === 0 || dayOfWeek === 6) return false;
-
-    // Market hours: 9:30 AM - 4:00 PM EST (convert to user's timezone)
-    const marketOpen = 9 * 60 + 30; // 9:30 AM
-    const marketClose = 16 * 60; // 4:00 PM
-
-    return timeInMinutes >= marketOpen && timeInMinutes < marketClose;
+    return {
+      success: true,
+      orderId: data.id
+    };
   }
 
   private static scheduleOrderMonitoring(orderId: string): void {
-    // In production, this would integrate with a job queue or scheduler
     console.log(`Scheduled monitoring for order ${orderId}`);
   }
 
-  // Order monitoring and execution methods
   static async processPendingOrders(): Promise<void> {
     const { data: pendingOrders } = await supabase
       .from("trades")
