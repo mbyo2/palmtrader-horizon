@@ -1,6 +1,6 @@
 
 import { Helmet } from "react-helmet";
-import BankingDashboard from "@/components/Banking/BankingDashboard";
+import EnhancedBankingInterface from "@/components/Banking/EnhancedBankingInterface";
 
 export default function BankingPage() {
   return (
@@ -9,7 +9,7 @@ export default function BankingPage() {
         <title>Banking - SmartTrade</title>
       </Helmet>
       <div className="container py-8">
-        <BankingDashboard />
+        <EnhancedBankingInterface />
       </div>
     </>
   );

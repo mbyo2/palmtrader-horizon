@@ -304,6 +304,45 @@ export type Database = {
         }
         Relationships: []
       }
+      compliance_events: {
+        Row: {
+          assigned_to: string | null
+          created_at: string
+          event_data: Json
+          event_type: string
+          id: string
+          notes: string | null
+          risk_level: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string
+          event_data: Json
+          event_type: string
+          id?: string
+          notes?: string | null
+          risk_level: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string
+          event_data?: Json
+          event_type?: string
+          id?: string
+          notes?: string | null
+          risk_level?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       fund_transfers: {
         Row: {
           amount: number
@@ -487,6 +526,108 @@ export type Database = {
           symbol?: string
           total_shares?: number
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      kyc_documents: {
+        Row: {
+          created_at: string
+          document_type: string
+          file_name: string
+          file_path: string
+          file_size: number
+          id: string
+          mime_type: string
+          rejection_reason: string | null
+          updated_at: string
+          user_id: string
+          verification_status: string
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          document_type: string
+          file_name: string
+          file_path: string
+          file_size: number
+          id?: string
+          mime_type: string
+          rejection_reason?: string | null
+          updated_at?: string
+          user_id: string
+          verification_status?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          document_type?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          id?: string
+          mime_type?: string
+          rejection_reason?: string | null
+          updated_at?: string
+          user_id?: string
+          verification_status?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: []
+      }
+      kyc_verifications: {
+        Row: {
+          address_verified: boolean | null
+          aml_status: string | null
+          created_at: string
+          email_verified: boolean | null
+          id: string
+          identity_verified: boolean | null
+          last_verification_date: string | null
+          pep_check: boolean | null
+          phone_verified: boolean | null
+          risk_score: number | null
+          sanctions_check: boolean | null
+          updated_at: string
+          user_id: string
+          verification_level: string
+          verification_notes: string | null
+        }
+        Insert: {
+          address_verified?: boolean | null
+          aml_status?: string | null
+          created_at?: string
+          email_verified?: boolean | null
+          id?: string
+          identity_verified?: boolean | null
+          last_verification_date?: string | null
+          pep_check?: boolean | null
+          phone_verified?: boolean | null
+          risk_score?: number | null
+          sanctions_check?: boolean | null
+          updated_at?: string
+          user_id: string
+          verification_level?: string
+          verification_notes?: string | null
+        }
+        Update: {
+          address_verified?: boolean | null
+          aml_status?: string | null
+          created_at?: string
+          email_verified?: boolean | null
+          id?: string
+          identity_verified?: boolean | null
+          last_verification_date?: string | null
+          pep_check?: boolean | null
+          phone_verified?: boolean | null
+          risk_score?: number | null
+          sanctions_check?: boolean | null
+          updated_at?: string
+          user_id?: string
+          verification_level?: string
+          verification_notes?: string | null
         }
         Relationships: []
       }
@@ -697,6 +838,48 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_methods: {
+        Row: {
+          account_mask: string | null
+          created_at: string
+          id: string
+          is_primary: boolean | null
+          is_verified: boolean | null
+          metadata: Json | null
+          method_type: string
+          provider: string
+          provider_account_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_mask?: string | null
+          created_at?: string
+          id?: string
+          is_primary?: boolean | null
+          is_verified?: boolean | null
+          metadata?: Json | null
+          method_type: string
+          provider: string
+          provider_account_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_mask?: string | null
+          created_at?: string
+          id?: string
+          is_primary?: boolean | null
+          is_verified?: boolean | null
+          metadata?: Json | null
+          method_type?: string
+          provider?: string
+          provider_account_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       portfolio: {
         Row: {
           average_price: number
@@ -823,6 +1006,42 @@ export type Database = {
         }
         Relationships: []
       }
+      tax_documents: {
+        Row: {
+          created_at: string
+          document_type: string
+          file_path: string | null
+          generated_at: string | null
+          id: string
+          status: string
+          tax_year: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          document_type: string
+          file_path?: string | null
+          generated_at?: string | null
+          id?: string
+          status?: string
+          tax_year: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          document_type?: string
+          file_path?: string | null
+          generated_at?: string | null
+          id?: string
+          status?: string
+          tax_year?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       technical_indicators: {
         Row: {
           created_at: string
@@ -915,6 +1134,65 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          description: string | null
+          external_transaction_id: string | null
+          id: string
+          metadata: Json | null
+          payment_method_id: string | null
+          processed_at: string | null
+          reference_number: string | null
+          status: string
+          transaction_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency?: string
+          description?: string | null
+          external_transaction_id?: string | null
+          id?: string
+          metadata?: Json | null
+          payment_method_id?: string | null
+          processed_at?: string | null
+          reference_number?: string | null
+          status?: string
+          transaction_type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          description?: string | null
+          external_transaction_id?: string | null
+          id?: string
+          metadata?: Json | null
+          payment_method_id?: string | null
+          processed_at?: string | null
+          reference_number?: string | null
+          status?: string
+          transaction_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_payment_method_id_fkey"
+            columns: ["payment_method_id"]
+            isOneToOne: false
+            referencedRelation: "payment_methods"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_follows: {
         Row: {
