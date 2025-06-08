@@ -219,7 +219,7 @@ export class KYCService {
         .single();
 
       if (error && error.code !== "PGRST116") throw error; // PGRST116 = no rows returned
-      return data;
+      return data as KYCVerification | null;
     } catch (error) {
       console.error("Error fetching KYC status:", error);
       return null;
@@ -236,7 +236,7 @@ export class KYCService {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data || [];
+      return (data || []) as KYCDocument[];
     } catch (error) {
       console.error("Error fetching KYC documents:", error);
       return [];

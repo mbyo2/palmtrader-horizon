@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -13,7 +12,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { EnhancedBankingService } from "@/services/EnhancedBankingService";
 import { PaymentProcessingService } from "@/services/PaymentProcessingService";
 import { KYCService } from "@/services/KYCService";
-import { FileUpload, CreditCard, Bank, Shield, DollarSign, Clock } from "lucide-react";
+import { Upload, CreditCard, Building2, Shield, DollarSign, Clock } from "lucide-react";
 
 export default function EnhancedBankingInterface() {
   const { user } = useAuth();
@@ -311,7 +310,7 @@ export default function EnhancedBankingInterface() {
                 disabled={!selectedFile || !documentType || loading}
                 className="w-full"
               >
-                <FileUpload className="w-4 h-4 mr-2" />
+                <Upload className="w-4 h-4 mr-2" />
                 {loading ? "Uploading..." : "Upload Document"}
               </Button>
             </CardContent>
@@ -375,7 +374,7 @@ export default function EnhancedBankingInterface() {
                   <div key={method.id} className="flex justify-between items-center p-4 border rounded-lg">
                     <div className="flex items-center gap-3">
                       {method.method_type === "bank_account" ? (
-                        <Bank className="h-5 w-5" />
+                        <Building2 className="h-5 w-5" />
                       ) : (
                         <CreditCard className="h-5 w-5" />
                       )}

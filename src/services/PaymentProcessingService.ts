@@ -37,15 +37,17 @@ export class PaymentProcessingService {
   static async processPayment(request: TransactionRequest): Promise<TransactionResult> {
     try {
       // Get payment method details
-      const { data: paymentMethod, error: pmError } = await supabase
+      const { data: paymentMethodData, error: pmError } = await supabase
         .from("payment_methods")
         .select("*")
         .eq("id", request.paymentMethodId)
         .single();
 
-      if (pmError || !paymentMethod) {
+      if (pmError || !paymentMethodData) {
         return { success: false, status: "failed", error: "Payment method not found" };
       }
+
+      const paymentMethod = paymentMethodData as PaymentMethod;
 
       // Simulate different payment providers
       let providerResult;
@@ -221,7 +223,7 @@ export class PaymentProcessingService {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data || [];
+      return (data || []) as PaymentMethod[];
     } catch (error) {
       console.error("Error fetching payment methods:", error);
       return [];
