@@ -29,7 +29,7 @@ export interface SocialComment {
   user_profile?: {
     display_name: string;
     username: string;
-  };
+  } | null;
 }
 
 export interface PopularStock {
@@ -218,10 +218,19 @@ export class SocialTradingService {
       }
 
       return (data || []).map(comment => ({
-        ...comment,
+        id: comment.id,
+        user_id: comment.user_id,
+        content: comment.content,
+        symbol: comment.symbol,
+        parent_id: comment.parent_id,
+        created_at: comment.created_at,
+        updated_at: comment.updated_at,
         likes_count: comment.comment_likes?.[0]?.count || 0,
         user_liked: userLikes.includes(comment.id),
-        user_profile: comment.user_profiles?.[0] || null
+        user_profile: comment.user_profiles?.[0] ? {
+          display_name: comment.user_profiles[0].display_name || '',
+          username: comment.user_profiles[0].username || ''
+        } : null
       })) as SocialComment[];
     } catch (error) {
       console.error("Error fetching social comments:", error);
