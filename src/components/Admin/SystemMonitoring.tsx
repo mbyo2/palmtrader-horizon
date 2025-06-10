@@ -18,10 +18,12 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
+type HealthStatus = 'healthy' | 'warning' | 'error';
+
 interface SystemHealth {
-  database: 'healthy' | 'warning' | 'error';
-  api: 'healthy' | 'warning' | 'error';
-  cache: 'healthy' | 'warning' | 'error';
+  database: HealthStatus;
+  api: HealthStatus;
+  cache: HealthStatus;
   lastUpdated: string;
 }
 
@@ -143,10 +145,10 @@ const SystemMonitoring = () => {
         .select('id')
         .limit(1);
 
-      const newHealth = {
-        database: dbError ? 'error' : 'healthy' as const,
-        api: 'healthy' as const, // Assume API is healthy if we can make requests
-        cache: 'healthy' as const, // Simulated cache status
+      const newHealth: SystemHealth = {
+        database: dbError ? 'error' : 'healthy',
+        api: 'healthy', // Assume API is healthy if we can make requests
+        cache: 'healthy', // Simulated cache status
         lastUpdated: new Date().toISOString()
       };
 
@@ -180,7 +182,7 @@ const SystemMonitoring = () => {
     });
   };
 
-  const getHealthIcon = (status: string) => {
+  const getHealthIcon = (status: HealthStatus) => {
     switch (status) {
       case 'healthy':
         return <CheckCircle className="h-4 w-4 text-green-500" />;
@@ -193,7 +195,7 @@ const SystemMonitoring = () => {
     }
   };
 
-  const getHealthBadge = (status: string) => {
+  const getHealthBadge = (status: HealthStatus) => {
     switch (status) {
       case 'healthy':
         return <Badge className="bg-green-500">Healthy</Badge>;

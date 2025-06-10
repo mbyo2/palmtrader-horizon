@@ -212,7 +212,9 @@ export type Database = {
         Row: {
           content: string
           created_at: string
+          flagged: boolean | null
           id: string
+          moderation_notes: string | null
           parent_id: string | null
           symbol: string | null
           updated_at: string
@@ -221,7 +223,9 @@ export type Database = {
         Insert: {
           content: string
           created_at?: string
+          flagged?: boolean | null
           id?: string
+          moderation_notes?: string | null
           parent_id?: string | null
           symbol?: string | null
           updated_at?: string
@@ -230,7 +234,9 @@ export type Database = {
         Update: {
           content?: string
           created_at?: string
+          flagged?: boolean | null
           id?: string
+          moderation_notes?: string | null
           parent_id?: string | null
           symbol?: string | null
           updated_at?: string
