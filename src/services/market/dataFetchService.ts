@@ -32,6 +32,9 @@ function generateMockHistoricalData(symbol: string, days: number): MarketData[] 
       high,
       low,
       close,
+      change: priceChange,
+      changePercent: (priceChange / price) * 100,
+      volume: Math.floor(Math.random() * 1000000) + 100000,
       type: 'stock',
     });
     
@@ -77,10 +80,19 @@ export async function fetchHistoricalData(symbol: string, days: number): Promise
     
     console.log(`Fetched ${data.length} historical data points for ${symbol}`);
     
-    // Convert to MarketData format and make sure timestamp is a string
+    // Convert to MarketData format and ensure all required properties exist
     return data.map(item => ({
-      ...item,
-      timestamp: String(item.timestamp)
+      symbol: item.symbol,
+      timestamp: String(item.timestamp),
+      price: item.price,
+      open: item.open || item.price,
+      high: item.high || item.price,
+      low: item.low || item.price,
+      close: item.close || item.price,
+      change: 0, // Calculate or set default
+      changePercent: 0, // Calculate or set default
+      volume: 0, // Set default or use actual volume if available
+      type: item.type || 'stock'
     })) as MarketData[];
   } catch (error) {
     console.error("Error in fetchHistoricalData:", error);

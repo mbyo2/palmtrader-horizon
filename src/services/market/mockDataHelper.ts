@@ -33,16 +33,18 @@ export class MockDataHelper {
       
       const high = currentPrice * (1 + Math.random() * 0.02);
       const low = currentPrice * (1 - Math.random() * 0.02);
-      const open = i === days - 1 ? basePrice : data[data.length - 1]?.close || currentPrice;
+      const openPrice = i === days - 1 ? basePrice : data[data.length - 1]?.price || currentPrice;
       
       data.push({
         symbol,
         timestamp: date.getTime().toString(),
         price: Number(currentPrice.toFixed(2)),
-        open: Number(open.toFixed(2)),
+        open: Number(openPrice.toFixed(2)),
         high: Number(high.toFixed(2)),
         low: Number(low.toFixed(2)),
         close: Number(currentPrice.toFixed(2)),
+        change: change * 100,
+        changePercent: change * 100,
         volume: Math.floor(Math.random() * 2000000) + 500000,
         type: 'stock'
       });

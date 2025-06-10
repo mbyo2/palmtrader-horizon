@@ -17,7 +17,7 @@ const GC_TIME = 5 * 60 * 1000; // 5 minutes cache persistence
 export function useMarketDataQuery(symbol: string, options = {}) {
   return useQuery({
     queryKey: ["marketData", symbol],
-    queryFn: () => MarketDataService.fetchHistoricalData(symbol),
+    queryFn: () => MarketDataService.fetchHistoricalData(symbol, 90),
     staleTime: MARKET_DATA_STALE_TIME,
     gcTime: GC_TIME, // Cache persists for 5 minutes (formerly cacheTime)
     refetchOnWindowFocus: false, // Don't refetch on window focus

@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { MarketData } from "./types";
 import { DataCache } from "./dataCache";
@@ -119,14 +118,19 @@ export const DataFetcher = {
 
       for (const date of dates) {
         const dayData = timeSeries[date];
+        const openPrice = parseFloat(dayData['1. open']);
+        const closePrice = parseFloat(dayData['4. close']);
+        
         marketData.push({
           symbol,
           timestamp: new Date(date).getTime().toString(),
-          price: parseFloat(dayData['4. close']),
-          open: parseFloat(dayData['1. open']),
+          price: closePrice,
+          open: openPrice,
           high: parseFloat(dayData['2. high']),
           low: parseFloat(dayData['3. low']),
-          close: parseFloat(dayData['4. close']),
+          close: closePrice,
+          change: closePrice - openPrice,
+          changePercent: ((closePrice - openPrice) / openPrice) * 100,
           volume: parseInt(dayData['5. volume']) || 0,
           type: 'stock'
         });
