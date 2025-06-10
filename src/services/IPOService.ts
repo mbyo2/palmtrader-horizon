@@ -46,7 +46,11 @@ export class IPOService {
         throw error;
       }
 
-      return data || [];
+      // Cast the data to ensure proper typing
+      return (data || []).map(item => ({
+        ...item,
+        status: item.status as IPOListing['status']
+      })) as IPOListing[];
     } catch (error) {
       console.error('Error in getIPOListings:', error);
       throw error;
