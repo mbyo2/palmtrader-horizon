@@ -1,7 +1,8 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { pushNotificationService } from '@/services/PushNotificationService';
 import { Bell, BellDot, AlertCircle, ArrowUp, ArrowDown, DollarSign } from "lucide-react";
 
 // Define notification types
@@ -23,6 +24,9 @@ interface NotificationsContextType {
   markAsRead: (id: string) => void;
   markAllAsRead: () => void;
   clearNotifications: () => void;
+  isPushEnabled: boolean;
+  enablePush: () => Promise<void>;
+  disablePush: () => Promise<void>;
 }
 
 const NotificationsContext = createContext<NotificationsContextType>({
@@ -31,13 +35,30 @@ const NotificationsContext = createContext<NotificationsContextType>({
   markAsRead: () => {},
   markAllAsRead: () => {},
   clearNotifications: () => {},
+  isPushEnabled: false,
+  enablePush: async () => {},
+  disablePush: async () => {},
 });
 
 export const useNotifications = () => useContext(NotificationsContext);
 
 export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [isPushEnabled, setIsPushEnabled] = useState(false);
   const unreadCount = notifications.filter(n => !n.isRead).length;
+
+  useEffect(() => {
+    checkPushStatus();
+  }, []);
+
+  const checkPushStatus = async () => {
+    try {
+      const isSubscribed = await pushNotificationService.isSubscribed();
+      setIsPushEnabled(isSubscribed);
+    } catch (error) {
+      console.error('Error checking push status:', error);
+    }
+  };
 
   // Function to add a new notification
   const addNotification = (notification: Omit<Notification, 'id' | 'timestamp' | 'isRead'>) => {
@@ -59,6 +80,17 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
                (notification.data?.direction === 'above' ? 'destructive' : 'default') : 
                'default',
     });
+
+    // Send push notification if enabled and browser supports it
+    if (isPushEnabled && 'Notification' in window && Notification.permission === 'granted') {
+      pushNotificationService.sendLocalNotification({
+        title: notification.title,
+        body: notification.message,
+        icon: '/icon-192.png',
+        tag: notification.type,
+        data: notification.data
+      });
+    }
   };
 
   // Mark a notification as read
@@ -80,6 +112,32 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
   // Clear all notifications
   const clearNotifications = () => {
     setNotifications([]);
+  };
+
+  // Enable push notifications
+  const enablePush = async () => {
+    try {
+      const permission = await pushNotificationService.requestPermission();
+      if (permission === 'granted') {
+        await pushNotificationService.subscribeToPush();
+        setIsPushEnabled(true);
+        
+        // Schedule background sync for offline support
+        await pushNotificationService.scheduleBackgroundSync('sync-notifications');
+      }
+    } catch (error) {
+      console.error('Error enabling push notifications:', error);
+    }
+  };
+
+  // Disable push notifications
+  const disablePush = async () => {
+    try {
+      await pushNotificationService.unsubscribeFromPush();
+      setIsPushEnabled(false);
+    } catch (error) {
+      console.error('Error disabling push notifications:', error);
+    }
   };
 
   // Listen for price alerts from the database
@@ -136,7 +194,7 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
     };
 
     handlePriceAlert();
-  }, []);
+  }, [isPushEnabled]);
 
   // Listen for trade confirmations
   useEffect(() => {
@@ -176,7 +234,7 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
     };
 
     handleTradeConfirmation();
-  }, []);
+  }, [isPushEnabled]);
 
   const contextValue = {
     notifications,
@@ -184,6 +242,9 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
     markAsRead,
     markAllAsRead,
     clearNotifications,
+    isPushEnabled,
+    enablePush,
+    disablePush,
   };
 
   return (

@@ -29,6 +29,7 @@ const AccountSettings = lazy(() => import('./pages/AccountSettings'));
 const Banking = lazy(() => import('./pages/Banking'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 const PrivacyPolicy = lazy(() => import('./components/legal/PrivacyPolicy'));
+const PWASettings = lazy(() => import('./pages/PWASettings'));
 
 // Create query client with optimized settings
 const queryClient = new QueryClient({
@@ -110,6 +111,7 @@ function App() {
                         <Route path="/500" element={<ErrorPage statusCode={500} title="Server Error" description="We're experiencing some issues. Please try again later." />} />
                         <Route path="/403" element={<ErrorPage statusCode={403} title="Access Denied" description="You don't have permission to access this resource." />} />
                         <Route path="/privacy" element={<PrivacyPolicy />} />
+                        <Route path="/pwa-settings" element={<PWASettings />} />
                         <Route path="*" element={<NotFound />} />
                       </Routes>
                     </EnhancedErrorBoundary>

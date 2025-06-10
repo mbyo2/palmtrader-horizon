@@ -15,6 +15,7 @@ const API_CACHE_DURATION = 300; // 5 minutes
 const IMAGE_CACHE_DURATION = 86400; // 24 hours
 
 self.addEventListener('install', (event) => {
+  console.log('Service Worker installing...');
   event.waitUntil(
     Promise.all([
       caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS)),
@@ -22,10 +23,43 @@ self.addEventListener('install', (event) => {
       caches.open(API_CACHE)
     ])
   );
+  self.skipWaiting(); // Activate immediately
+});
+
+self.addEventListener('activate', (event) => {
+  console.log('Service Worker activating...');
+  event.waitUntil(
+    Promise.all([
+      // Clean up old caches
+      caches.keys().then((cacheNames) => {
+        return Promise.all(
+          cacheNames
+            .filter((name) => name !== CACHE_NAME && 
+                            name !== IMAGE_CACHE && 
+                            name !== API_CACHE)
+            .map((name) => caches.delete(name))
+        );
+      }),
+      // Clean up expired items from API cache
+      caches.open(API_CACHE).then(async (cache) => {
+        const requests = await cache.keys();
+        return Promise.all(
+          requests.map(async (request) => {
+            const response = await cache.match(request);
+            const cachedAt = response?.headers.get('cached-at');
+            if (cachedAt && Date.now() - new Date(cachedAt).getTime() > API_CACHE_DURATION * 1000) {
+              return cache.delete(request);
+            }
+          })
+        );
+      }),
+      // Take control of all clients immediately
+      self.clients.claim()
+    ])
+  );
 });
 
 function shouldCache(url) {
-  // Add patterns for URLs that should be cached
   const cachePatterns = [
     '/api/market-data',
     '/api/stocks',
@@ -96,6 +130,16 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Handle navigation requests (SPA routing)
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request).catch(() => {
+        return caches.match('/index.html');
+      })
+    );
+    return;
+  }
+
   // Handle other requests
   event.respondWith(
     caches.match(event.request).then((response) => {
@@ -106,53 +150,122 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-// Clean up old caches
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    Promise.all([
-      caches.keys().then((cacheNames) => {
-        return Promise.all(
-          cacheNames
-            .filter((name) => name !== CACHE_NAME && 
-                            name !== IMAGE_CACHE && 
-                            name !== API_CACHE)
-            .map((name) => caches.delete(name))
-        );
-      }),
-      // Clean up expired items from API cache
-      caches.open(API_CACHE).then(async (cache) => {
-        const requests = await cache.keys();
-        return Promise.all(
-          requests.map(async (request) => {
-            const response = await cache.match(request);
-            const cachedAt = response?.headers.get('cached-at');
-            if (cachedAt && Date.now() - new Date(cachedAt).getTime() > API_CACHE_DURATION * 1000) {
-              return cache.delete(request);
-            }
-          })
-        );
-      })
-    ])
-  );
-});
-
-// Handle offline functionality
-self.addEventListener('fetch', (event) => {
-  if (event.request.mode === 'navigate') {
-    event.respondWith(
-      fetch(event.request).catch(() => {
-        return caches.match('/offline.html');
-      })
-    );
+// Background sync for offline actions
+self.addEventListener('sync', (event) => {
+  console.log('Background sync event:', event.tag);
+  if (event.tag === 'sync-portfolio-data') {
+    event.waitUntil(syncPortfolioData());
+  } else if (event.tag === 'sync-trade-orders') {
+    event.waitUntil(syncTradeOrders());
   }
 });
 
-// Background sync for offline actions
-self.addEventListener('sync', (event) => {
-  if (event.tag === 'sync-data') {
-    event.waitUntil(
-      // Handle background sync
-      Promise.resolve()
-    );
+// Push notification handling
+self.addEventListener('push', (event) => {
+  console.log('Push notification received:', event);
+  
+  const options = {
+    icon: '/icon-192.png',
+    badge: '/icon-192.png',
+    vibrate: [100, 50, 100],
+    data: {
+      dateOfArrival: Date.now(),
+      primaryKey: '1'
+    },
+    actions: [
+      {
+        action: 'view',
+        title: 'View Details',
+        icon: '/icon-192.png'
+      },
+      {
+        action: 'dismiss',
+        title: 'Dismiss',
+        icon: '/icon-192.png'
+      }
+    ]
+  };
+
+  let notificationData = {};
+  
+  if (event.data) {
+    try {
+      notificationData = event.data.json();
+    } catch (error) {
+      console.error('Error parsing push notification data:', error);
+    }
+  }
+
+  const title = notificationData.title || 'PalmCacia Notification';
+  const body = notificationData.body || 'You have a new notification';
+  
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body,
+      ...options,
+      ...notificationData.options
+    })
+  );
+});
+
+// Notification click handling
+self.addEventListener('notificationclick', (event) => {
+  console.log('Notification clicked:', event);
+  
+  event.notification.close();
+  
+  const action = event.action;
+  const notificationData = event.notification.data || {};
+  
+  if (action === 'dismiss') {
+    return;
+  }
+  
+  // Default action or 'view' action
+  event.waitUntil(
+    clients.matchAll({ type: 'window' }).then((clientList) => {
+      // Check if app is already open
+      for (const client of clientList) {
+        if (client.url === self.location.origin && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      
+      // Open new window/tab if app is not open
+      if (clients.openWindow) {
+        const targetUrl = notificationData.url || '/';
+        return clients.openWindow(targetUrl);
+      }
+    })
+  );
+});
+
+// Background sync functions
+async function syncPortfolioData() {
+  try {
+    console.log('Syncing portfolio data in background...');
+    // Implement portfolio sync logic here
+    return Promise.resolve();
+  } catch (error) {
+    console.error('Error syncing portfolio data:', error);
+    throw error;
+  }
+}
+
+async function syncTradeOrders() {
+  try {
+    console.log('Syncing trade orders in background...');
+    // Implement trade orders sync logic here
+    return Promise.resolve();
+  } catch (error) {
+    console.error('Error syncing trade orders:', error);
+    throw error;
+  }
+}
+
+// Periodic background sync
+self.addEventListener('periodicsync', (event) => {
+  if (event.tag === 'portfolio-update') {
+    event.waitUntil(syncPortfolioData());
   }
 });
