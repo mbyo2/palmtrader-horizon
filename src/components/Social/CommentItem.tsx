@@ -1,28 +1,24 @@
 
-import { format } from "date-fns";
-import { User, Heart, Flag, Reply, MoreHorizontal, Trash2 } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { toast } from "@/components/ui/use-toast";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Heart, Trash2, MoreVertical } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+
+interface Comment {
+  id: string;
+  content: string;
+  created_at: string;
+  user_id: string;
+  likes_count?: number;
+  profiles: {
+    username: string | null;
+    avatar_url: string | null;
+  } | null;
+}
 
 interface CommentItemProps {
-  comment: {
-    id: string;
-    content: string;
-    created_at: string;
-    user_id: string;
-    likes_count?: number;
-    profiles: {
-      username: string | null;
-      avatar_url: string | null;
-    } | null;
-  };
+  comment: Comment;
   userId: string | null;
   isLiked: boolean;
   onLike: (id: string) => Promise<void>;
@@ -30,83 +26,72 @@ interface CommentItemProps {
 }
 
 const CommentItem = ({ comment, userId, isLiked, onLike, onDelete }: CommentItemProps) => {
-  const handleReport = () => {
-    toast({
-      title: "Report submitted",
-      description: "Thank you for helping keep our community safe",
-    });
+  const [isLiking, setIsLiking] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleLike = async () => {
+    setIsLiking(true);
+    await onLike(comment.id);
+    setIsLiking(false);
   };
 
-  const handleReply = () => {
-    toast({
-      title: "Reply functionality",
-      description: "Comment replies will be implemented soon",
-    });
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    await onDelete(comment.id);
+    setIsDeleting(false);
   };
+
+  const username = comment.profiles?.username || 'Anonymous';
+  const isOwner = userId === comment.user_id;
 
   return (
-    <div className="p-4 rounded-lg border border-border/40 space-y-2">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <Avatar className="h-8 w-8">
-            <AvatarImage src={comment.profiles?.avatar_url || undefined} alt="User" />
-            <AvatarFallback>
-              <User className="h-4 w-4" />
-            </AvatarFallback>
-          </Avatar>
-          <div>
-            <span className="font-medium">
-              {comment.profiles?.username || "Anonymous"}
-            </span>
-            <p className="text-muted-foreground text-xs">
-              {format(new Date(comment.created_at), "MMM d, yyyy")}
-            </p>
+    <div className="p-4 rounded-lg border border-border/40 bg-card">
+      <div className="flex items-start space-x-3">
+        <Avatar className="h-8 w-8">
+          <AvatarFallback className="text-xs">
+            {username.charAt(0).toUpperCase()}
+          </AvatarFallback>
+        </Avatar>
+        
+        <div className="flex-1 space-y-2">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium">{username}</p>
+              <p className="text-xs text-muted-foreground">
+                {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
+              </p>
+            </div>
+            
+            {isOwner && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="h-8 w-8 p-0"
+              >
+                <Trash2 className="h-3 w-3" />
+              </Button>
+            )}
+          </div>
+          
+          <p className="text-sm text-foreground whitespace-pre-wrap">
+            {comment.content}
+          </p>
+          
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleLike}
+              disabled={isLiking || !userId}
+              className={`h-7 px-2 ${isLiked ? 'text-red-500' : 'text-muted-foreground'}`}
+            >
+              <Heart className={`h-3 w-3 mr-1 ${isLiked ? 'fill-current' : ''}`} />
+              <span className="text-xs">{comment.likes_count || 0}</span>
+            </Button>
           </div>
         </div>
-
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={handleReport}>
-              <Flag className="h-4 w-4 mr-2" />
-              Report
-            </DropdownMenuItem>
-            {userId === comment.user_id && (
-              <DropdownMenuItem onClick={() => onDelete(comment.id)}>
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete
-              </DropdownMenuItem>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-
-      <p className="py-2">{comment.content}</p>
-
-      <div className="flex items-center space-x-2 pt-1">
-        <Button
-          variant="ghost"
-          size="sm"
-          className={isLiked ? "text-pink-500" : "text-muted-foreground"}
-          onClick={() => onLike(comment.id)}
-        >
-          <Heart className={`h-4 w-4 mr-1 ${isLiked ? "fill-pink-500" : ""}`} />
-          {comment.likes_count || 0}
-        </Button>
-
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-muted-foreground"
-          onClick={handleReply}
-        >
-          <Reply className="h-4 w-4 mr-1" />
-          Reply
-        </Button>
       </div>
     </div>
   );

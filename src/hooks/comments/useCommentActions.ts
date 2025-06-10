@@ -1,82 +1,58 @@
 
-import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/components/ui/use-toast";
-import { Comment } from "./types";
+import { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
-export const useCommentActions = (
-  symbol?: string, 
-  loadComments?: () => Promise<void>,
-  setComments?: React.Dispatch<React.SetStateAction<Comment[]>>
-) => {
+export const useCommentActions = (onUpdate: () => void) => {
   const [loading, setLoading] = useState(false);
 
   const addComment = async (content: string) => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const { data: session } = await supabase.auth.getSession();
-      if (!session.session) {
-        toast({
-          title: "Please sign in to comment",
-          variant: "destructive",
-        });
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) {
+        toast.error('Please log in to comment');
         return;
       }
 
-      const { error } = await supabase.from("comments").insert({
-        content: content.trim(),
-        symbol,
-        user_id: session.session.user.id,
-      });
+      const { error } = await supabase
+        .from('comments')
+        .insert({
+          content,
+          user_id: user.user.id
+        });
 
       if (error) throw error;
 
-      if (loadComments) {
-        await loadComments();
-      }
-      
-      toast({
-        title: "Comment posted successfully",
-      });
+      toast.success('Comment added successfully');
+      onUpdate();
     } catch (error) {
-      console.error("Error posting comment:", error);
-      toast({
-        title: "Error posting comment",
-        variant: "destructive",
-      });
+      console.error('Error adding comment:', error);
+      toast.error('Failed to add comment');
     } finally {
       setLoading(false);
     }
   };
 
   const deleteComment = async (commentId: string) => {
+    setLoading(true);
     try {
       const { error } = await supabase
-        .from("comments")
+        .from('comments')
         .delete()
-        .eq("id", commentId);
+        .eq('id', commentId);
 
       if (error) throw error;
 
-      if (setComments) {
-        setComments(prevComments => prevComments.filter((c) => c.id !== commentId));
-      }
-      
-      toast({
-        title: "Comment deleted successfully",
-      });
+      toast.success('Comment deleted successfully');
+      onUpdate();
     } catch (error) {
-      console.error("Error deleting comment:", error);
-      toast({
-        title: "Error deleting comment",
-        variant: "destructive",
-      });
+      console.error('Error deleting comment:', error);
+      toast.error('Failed to delete comment');
+    } finally {
+      setLoading(false);
     }
   };
 
-  return {
-    loading,
-    addComment,
-    deleteComment
-  };
+  return { addComment, deleteComment, loading };
 };

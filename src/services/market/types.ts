@@ -1,14 +1,9 @@
 
 export interface MarketData {
   symbol: string;
-  timestamp: string;
   price: number;
-  open?: number;
-  high?: number;
-  low?: number;
-  close?: number;
-  volume?: number;
-  type: 'stock' | 'crypto' | 'forex';
+  change: number;
+  changePercent: number;
+  volume: number;
+  timestamp: string;
 }
-
-export type MarketDataCallback = (payload: MarketData) => void;

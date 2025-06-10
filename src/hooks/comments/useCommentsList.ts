@@ -1,67 +1,39 @@
 
-import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/components/ui/use-toast";
-import { Comment } from "./types";
+import { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import type { Comment } from './types';
 
-export const useCommentsList = (symbol?: string, limit: number = 10) => {
+export const useCommentsList = (symbol?: string, limit = 10) => {
   const [comments, setComments] = useState<Comment[]>([]);
-  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
-  const loadComments = async () => {
+  const fetchComments = async () => {
+    setLoading(true);
     try {
-      setIsInitialLoading(true);
-      console.log("Loading comments for symbol:", symbol);
-      
-      const { data, error } = await supabase
+      let query = supabase
         .from('comments')
         .select(`
           *,
-          profiles:user_id(username, avatar_url),
-          likes:comment_likes(count)
+          profiles(username, avatar_url)
         `)
-        .order('created_at', { ascending: false });
-      
-      if (error) {
-        console.error("Error fetching comments:", error);
-        throw error;
-      }
+        .order('created_at', { ascending: false })
+        .limit(limit);
 
-      let filteredComments = data || [];
       if (symbol) {
-        filteredComments = filteredComments.filter(comment => comment.symbol === symbol);
-      }
-      
-      if (limit) {
-        filteredComments = filteredComments.slice(0, limit);
+        query = query.eq('symbol', symbol);
       }
 
-      const formattedComments = filteredComments.map(comment => ({
-        ...comment,
-        likes_count: comment.likes?.length || 0
-      }));
-      
-      setComments(formattedComments);
-      
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      setComments((data || []) as Comment[]);
     } catch (error) {
-      console.error("Error loading comments:", error);
-      toast({
-        title: "Error loading comments",
-        variant: "destructive",
-      });
+      console.error('Error fetching comments:', error);
     } finally {
-      setIsInitialLoading(false);
+      setLoading(false);
     }
   };
 
-  useEffect(() => {
-    loadComments();
-  }, [symbol]);
-
-  return {
-    comments,
-    setComments,
-    isInitialLoading,
-    loadComments
-  };
+  return { comments, loading, fetchComments };
 };

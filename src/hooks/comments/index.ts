@@ -1,20 +1,34 @@
 
-import { useState, useEffect } from "react";
-import { useCommentsList } from "./useCommentsList";
-import { useCommentActions } from "./useCommentActions";
-import { useLikeComment } from "./useLikeComment";
-import { useAuthUser } from "./useAuthUser";
+import { useState, useEffect } from 'react';
+import { useAuthUser } from './useAuthUser';
+import { useCommentsList } from './useCommentsList';
+import { useCommentActions } from './useCommentActions';
+import { useLikeComment } from './useLikeComment';
 
-export const useComments = (symbol?: string, limit: number = 10) => {
-  const { comments, setComments, isInitialLoading, loadComments } = useCommentsList(symbol, limit);
+export const useComments = (symbol?: string, limit = 10) => {
   const { userId } = useAuthUser();
-  const { loading, addComment, deleteComment } = useCommentActions(symbol, loadComments, setComments);
-  const { likedComments, handleLike } = useLikeComment(userId, comments, setComments);
+  const { comments, loading: commentsLoading, fetchComments } = useCommentsList(symbol, limit);
+  const { addComment, deleteComment, loading: actionsLoading } = useCommentActions(fetchComments);
+  const { likedComments, toggleLike } = useLikeComment();
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+
+  useEffect(() => {
+    const loadInitialData = async () => {
+      await fetchComments();
+      setIsInitialLoading(false);
+    };
+    loadInitialData();
+  }, [symbol]);
+
+  const handleLike = async (commentId: string) => {
+    await toggleLike(commentId);
+    await fetchComments(); // Refresh comments to get updated like counts
+  };
 
   return {
     comments,
-    loading,
-    isInitialLoading,
+    loading: actionsLoading,
+    isInitialLoading: isInitialLoading || commentsLoading,
     userId,
     likedComments,
     handleLike,
@@ -23,4 +37,4 @@ export const useComments = (symbol?: string, limit: number = 10) => {
   };
 };
 
-export * from "./types";
+export type { Comment } from './types';

@@ -4,61 +4,46 @@ import { toast } from "sonner";
 
 export interface IPOListing {
   id: string;
-  company_name: string;
   symbol: string;
+  company_name: string;
   description: string | null;
   sector: string | null;
   issue_price_min: number;
   issue_price_max: number;
   total_shares: number;
   retail_allocation_percentage: number;
+  minimum_lot_size: number;
   subscription_start_date: string;
   subscription_end_date: string;
   listing_date: string | null;
-  minimum_lot_size: number;
-  status: 'upcoming' | 'open' | 'closed' | 'listed' | 'withdrawn';
+  status: 'upcoming' | 'open' | 'closed' | 'listed';
+  prospectus_url: string | null;
   created_at: string;
   updated_at: string;
 }
 
 export interface IPOApplication {
   id: string;
-  user_id: string;
   ipo_id: string;
+  user_id: string;
   shares_applied: number;
-  price_per_share: number;
-  total_amount: number;
-  status: 'pending' | 'approved' | 'rejected' | 'allocated';
-  payment_status: 'pending' | 'completed' | 'refunded';
-  created_at: string;
-  updated_at: string;
-  ipo_listing?: IPOListing;
-}
-
-export interface IPOAllocation {
-  id: string;
-  application_id: string;
-  shares_allocated: number;
-  allocation_price: number;
-  total_amount: number;
+  amount_invested: number;
+  application_number: string;
+  status: 'pending' | 'confirmed' | 'allotted' | 'rejected';
+  allotted_shares: number | null;
+  refund_amount: number | null;
   created_at: string;
   updated_at: string;
 }
 
 export class IPOService {
   // Get all IPO listings
-  static async getIPOListings(status?: string): Promise<IPOListing[]> {
+  static async getIPOListings(): Promise<IPOListing[]> {
     try {
-      let query = supabase
+      const { data, error } = await supabase
         .from("ipo_listings")
         .select("*")
-        .order("subscription_start_date", { ascending: true });
-
-      if (status) {
-        query = query.eq("status", status);
-      }
-
-      const { data, error } = await query;
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
       return (data || []) as IPOListing[];
@@ -86,25 +71,27 @@ export class IPOService {
   }
 
   // Apply for IPO
-  static async applyForIPO(application: {
-    ipo_id: string;
-    shares_applied: number;
-    price_per_share: number;
-  }): Promise<boolean> {
+  static async applyForIPO(
+    ipoId: string,
+    sharesApplied: number,
+    amountInvested: number
+  ): Promise<boolean> {
     try {
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) throw new Error("Not authenticated");
 
-      const total_amount = application.shares_applied * application.price_per_share;
+      // Generate application number
+      const applicationNumber = `IPO${Date.now()}${Math.floor(Math.random() * 1000)}`;
 
       const { error } = await supabase
         .from("ipo_applications")
         .insert({
+          ipo_id: ipoId,
           user_id: user.user.id,
-          ipo_id: application.ipo_id,
-          shares_applied: application.shares_applied,
-          price_per_share: application.price_per_share,
-          total_amount
+          shares_applied: sharesApplied,
+          amount_invested: amountInvested,
+          application_number: applicationNumber,
+          status: 'pending'
         });
 
       if (error) throw error;
@@ -126,10 +113,7 @@ export class IPOService {
 
       const { data, error } = await supabase
         .from("ipo_applications")
-        .select(`
-          *,
-          ipo_listings(*)
-        `)
+        .select("*")
         .eq("user_id", user.user.id)
         .order("created_at", { ascending: false });
 
@@ -141,32 +125,7 @@ export class IPOService {
     }
   }
 
-  // Get IPO allocations for user
-  static async getUserIPOAllocations(): Promise<IPOAllocation[]> {
-    try {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) return [];
-
-      const { data, error } = await supabase
-        .from("ipo_allocations")
-        .select(`
-          *,
-          ipo_applications!inner(
-            user_id,
-            ipo_listings(*)
-          )
-        `)
-        .eq("ipo_applications.user_id", user.user.id);
-
-      if (error) throw error;
-      return (data || []) as IPOAllocation[];
-    } catch (error) {
-      console.error("Error fetching IPO allocations:", error);
-      return [];
-    }
-  }
-
-  // Check if user has applied for an IPO
+  // Check if user has applied for specific IPO
   static async hasUserApplied(ipoId: string): Promise<boolean> {
     try {
       const { data: user } = await supabase.auth.getUser();
@@ -175,43 +134,29 @@ export class IPOService {
       const { data, error } = await supabase
         .from("ipo_applications")
         .select("id")
-        .eq("user_id", user.user.id)
         .eq("ipo_id", ipoId)
+        .eq("user_id", user.user.id)
         .single();
 
       if (error && error.code !== "PGRST116") throw error;
       return !!data;
     } catch (error) {
-      console.error("Error checking IPO application:", error);
+      console.error("Error checking IPO application status:", error);
       return false;
     }
   }
 
-  // Calculate IPO subscription ratio
-  static async getIPOSubscriptionRatio(ipoId: string): Promise<number> {
-    try {
-      const { data: applications, error } = await supabase
-        .from("ipo_applications")
-        .select("shares_applied")
-        .eq("ipo_id", ipoId);
+  // Calculate IPO subscription details
+  static calculateIPODetails(ipo: IPOListing, sharesApplied: number) {
+    const minInvestment = sharesApplied * ipo.issue_price_min;
+    const maxInvestment = sharesApplied * ipo.issue_price_max;
+    const isValidApplication = sharesApplied >= ipo.minimum_lot_size;
 
-      if (error) throw error;
-
-      const { data: ipo, error: ipoError } = await supabase
-        .from("ipo_listings")
-        .select("total_shares, retail_allocation_percentage")
-        .eq("id", ipoId)
-        .single();
-
-      if (ipoError) throw ipoError;
-
-      const totalAppliedShares = applications?.reduce((sum, app) => sum + app.shares_applied, 0) || 0;
-      const availableShares = ipo.total_shares * (ipo.retail_allocation_percentage / 100);
-
-      return availableShares > 0 ? totalAppliedShares / availableShares : 0;
-    } catch (error) {
-      console.error("Error calculating subscription ratio:", error);
-      return 0;
-    }
+    return {
+      minInvestment,
+      maxInvestment,
+      isValidApplication,
+      lotSize: ipo.minimum_lot_size
+    };
   }
 }
