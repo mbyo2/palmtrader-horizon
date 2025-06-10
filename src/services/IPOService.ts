@@ -1,14 +1,21 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 export interface IPOListing {
   id: string;
   company_name: string;
   symbol: string;
-  issue_date: string;
-  issue_size: number;
-  price_range_low: number;
-  price_range_high: number;
-  status: 'upcoming' | 'live' | 'closed';
+  description: string | null;
+  sector: string | null;
+  issue_price_min: number;
+  issue_price_max: number;
+  total_shares: number;
+  retail_allocation_percentage: number;
+  subscription_start_date: string;
+  subscription_end_date: string;
+  listing_date: string | null;
+  minimum_lot_size: number;
+  status: 'upcoming' | 'open' | 'closed' | 'listed' | 'withdrawn';
   created_at: string;
   updated_at: string;
 }
@@ -20,22 +27,10 @@ export interface IPOApplication {
   shares_applied: number;
   price_per_share: number;
   total_amount: number;
-  amount_invested?: number;
-  application_number?: string;
-  allotted_shares?: number;
-  refund_amount?: number;
-  status: 'pending' | 'confirmed' | 'cancelled' | 'allotted' | 'rejected';
-  payment_status: 'pending' | 'completed' | 'failed' | 'refunded';
+  status: 'pending' | 'approved' | 'rejected' | 'allocated';
+  payment_status: 'pending' | 'completed' | 'refunded';
   created_at: string;
   updated_at: string;
-}
-
-export interface IPOAlert {
-  id: string;
-  user_id: string;
-  ipo_id: string;
-  alert_price: number;
-  created_at: string;
 }
 
 export class IPOService {
@@ -44,7 +39,7 @@ export class IPOService {
       const { data, error } = await supabase
         .from('ipo_listings')
         .select('*')
-        .order('issue_date', { ascending: false });
+        .order('subscription_start_date', { ascending: false });
 
       if (error) {
         console.error('Error fetching IPO listings:', error);
@@ -76,13 +71,7 @@ export class IPOService {
 
       if (error) throw error;
 
-      return {
-        ...data,
-        amount_invested: data.total_amount,
-        application_number: `IPO-${data.id.slice(-8).toUpperCase()}`,
-        allotted_shares: 0,
-        refund_amount: 0
-      } as IPOApplication;
+      return data as IPOApplication;
     } catch (error) {
       console.error('Error applying for IPO:', error);
       throw error;
@@ -99,71 +88,9 @@ export class IPOService {
 
       if (error) throw error;
 
-      return (data || []).map(app => ({
-        ...app,
-        amount_invested: app.total_amount,
-        application_number: `IPO-${app.id.slice(-8).toUpperCase()}`,
-        allotted_shares: 0,
-        refund_amount: 0
-      })) as IPOApplication[];
+      return data as IPOApplication[] || [];
     } catch (error) {
       console.error('Error fetching user IPO applications:', error);
-      throw error;
-    }
-  }
-
-  static async getIPOAlerts(userId: string): Promise<IPOAlert[]> {
-    try {
-      const { data, error } = await supabase
-        .from('ipo_alerts')
-        .select('*')
-        .eq('user_id', userId);
-
-      if (error) {
-        console.error('Error fetching IPO alerts:', error);
-        throw error;
-      }
-
-      return data || [];
-    } catch (error) {
-      console.error('Error in getIPOAlerts:', error);
-      throw error;
-    }
-  }
-
-  static async createIPOAlert(userId: string, ipoId: string, alertPrice: number): Promise<IPOAlert> {
-    try {
-      const { data, error } = await supabase
-        .from('ipo_alerts')
-        .insert([{ user_id: userId, ipo_id: ipoId, alert_price: alertPrice }])
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error creating IPO alert:', error);
-        throw error;
-      }
-
-      return data as IPOAlert;
-    } catch (error) {
-      console.error('Error in createIPOAlert:', error);
-      throw error;
-    }
-  }
-
-  static async deleteIPOAlert(alertId: string): Promise<void> {
-    try {
-      const { error } = await supabase
-        .from('ipo_alerts')
-        .delete()
-        .eq('id', alertId);
-
-      if (error) {
-        console.error('Error deleting IPO alert:', error);
-        throw error;
-      }
-    } catch (error) {
-      console.error('Error in deleteIPOAlert:', error);
       throw error;
     }
   }
