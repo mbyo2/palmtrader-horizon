@@ -217,21 +217,28 @@ export class SocialTradingService {
         userLikes = likes?.map(like => like.comment_id) || [];
       }
 
-      return (data || []).map(comment => ({
-        id: comment.id,
-        user_id: comment.user_id,
-        content: comment.content,
-        symbol: comment.symbol,
-        parent_id: comment.parent_id,
-        created_at: comment.created_at,
-        updated_at: comment.updated_at,
-        likes_count: comment.comment_likes?.[0]?.count || 0,
-        user_liked: userLikes.includes(comment.id),
-        user_profile: comment.user_profiles?.[0] ? {
-          display_name: comment.user_profiles[0].display_name || '',
-          username: comment.user_profiles[0].username || ''
-        } : null
-      })) as SocialComment[];
+      return (data || []).map(comment => {
+        // Safely access user profile data
+        const userProfile = Array.isArray(comment.user_profiles) && comment.user_profiles.length > 0 
+          ? comment.user_profiles[0] 
+          : null;
+
+        return {
+          id: comment.id,
+          user_id: comment.user_id,
+          content: comment.content,
+          symbol: comment.symbol,
+          parent_id: comment.parent_id,
+          created_at: comment.created_at,
+          updated_at: comment.updated_at,
+          likes_count: comment.comment_likes?.[0]?.count || 0,
+          user_liked: userLikes.includes(comment.id),
+          user_profile: userProfile ? {
+            display_name: userProfile.display_name || '',
+            username: userProfile.username || ''
+          } : null
+        };
+      }) as SocialComment[];
     } catch (error) {
       console.error("Error fetching social comments:", error);
       return [];
