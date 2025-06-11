@@ -111,7 +111,7 @@ class PushNotificationService {
         .from('push_subscriptions')
         .upsert({
           user_id: session.session.user.id,
-          subscription_data: subscriptionData,
+          subscription_data: subscriptionData as any,
           is_active: true
         }, {
           onConflict: 'user_id'
