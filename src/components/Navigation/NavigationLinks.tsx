@@ -1,6 +1,6 @@
 
 import { Link } from "react-router-dom";
-import { BarChart3, Activity, TrendingUp, DollarSign } from "lucide-react";
+import { BarChart3, Activity, TrendingUp, DollarSign, Settings } from "lucide-react";
 
 interface NavigationLinksProps {
   onClick?: () => void;
@@ -13,6 +13,7 @@ export const NavigationLinks = ({ onClick }: NavigationLinksProps) => {
     { to: "/portfolio", label: "Portfolio", icon: <TrendingUp className="h-4 w-4 mr-2" /> },
     { to: "/watchlist", label: "Watchlist", icon: <DollarSign className="h-4 w-4 mr-2" /> },
     { to: "/ipo", label: "IPO", icon: <BarChart3 className="h-4 w-4 mr-2" /> },
+    { to: "/pwa-settings", label: "Notifications", icon: <Settings className="h-4 w-4 mr-2" /> },
   ];
 
   return (

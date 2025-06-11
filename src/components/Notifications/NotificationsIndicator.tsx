@@ -1,28 +1,51 @@
 
 import React from 'react';
 import { useNotifications } from './NotificationsProvider';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
-import { Bell, BellDot } from 'lucide-react';
+import { Bell, BellDot, BellOff } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 
 const NotificationsIndicator: React.FC = () => {
   const { notifications, unreadCount, markAsRead, markAllAsRead, clearNotifications } = useNotifications();
+  const { isSupported, permission, isSubscribed } = usePushNotifications();
 
-  // Function to render notification icon based on unread count
+  // Function to render notification icon based on status and unread count
   const renderNotificationIcon = () => {
+    // Show different states based on push notification status
+    if (!isSupported || permission === 'denied') {
+      return (
+        <div className="relative">
+          <BellOff className="h-5 w-5 text-muted-foreground" />
+        </div>
+      );
+    }
+
     if (unreadCount > 0) {
       return (
         <div className="relative">
           <BellDot className="h-5 w-5" />
-          <span className="absolute -top-1 -right-1 rounded-full bg-red-500 text-white text-xs font-bold px-1 min-w-[1.2rem] text-center">
+          <Badge 
+            variant="destructive" 
+            className="absolute -top-1 -right-1 rounded-full px-1 min-w-[1.2rem] h-5 text-xs font-bold flex items-center justify-center"
+          >
             {unreadCount > 99 ? '99+' : unreadCount}
-          </span>
+          </Badge>
         </div>
       );
     }
-    return <Bell className="h-5 w-5" />;
+
+    return (
+      <div className="relative">
+        <Bell className="h-5 w-5" />
+        {isSubscribed && (
+          <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full" />
+        )}
+      </div>
+    );
   };
 
   // Get notification icon color based on type
@@ -39,6 +62,19 @@ const NotificationsIndicator: React.FC = () => {
     }
   };
 
+  const getStatusText = () => {
+    if (!isSupported) return 'Not supported';
+    if (permission === 'denied') return 'Blocked';
+    if (!isSubscribed) return 'Disabled';
+    return 'Active';
+  };
+
+  const getStatusColor = () => {
+    if (!isSupported || permission === 'denied') return 'destructive';
+    if (!isSubscribed) return 'secondary';
+    return 'default';
+  };
+
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -47,8 +83,13 @@ const NotificationsIndicator: React.FC = () => {
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-80 p-0" align="end">
-        <div className="flex items-center justify-between p-2 border-b">
-          <h4 className="font-semibold">Notifications</h4>
+        <div className="flex items-center justify-between p-3 border-b">
+          <div className="flex items-center gap-2">
+            <h4 className="font-semibold">Notifications</h4>
+            <Badge variant={getStatusColor()} className="text-xs">
+              {getStatusText()}
+            </Badge>
+          </div>
           <div className="flex space-x-1">
             <Button 
               onClick={markAllAsRead} 
@@ -74,7 +115,9 @@ const NotificationsIndicator: React.FC = () => {
         <ScrollArea className="h-[300px]">
           {notifications.length === 0 ? (
             <div className="p-4 text-center text-muted-foreground">
-              No notifications yet
+              <Bell className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p>No notifications yet</p>
+              <p className="text-xs mt-1">You'll see important updates here</p>
             </div>
           ) : (
             <div className="flex flex-col">
@@ -93,11 +136,32 @@ const NotificationsIndicator: React.FC = () => {
                     </span>
                   </div>
                   <p className="text-sm text-muted-foreground">{notification.message}</p>
+                  {!notification.isRead && (
+                    <div className="w-2 h-2 bg-primary rounded-full mt-2" />
+                  )}
                 </div>
               ))}
             </div>
           )}
         </ScrollArea>
+
+        {(!isSupported || permission === 'denied' || !isSubscribed) && (
+          <div className="p-3 border-t bg-muted/30">
+            <p className="text-xs text-muted-foreground mb-2">
+              {!isSupported 
+                ? 'Your browser doesn\'t support push notifications'
+                : permission === 'denied'
+                ? 'Notifications are blocked. Enable them in your browser settings.'
+                : 'Enable push notifications for real-time updates'
+              }
+            </p>
+            {isSupported && permission !== 'denied' && (
+              <Button size="sm" variant="outline" className="w-full text-xs">
+                Enable Notifications
+              </Button>
+            )}
+          </div>
+        )}
       </PopoverContent>
     </Popover>
   );

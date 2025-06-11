@@ -14,6 +14,7 @@ import { LoadingSpinner } from "./components/ui/loading-spinner";
 import ErrorPage from "./components/ErrorPage";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import InstallPrompt from "./components/PWA/InstallPrompt";
 
 // Lazy-loaded Pages
 const Index = lazy(() => import('./pages/Index'));
@@ -119,6 +120,7 @@ function App() {
                   <OrderProcessorInitializer />
                 </main>
                 <Footer />
+                <InstallPrompt />
               </div>
             </AccessibilityProvider>
           </NotificationsProvider>

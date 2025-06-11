@@ -89,42 +89,40 @@ const NotificationTriggers = () => {
         )
         .subscribe();
 
-      // Listen for portfolio updates (significant changes)
+      // Listen for portfolio updates
       const portfolioChannel = supabase
         .channel('portfolio_notifications')
         .on(
           'postgres_changes',
           {
-            event: '*',
+            event: 'INSERT',
             schema: 'public',
             table: 'portfolio',
             filter: `user_id=eq.${session.session.user.id}`,
           },
           async (payload) => {
-            if (payload.eventType === 'INSERT' && payload.new) {
-              const position = payload.new;
-              console.log('New portfolio position, sending notification:', position);
-              
-              try {
-                await pushNotificationService.sendPushNotification(
-                  session.session!.user.id,
-                  {
-                    title: `New Position: ${position.symbol}`,
-                    body: `You now hold ${position.shares} shares of ${position.symbol} at an average price of $${position.average_price}`,
-                    icon: '/icon-192.png',
-                    tag: 'portfolio-update',
-                    url: '/portfolio',
-                    data: {
-                      type: 'portfolio-update',
-                      symbol: position.symbol,
-                      shares: position.shares,
-                      averagePrice: position.average_price
-                    }
+            const position = payload.new;
+            console.log('New portfolio position, sending notification:', position);
+            
+            try {
+              await pushNotificationService.sendPushNotification(
+                session.session!.user.id,
+                {
+                  title: `New Position: ${position.symbol}`,
+                  body: `You now hold ${position.shares} shares of ${position.symbol} at an average price of $${position.average_price}`,
+                  icon: '/icon-192.png',
+                  tag: 'portfolio-update',
+                  url: '/portfolio',
+                  data: {
+                    type: 'portfolio-update',
+                    symbol: position.symbol,
+                    shares: position.shares,
+                    averagePrice: position.average_price
                   }
-                );
-              } catch (error) {
-                console.error('Failed to send portfolio update notification:', error);
-              }
+                }
+              );
+            } catch (error) {
+              console.error('Failed to send portfolio update notification:', error);
             }
           }
         )
@@ -140,7 +138,7 @@ const NotificationTriggers = () => {
     setupNotificationTriggers();
   }, []);
 
-  return null; // This component doesn't render anything
+  return null;
 };
 
 export default NotificationTriggers;

@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 export interface PushSubscriptionData {
@@ -26,6 +25,8 @@ export interface NotificationPayload {
 
 class PushNotificationService {
   private vapidPublicKey = 'BKuM-FH8VrLJB6q6eT1fLbYkP-9X7ZrI_Q6FQNrXBrNgd6E_Mm_N3tBrQ7gJ8VLx9_K6dFr7gNm1_7fJ9R0h8Qw';
+  private retryAttempts = 3;
+  private retryDelay = 1000; // 1 second
 
   async requestPermission(): Promise<NotificationPermission> {
     if (!('Notification' in window)) {
@@ -93,61 +94,85 @@ class PushNotificationService {
   }
 
   private async savePushSubscription(subscription: PushSubscription): Promise<void> {
-    try {
-      const { data: session } = await supabase.auth.getSession();
-      if (!session.session) {
-        throw new Error('User not authenticated');
-      }
-
-      const subscriptionData: PushSubscriptionData = {
-        endpoint: subscription.endpoint,
-        keys: {
-          p256dh: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('p256dh')!))),
-          auth: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('auth')!)))
+    let attempts = 0;
+    
+    while (attempts < this.retryAttempts) {
+      try {
+        const { data: session } = await supabase.auth.getSession();
+        if (!session.session) {
+          throw new Error('User not authenticated');
         }
-      };
 
-      const { error } = await supabase
-        .from('push_subscriptions')
-        .upsert({
-          user_id: session.session.user.id,
-          subscription_data: subscriptionData as any,
-          is_active: true
-        }, {
-          onConflict: 'user_id'
-        });
+        const subscriptionData: PushSubscriptionData = {
+          endpoint: subscription.endpoint,
+          keys: {
+            p256dh: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('p256dh')!))),
+            auth: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('auth')!)))
+          }
+        };
 
-      if (error) {
-        throw error;
+        const { error } = await supabase
+          .from('push_subscriptions')
+          .upsert({
+            user_id: session.session.user.id,
+            subscription_data: subscriptionData as any,
+            is_active: true
+          }, {
+            onConflict: 'user_id'
+          });
+
+        if (error) {
+          throw error;
+        }
+
+        console.log('Push subscription saved to database');
+        return;
+      } catch (error) {
+        attempts++;
+        console.error(`Error saving push subscription (attempt ${attempts}):`, error);
+        
+        if (attempts >= this.retryAttempts) {
+          throw error;
+        }
+        
+        // Wait before retrying
+        await new Promise(resolve => setTimeout(resolve, this.retryDelay * attempts));
       }
-
-      console.log('Push subscription saved to database');
-    } catch (error) {
-      console.error('Error saving push subscription:', error);
-      throw error;
     }
   }
 
   private async removePushSubscription(): Promise<void> {
-    try {
-      const { data: session } = await supabase.auth.getSession();
-      if (!session.session) {
-        throw new Error('User not authenticated');
+    let attempts = 0;
+    
+    while (attempts < this.retryAttempts) {
+      try {
+        const { data: session } = await supabase.auth.getSession();
+        if (!session.session) {
+          throw new Error('User not authenticated');
+        }
+
+        const { error } = await supabase
+          .from('push_subscriptions')
+          .update({ is_active: false })
+          .eq('user_id', session.session.user.id);
+
+        if (error) {
+          throw error;
+        }
+
+        console.log('Push subscription removed from database');
+        return;
+      } catch (error) {
+        attempts++;
+        console.error(`Error removing push subscription (attempt ${attempts}):`, error);
+        
+        if (attempts >= this.retryAttempts) {
+          throw error;
+        }
+        
+        // Wait before retrying
+        await new Promise(resolve => setTimeout(resolve, this.retryDelay * attempts));
       }
-
-      const { error } = await supabase
-        .from('push_subscriptions')
-        .update({ is_active: false })
-        .eq('user_id', session.session.user.id);
-
-      if (error) {
-        throw error;
-      }
-
-      console.log('Push subscription removed from database');
-    } catch (error) {
-      console.error('Error removing push subscription:', error);
-      throw error;
     }
   }
 
@@ -173,53 +198,81 @@ class PushNotificationService {
     }
 
     if (Notification.permission === 'granted') {
-      new Notification(payload.title, {
-        body: payload.body,
-        icon: payload.icon || '/icon-192.png',
-        badge: payload.badge || '/icon-192.png',
-        tag: payload.tag,
-        data: payload.data
-      });
+      try {
+        new Notification(payload.title, {
+          body: payload.body,
+          icon: payload.icon || '/icon-192.png',
+          badge: payload.badge || '/icon-192.png',
+          tag: payload.tag,
+          data: payload.data
+        });
+      } catch (error) {
+        console.error('Error creating local notification:', error);
+      }
     }
   }
 
   async sendPushNotification(userId: string, notification: NotificationPayload): Promise<void> {
-    try {
-      const { error } = await supabase.functions.invoke('send-push-notification', {
-        body: {
-          userId,
-          notification
+    let attempts = 0;
+    
+    while (attempts < this.retryAttempts) {
+      try {
+        const { error } = await supabase.functions.invoke('send-push-notification', {
+          body: {
+            userId,
+            notification
+          }
+        });
+
+        if (error) {
+          throw error;
         }
-      });
 
-      if (error) {
-        throw error;
+        console.log('Push notification sent successfully');
+        return;
+      } catch (error) {
+        attempts++;
+        console.error(`Error sending push notification (attempt ${attempts}):`, error);
+        
+        if (attempts >= this.retryAttempts) {
+          throw error;
+        }
+        
+        // Wait before retrying
+        await new Promise(resolve => setTimeout(resolve, this.retryDelay * attempts));
       }
-
-      console.log('Push notification sent successfully');
-    } catch (error) {
-      console.error('Error sending push notification:', error);
-      throw error;
     }
   }
 
   async sendPushNotificationToMultipleUsers(userIds: string[], notification: NotificationPayload): Promise<void> {
-    try {
-      const { error } = await supabase.functions.invoke('send-push-notification', {
-        body: {
-          userIds,
-          notification
+    let attempts = 0;
+    
+    while (attempts < this.retryAttempts) {
+      try {
+        const { error } = await supabase.functions.invoke('send-push-notification', {
+          body: {
+            userIds,
+            notification
+          }
+        });
+
+        if (error) {
+          throw error;
         }
-      });
 
-      if (error) {
-        throw error;
+        console.log('Push notifications sent successfully');
+        return;
+      } catch (error) {
+        attempts++;
+        console.error(`Error sending push notifications (attempt ${attempts}):`, error);
+        
+        if (attempts >= this.retryAttempts) {
+          throw error;
+        }
+        
+        // Wait before retrying
+        await new Promise(resolve => setTimeout(resolve, this.retryDelay * attempts));
       }
-
-      console.log('Push notifications sent successfully');
-    } catch (error) {
-      console.error('Error sending push notifications:', error);
-      throw error;
     }
   }
 
