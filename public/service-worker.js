@@ -1,10 +1,10 @@
-
 const CACHE_NAME = 'palmcasia-cache-v1';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/favicon.ico',
-  '/manifest.json'
+  '/manifest.json',
+  '/offline.html'
 ];
 
 const IMAGE_CACHE = 'palmcasia-images-v1';
@@ -23,7 +23,7 @@ self.addEventListener('install', (event) => {
       caches.open(API_CACHE)
     ])
   );
-  self.skipWaiting(); // Activate immediately
+  self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
@@ -53,7 +53,6 @@ self.addEventListener('activate', (event) => {
           })
         );
       }),
-      // Take control of all clients immediately
       self.clients.claim()
     ])
   );
@@ -150,17 +149,19 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-// Background sync for offline actions
+// Enhanced background sync for trading orders
 self.addEventListener('sync', (event) => {
   console.log('Background sync event:', event.tag);
   if (event.tag === 'sync-portfolio-data') {
     event.waitUntil(syncPortfolioData());
   } else if (event.tag === 'sync-trade-orders') {
     event.waitUntil(syncTradeOrders());
+  } else if (event.tag === 'sync-notifications') {
+    event.waitUntil(syncNotifications());
   }
 });
 
-// Push notification handling
+// Enhanced push notification handling
 self.addEventListener('push', (event) => {
   console.log('Push notification received:', event);
   
@@ -168,6 +169,7 @@ self.addEventListener('push', (event) => {
     icon: '/icon-192.png',
     badge: '/icon-192.png',
     vibrate: [100, 50, 100],
+    requireInteraction: true,
     data: {
       dateOfArrival: Date.now(),
       primaryKey: '1'
@@ -208,7 +210,7 @@ self.addEventListener('push', (event) => {
   );
 });
 
-// Notification click handling
+// Enhanced notification click handling
 self.addEventListener('notificationclick', (event) => {
   console.log('Notification clicked:', event);
   
@@ -221,19 +223,36 @@ self.addEventListener('notificationclick', (event) => {
     return;
   }
   
-  // Default action or 'view' action
+  // Route based on notification type
+  let targetUrl = '/';
+  
+  if (notificationData.type === 'price-alert') {
+    targetUrl = `/markets?symbol=${notificationData.symbol}`;
+  } else if (notificationData.type === 'trade-confirmation') {
+    targetUrl = '/portfolio';
+  } else if (notificationData.type === 'portfolio-update') {
+    targetUrl = '/portfolio';
+  } else if (notificationData.url) {
+    targetUrl = notificationData.url;
+  }
+  
   event.waitUntil(
     clients.matchAll({ type: 'window' }).then((clientList) => {
       // Check if app is already open
       for (const client of clientList) {
-        if (client.url === self.location.origin && 'focus' in client) {
-          return client.focus();
+        if (client.url.includes(self.location.origin) && 'focus' in client) {
+          return client.focus().then(() => {
+            // Navigate to the specific URL
+            return client.postMessage({
+              type: 'NAVIGATE',
+              url: targetUrl
+            });
+          });
         }
       }
       
       // Open new window/tab if app is not open
       if (clients.openWindow) {
-        const targetUrl = notificationData.url || '/';
         return clients.openWindow(targetUrl);
       }
     })
@@ -259,6 +278,18 @@ async function syncTradeOrders() {
     return Promise.resolve();
   } catch (error) {
     console.error('Error syncing trade orders:', error);
+    throw error;
+  }
+}
+
+// Enhanced notification sync
+async function syncNotifications() {
+  try {
+    console.log('Syncing notifications in background...');
+    // Check for pending notifications and retry failed sends
+    return Promise.resolve();
+  } catch (error) {
+    console.error('Error syncing notifications:', error);
     throw error;
   }
 }

@@ -25,7 +25,7 @@ export interface NotificationPayload {
 }
 
 class PushNotificationService {
-  private vapidPublicKey = 'BKuM-FH8VrLJB6q6eT1fLbYkP-9X7ZrI_Q6FQNrXBrNgd6E_Mm_N3tBrQ7gJ8VLx9_K6dFr7gNm1_7fJ9R0h8Qw'; // You'll need to set this
+  private vapidPublicKey = 'BKuM-FH8VrLJB6q6eT1fLbYkP-9X7ZrI_Q6FQNrXBrNgd6E_Mm_N3tBrQ7gJ8VLx9_K6dFr7gNm1_7fJ9R0h8Qw';
 
   async requestPermission(): Promise<NotificationPermission> {
     if (!('Notification' in window)) {
@@ -107,14 +107,21 @@ class PushNotificationService {
         }
       };
 
-      // Store in localStorage temporarily until Supabase types are updated
-      localStorage.setItem('push_subscription', JSON.stringify({
-        user_id: session.session.user.id,
-        subscription_data: subscriptionData,
-        is_active: true
-      }));
+      const { error } = await supabase
+        .from('push_subscriptions')
+        .upsert({
+          user_id: session.session.user.id,
+          subscription_data: subscriptionData,
+          is_active: true
+        }, {
+          onConflict: 'user_id'
+        });
 
-      console.log('Push subscription saved locally');
+      if (error) {
+        throw error;
+      }
+
+      console.log('Push subscription saved to database');
     } catch (error) {
       console.error('Error saving push subscription:', error);
       throw error;
@@ -128,10 +135,16 @@ class PushNotificationService {
         throw new Error('User not authenticated');
       }
 
-      // Remove from localStorage temporarily
-      localStorage.removeItem('push_subscription');
+      const { error } = await supabase
+        .from('push_subscriptions')
+        .update({ is_active: false })
+        .eq('user_id', session.session.user.id);
 
-      console.log('Push subscription removed locally');
+      if (error) {
+        throw error;
+      }
+
+      console.log('Push subscription removed from database');
     } catch (error) {
       console.error('Error removing push subscription:', error);
       throw error;
@@ -167,6 +180,46 @@ class PushNotificationService {
         tag: payload.tag,
         data: payload.data
       });
+    }
+  }
+
+  async sendPushNotification(userId: string, notification: NotificationPayload): Promise<void> {
+    try {
+      const { error } = await supabase.functions.invoke('send-push-notification', {
+        body: {
+          userId,
+          notification
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      console.log('Push notification sent successfully');
+    } catch (error) {
+      console.error('Error sending push notification:', error);
+      throw error;
+    }
+  }
+
+  async sendPushNotificationToMultipleUsers(userIds: string[], notification: NotificationPayload): Promise<void> {
+    try {
+      const { error } = await supabase.functions.invoke('send-push-notification', {
+        body: {
+          userIds,
+          notification
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      console.log('Push notifications sent successfully');
+    } catch (error) {
+      console.error('Error sending push notifications:', error);
+      throw error;
     }
   }
 

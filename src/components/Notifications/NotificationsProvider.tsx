@@ -1,9 +1,8 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { pushNotificationService } from '@/services/PushNotificationService';
-import { Bell, BellDot, AlertCircle, ArrowUp, ArrowDown, DollarSign } from "lucide-react";
+import NotificationTriggers from './NotificationTriggers';
 
 // Define notification types
 export type NotificationType = 'price-alert' | 'trade-confirmation' | 'system';
@@ -249,7 +248,10 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
 
   return (
     <NotificationsContext.Provider value={contextValue}>
+      <NotificationTriggers />
       {children}
     </NotificationsContext.Provider>
   );
 };
+
+export default NotificationsProvider;
