@@ -76,7 +76,7 @@ const NotificationTriggers = () => {
                     type: 'trade-confirmation',
                     tradeId: trade.id,
                     symbol: trade.symbol,
-                    type: trade.type,
+                    tradeType: trade.type,
                     shares: trade.shares,
                     price: trade.price
                   }
