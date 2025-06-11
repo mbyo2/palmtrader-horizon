@@ -1,3 +1,4 @@
+
 import React, { Suspense, useState, useEffect, lazy } from 'react';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
@@ -5,6 +6,7 @@ import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { NotificationsProvider } from "./components/Notifications/NotificationsProvider";
+import { AuthProvider } from "./hooks/useAuth";
 import EnhancedErrorBoundary from "./components/EnhancedErrorBoundary";
 import { setupGlobalErrorHandlers } from "./utils/errorHandling";
 import OrderProcessorInitializer from "./components/OrderProcessorInitializer";
@@ -83,47 +85,49 @@ function App() {
     <BrowserRouter>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <NotificationsProvider>
-            <AccessibilityProvider>
-              <div className="min-h-screen flex flex-col">
-                <Navbar />
-                <main id="main" className="flex-1 w-full max-w-[2000px] mx-auto px-4 sm:px-6 lg:px-8" tabIndex={-1}>
-                  <Toaster />
-                  <Sonner />
-                  <Suspense fallback={
-                    <div className="container py-6 flex items-center justify-center min-h-[60vh]" aria-live="polite">
-                      <LoadingSpinner size="lg" />
-                    </div>
-                  }>
-                    <EnhancedErrorBoundary>
-                      <Routes>
-                        <Route path="/" element={<Index />} />
-                        <Route path="/auth" element={<Auth />} />
-                        <Route path="/markets" element={<Markets />} />
-                        <Route path="/watchlist" element={<Watchlist />} />
-                        <Route path="/portfolio" element={<Portfolio />} />
-                        <Route path="/ipo" element={<IPO />} />
-                        <Route path="/ipo/:id" element={<IPODetails />} />
-                        <Route path="/crypto" element={<Crypto />} />
-                        <Route path="/onboarding" element={<Onboarding />} />
-                        <Route path="/settings" element={<AccountSettings />} />
-                        <Route path="/banking" element={<Banking />} />
-                        <Route path="/404" element={<ErrorPage statusCode={404} title="Page Not Found" description="The page you are looking for doesn't exist or has been moved." />} />
-                        <Route path="/500" element={<ErrorPage statusCode={500} title="Server Error" description="We're experiencing some issues. Please try again later." />} />
-                        <Route path="/403" element={<ErrorPage statusCode={403} title="Access Denied" description="You don't have permission to access this resource." />} />
-                        <Route path="/privacy" element={<PrivacyPolicy />} />
-                        <Route path="/pwa-settings" element={<PWASettings />} />
-                        <Route path="*" element={<NotFound />} />
-                      </Routes>
-                    </EnhancedErrorBoundary>
-                  </Suspense>
-                  <OrderProcessorInitializer />
-                </main>
-                <Footer />
-                <InstallPrompt />
-              </div>
-            </AccessibilityProvider>
-          </NotificationsProvider>
+          <AuthProvider>
+            <NotificationsProvider>
+              <AccessibilityProvider>
+                <div className="min-h-screen flex flex-col">
+                  <Navbar />
+                  <main id="main" className="flex-1 w-full max-w-[2000px] mx-auto px-4 sm:px-6 lg:px-8" tabIndex={-1}>
+                    <Toaster />
+                    <Sonner />
+                    <Suspense fallback={
+                      <div className="container py-6 flex items-center justify-center min-h-[60vh]" aria-live="polite">
+                        <LoadingSpinner size="lg" />
+                      </div>
+                    }>
+                      <EnhancedErrorBoundary>
+                        <Routes>
+                          <Route path="/" element={<Index />} />
+                          <Route path="/auth" element={<Auth />} />
+                          <Route path="/markets" element={<Markets />} />
+                          <Route path="/watchlist" element={<Watchlist />} />
+                          <Route path="/portfolio" element={<Portfolio />} />
+                          <Route path="/ipo" element={<IPO />} />
+                          <Route path="/ipo/:id" element={<IPODetails />} />
+                          <Route path="/crypto" element={<Crypto />} />
+                          <Route path="/onboarding" element={<Onboarding />} />
+                          <Route path="/settings" element={<AccountSettings />} />
+                          <Route path="/banking" element={<Banking />} />
+                          <Route path="/404" element={<ErrorPage statusCode={404} title="Page Not Found" description="The page you are looking for doesn't exist or has been moved." />} />
+                          <Route path="/500" element={<ErrorPage statusCode={500} title="Server Error" description="We're experiencing some issues. Please try again later." />} />
+                          <Route path="/403" element={<ErrorPage statusCode={403} title="Access Denied" description="You don't have permission to access this resource." />} />
+                          <Route path="/privacy" element={<PrivacyPolicy />} />
+                          <Route path="/pwa-settings" element={<PWASettings />} />
+                          <Route path="*" element={<NotFound />} />
+                        </Routes>
+                      </EnhancedErrorBoundary>
+                    </Suspense>
+                    <OrderProcessorInitializer />
+                  </main>
+                  <Footer />
+                  <InstallPrompt />
+                </div>
+              </AccessibilityProvider>
+            </NotificationsProvider>
+          </AuthProvider>
         </ThemeProvider>
       </QueryClientProvider>
     </BrowserRouter>
