@@ -976,6 +976,33 @@ export type Database = {
         }
         Relationships: []
       }
+      push_subscriptions: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          subscription_data: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          subscription_data: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          subscription_data?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       recurring_investments: {
         Row: {
           amount: number
