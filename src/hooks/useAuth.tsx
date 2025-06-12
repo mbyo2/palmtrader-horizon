@@ -5,18 +5,34 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
 
+interface AccountDetails {
+  role: 'basic' | 'premium' | 'admin';
+  account_status: 'pending' | 'active' | 'restricted' | 'suspended';
+  kyc_status: 'not_started' | 'pending' | 'approved' | 'rejected';
+  onboarding_completed?: boolean;
+  first_name?: string;
+  last_name?: string;
+  phone_number?: string;
+}
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  accountDetails: AccountDetails | null;
   signOut: () => Promise<void>;
+  isAdmin: () => boolean;
+  requireAuth: (callback: () => void) => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   session: null,
   loading: true,
+  accountDetails: null,
   signOut: async () => {},
+  isAdmin: () => false,
+  requireAuth: () => {},
 });
 
 export const useAuth = () => {
@@ -34,14 +50,34 @@ interface AuthProviderProps {
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
+  const [accountDetails, setAccountDetails] = useState<AccountDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+
+  const fetchAccountDetails = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('account_details')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) throw error;
+      setAccountDetails(data);
+    } catch (error) {
+      console.error('Error fetching account details:', error);
+      setAccountDetails(null);
+    }
+  };
 
   useEffect(() => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
+      if (session?.user) {
+        fetchAccountDetails(session.user.id);
+      }
       setLoading(false);
     });
 
@@ -51,6 +87,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
+      if (session?.user) {
+        setTimeout(() => {
+          fetchAccountDetails(session.user.id);
+        }, 0);
+      } else {
+        setAccountDetails(null);
+      }
       setLoading(false);
     });
 
@@ -60,6 +103,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const signOut = async () => {
     try {
       await supabase.auth.signOut();
+      setAccountDetails(null);
       navigate('/');
       toast({
         title: 'Signed out successfully',
@@ -75,8 +119,33 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
+  const isAdmin = () => {
+    return accountDetails?.role === 'admin';
+  };
+
+  const requireAuth = (callback: () => void) => {
+    if (!user) {
+      toast({
+        title: 'Authentication required',
+        description: 'Please sign in to continue.',
+        variant: 'destructive',
+      });
+      navigate('/auth');
+      return;
+    }
+    callback();
+  };
+
   return (
-    <AuthContext.Provider value={{ user, session, loading, signOut }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      session, 
+      loading, 
+      accountDetails,
+      signOut, 
+      isAdmin,
+      requireAuth
+    }}>
       {children}
     </AuthContext.Provider>
   );
