@@ -103,12 +103,13 @@ export class MobileMoneyService {
         return { success: false, error: "Invalid phone number format" };
       }
 
-      // Check if account already exists using raw SQL query
+      // Check if account already exists
       const { data: existingAccount } = await supabase
-        .rpc('exec_sql', {
-          sql: `SELECT id FROM mobile_money_accounts WHERE user_id = $1 AND phone_number = $2 AND provider = $3`,
-          params: [userId, accountData.phoneNumber, accountData.provider]
-        })
+        .from("mobile_money_accounts")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("phone_number", accountData.phoneNumber)
+        .eq("provider", accountData.provider)
         .single();
 
       if (existingAccount) {
@@ -121,14 +122,18 @@ export class MobileMoneyService {
         return { success: false, error: verification.error };
       }
 
-      // Insert new account using raw SQL
+      // Insert new account
       const { data, error } = await supabase
-        .rpc('exec_sql', {
-          sql: `INSERT INTO mobile_money_accounts (user_id, provider, phone_number, account_name, is_verified, is_primary) 
-                VALUES ($1, $2, $3, $4, $5, $6) 
-                RETURNING id`,
-          params: [userId, accountData.provider, accountData.phoneNumber, accountData.accountName, verification.verified, false]
+        .from("mobile_money_accounts")
+        .insert({
+          user_id: userId,
+          provider: accountData.provider,
+          phone_number: accountData.phoneNumber,
+          account_name: accountData.accountName,
+          is_verified: verification.verified,
+          is_primary: false
         })
+        .select()
         .single();
 
       if (error) throw error;
@@ -136,31 +141,10 @@ export class MobileMoneyService {
       return { success: true, accountId: data.id };
     } catch (error) {
       console.error("Error adding mobile money account:", error);
-      
-      // Try alternative approach using regular insert with type assertion
-      try {
-        const { data, error } = await (supabase as any)
-          .from("mobile_money_accounts")
-          .insert({
-            user_id: userId,
-            provider: accountData.provider,
-            phone_number: accountData.phoneNumber,
-            account_name: accountData.accountName,
-            is_verified: true,
-            is_primary: false
-          })
-          .select()
-          .single();
-
-        if (error) throw error;
-        return { success: true, accountId: data.id };
-      } catch (fallbackError) {
-        console.error("Fallback error:", fallbackError);
-        return {
-          success: false,
-          error: "Failed to add account"
-        };
-      }
+      return {
+        success: false,
+        error: "Failed to add account"
+      };
     }
   }
 
@@ -172,8 +156,8 @@ export class MobileMoneyService {
     pin?: string;
   }): Promise<{ success: boolean; transactionId?: string; error?: string }> {
     try {
-      // Get account details using type assertion
-      const { data: account, error: accountError } = await (supabase as any)
+      // Get account details
+      const { data: account, error: accountError } = await supabase
         .from("mobile_money_accounts")
         .select("*")
         .eq("id", request.accountId)
@@ -205,8 +189,8 @@ export class MobileMoneyService {
       // Calculate fees
       const fees = request.amount * provider.fees.deposit;
 
-      // Create transaction record using type assertion
-      const { data: transaction, error: txError } = await (supabase as any)
+      // Create transaction record
+      const { data: transaction, error: txError } = await supabase
         .from("mobile_money_transactions")
         .insert({
           user_id: request.userId,
@@ -232,7 +216,7 @@ export class MobileMoneyService {
       });
 
       // Update transaction status
-      await (supabase as any)
+      await supabase
         .from("mobile_money_transactions")
         .update({
           status: providerResult.success ? "processing" : "failed",
@@ -261,8 +245,8 @@ export class MobileMoneyService {
     amount: number;
   }): Promise<{ success: boolean; transactionId?: string; error?: string }> {
     try {
-      // Get account details using type assertion
-      const { data: account, error: accountError } = await (supabase as any)
+      // Get account details
+      const { data: account, error: accountError } = await supabase
         .from("mobile_money_accounts")
         .select("*")
         .eq("id", request.accountId)
@@ -286,8 +270,8 @@ export class MobileMoneyService {
         return { success: false, error: "Insufficient balance" };
       }
 
-      // Create transaction record using type assertion
-      const { data: transaction, error: txError } = await (supabase as any)
+      // Create transaction record
+      const { data: transaction, error: txError } = await supabase
         .from("mobile_money_transactions")
         .insert({
           user_id: request.userId,
@@ -312,7 +296,7 @@ export class MobileMoneyService {
         type: "withdrawal"
       });
 
-      await (supabase as any)
+      await supabase
         .from("mobile_money_transactions")
         .update({
           status: providerResult.success ? "processing" : "failed",
@@ -337,7 +321,7 @@ export class MobileMoneyService {
   // Get user's mobile money accounts
   static async getUserMobileMoneyAccounts(userId: string): Promise<MobileMoneyAccount[]> {
     try {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("mobile_money_accounts")
         .select("*")
         .eq("user_id", userId)
