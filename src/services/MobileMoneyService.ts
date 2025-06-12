@@ -91,6 +91,11 @@ export class MobileMoneyService {
     return this.PROVIDERS.find(p => p.name === name) || null;
   }
 
+  // Helper function to validate and cast provider strings
+  private static isValidProvider(provider: string): provider is MobileMoneyProvider['name'] {
+    return ['MTN_MOBILE_MONEY', 'AIRTEL_MONEY', 'ZAMTEL_KWACHA'].includes(provider);
+  }
+
   // Add mobile money account
   static async addMobileMoneyAccount(userId: string, accountData: {
     provider: MobileMoneyProvider['name'];
@@ -172,9 +177,14 @@ export class MobileMoneyService {
         return { success: false, error: "Account not verified" };
       }
 
+      // Validate and cast provider
+      if (!this.isValidProvider(account.provider)) {
+        return { success: false, error: "Invalid provider" };
+      }
+
       const provider = this.getProvider(account.provider);
       if (!provider) {
-        return { success: false, error: "Invalid provider" };
+        return { success: false, error: "Provider not found" };
       }
 
       // Validate amount limits
@@ -257,9 +267,14 @@ export class MobileMoneyService {
         return { success: false, error: "Mobile money account not found" };
       }
 
+      // Validate and cast provider
+      if (!this.isValidProvider(account.provider)) {
+        return { success: false, error: "Invalid provider" };
+      }
+
       const provider = this.getProvider(account.provider);
       if (!provider) {
-        return { success: false, error: "Invalid provider" };
+        return { success: false, error: "Provider not found" };
       }
 
       // Check user balance
@@ -329,17 +344,19 @@ export class MobileMoneyService {
 
       if (error) throw error;
       
-      // Transform the data to match our interface
-      return (data || []).map((account: any) => ({
-        id: account.id,
-        userId: account.user_id,
-        provider: account.provider,
-        phoneNumber: account.phone_number,
-        accountName: account.account_name,
-        isVerified: account.is_verified,
-        isPrimary: account.is_primary,
-        createdAt: account.created_at
-      }));
+      // Transform the data to match our interface with proper type validation
+      return (data || [])
+        .filter((account: any) => this.isValidProvider(account.provider))
+        .map((account: any) => ({
+          id: account.id,
+          userId: account.user_id,
+          provider: account.provider as MobileMoneyProvider['name'],
+          phoneNumber: account.phone_number,
+          accountName: account.account_name,
+          isVerified: account.is_verified,
+          isPrimary: account.is_primary,
+          createdAt: account.created_at
+        }));
     } catch (error) {
       console.error("Error fetching mobile money accounts:", error);
       return [];
