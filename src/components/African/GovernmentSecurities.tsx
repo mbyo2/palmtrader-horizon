@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { AfricanMarketDataService } from "@/services/AfricanMarketDataService";
 import { CurrencyService } from "@/services/CurrencyService";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -25,6 +24,37 @@ interface GovernmentSecurity {
   lastAuctionDate?: string;
 }
 
+// Mock data service for now
+const fetchGovernmentSecurities = async (): Promise<GovernmentSecurity[]> => {
+  // Simulate API call
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  
+  return [
+    {
+      id: "ZMW-TB-91D",
+      name: "91-Day Treasury Bill",
+      type: "treasury_bill" as const,
+      currency: "ZMW",
+      yield: 12.5,
+      minimumInvestment: 1000,
+      maturityDays: 91,
+      issuer: "Bank of Zambia",
+      lastAuctionDate: "2024-01-15"
+    },
+    {
+      id: "ZMW-GB-5Y",
+      name: "5-Year Government Bond",
+      type: "government_bond" as const,
+      currency: "ZMW",
+      yield: 15.2,
+      minimumInvestment: 5000,
+      maturityYears: 5,
+      issuer: "Ministry of Finance",
+      couponRate: 14.5
+    }
+  ];
+};
+
 const GovernmentSecurities = () => {
   const { user, requireAuth } = useAuth();
   const [securities, setSecurities] = useState<GovernmentSecurity[]>([]);
@@ -34,10 +64,10 @@ const GovernmentSecurities = () => {
   const [isInvesting, setIsInvesting] = useState(false);
 
   useEffect(() => {
-    const fetchSecurities = async () => {
+    const fetchSecuritiesData = async () => {
       setIsLoading(true);
       try {
-        const data = await AfricanMarketDataService.fetchGovernmentSecurities();
+        const data = await fetchGovernmentSecurities();
         setSecurities(data);
       } catch (error) {
         console.error("Error fetching government securities:", error);
@@ -47,7 +77,7 @@ const GovernmentSecurities = () => {
       }
     };
 
-    fetchSecurities();
+    fetchSecuritiesData();
   }, []);
 
   const handleInvest = async () => {

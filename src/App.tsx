@@ -22,6 +22,7 @@ import InstallPrompt from "./components/PWA/InstallPrompt";
 const Index = lazy(() => import('./pages/Index'));
 const Auth = lazy(() => import('./pages/Auth'));
 const Markets = lazy(() => import('./pages/Markets'));
+const AfricanMarkets = lazy(() => import('./pages/AfricanMarkets'));
 const Watchlist = lazy(() => import('./pages/Watchlist'));
 const Portfolio = lazy(() => import('./pages/Portfolio'));
 const IPO = lazy(() => import('./pages/IPO'));

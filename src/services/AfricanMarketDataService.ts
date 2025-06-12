@@ -81,12 +81,10 @@ export class AfricanMarketDataService {
         }
       ];
 
-      // Store in database for caching
-      await this.cacheMarketData(mockLuSEData);
       return mockLuSEData;
     } catch (error) {
       console.error("Error fetching LuSE data:", error);
-      return this.getCachedAfricanStocks("LuSE");
+      return [];
     }
   }
 
@@ -123,11 +121,10 @@ export class AfricanMarketDataService {
         }
       ];
 
-      await this.cacheCommodityData(mockCommodityData);
       return mockCommodityData;
     } catch (error) {
       console.error("Error fetching commodity data:", error);
-      return this.getCachedCommodityData();
+      return [];
     }
   }
 
@@ -161,11 +158,10 @@ export class AfricanMarketDataService {
         }
       ];
 
-      await this.cacheCurrencyRates(mockRates);
       return mockRates;
     } catch (error) {
       console.error("Error fetching currency rates:", error);
-      return this.getCachedCurrencyRates();
+      return [];
     }
   }
 
@@ -197,132 +193,9 @@ export class AfricanMarketDataService {
         }
       ];
 
-      await this.cacheGovernmentSecurities(mockSecurities);
       return mockSecurities;
     } catch (error) {
       console.error("Error fetching government securities:", error);
-      return [];
-    }
-  }
-
-  // Helper methods for caching
-  private static async cacheMarketData(data: AfricanMarketData[]) {
-    try {
-      const { error } = await supabase
-        .from("african_market_data")
-        .upsert(data.map(item => ({
-          symbol: item.symbol,
-          name: item.name,
-          price: item.price,
-          currency: item.currency,
-          change_amount: item.change,
-          change_percent: item.changePercent,
-          volume: item.volume,
-          market_cap: item.marketCap,
-          exchange: item.exchange,
-          sector: item.sector,
-          last_updated: item.lastUpdated
-        })));
-
-      if (error) throw error;
-    } catch (error) {
-      console.error("Error caching market data:", error);
-    }
-  }
-
-  private static async cacheCommodityData(data: CommodityPrice[]) {
-    try {
-      const { error } = await supabase
-        .from("commodity_prices")
-        .upsert(data.map(item => ({
-          commodity: item.commodity,
-          price: item.price,
-          currency: item.currency,
-          unit: item.unit,
-          change_amount: item.change,
-          change_percent: item.changePercent,
-          last_updated: item.lastUpdated
-        })));
-
-      if (error) throw error;
-    } catch (error) {
-      console.error("Error caching commodity data:", error);
-    }
-  }
-
-  private static async cacheCurrencyRates(data: CurrencyRate[]) {
-    try {
-      const { error } = await supabase
-        .from("currency_rates")
-        .upsert(data.map(item => ({
-          base_currency: item.baseCurrency,
-          target_currency: item.targetCurrency,
-          rate: item.rate,
-          change_amount: item.change,
-          change_percent: item.changePercent,
-          last_updated: item.lastUpdated
-        })));
-
-      if (error) throw error;
-    } catch (error) {
-      console.error("Error caching currency rates:", error);
-    }
-  }
-
-  private static async cacheGovernmentSecurities(data: any[]) {
-    try {
-      const { error } = await supabase
-        .from("government_securities")
-        .upsert(data);
-
-      if (error) throw error;
-    } catch (error) {
-      console.error("Error caching government securities:", error);
-    }
-  }
-
-  private static async getCachedAfricanStocks(exchange: string): Promise<AfricanMarketData[]> {
-    try {
-      const { data, error } = await supabase
-        .from("african_market_data")
-        .select("*")
-        .eq("exchange", exchange)
-        .order("last_updated", { ascending: false });
-
-      if (error) throw error;
-      return data || [];
-    } catch (error) {
-      console.error("Error fetching cached data:", error);
-      return [];
-    }
-  }
-
-  private static async getCachedCommodityData(): Promise<CommodityPrice[]> {
-    try {
-      const { data, error } = await supabase
-        .from("commodity_prices")
-        .select("*")
-        .order("last_updated", { ascending: false });
-
-      if (error) throw error;
-      return data || [];
-    } catch (error) {
-      console.error("Error fetching cached commodity data:", error);
-      return [];
-    }
-  }
-
-  private static async getCachedCurrencyRates(): Promise<CurrencyRate[]> {
-    try {
-      const { data, error } = await supabase
-        .from("currency_rates")
-        .select("*")
-        .order("last_updated", { ascending: false });
-
-      if (error) throw error;
-      return data || [];
-    } catch (error) {
-      console.error("Error fetching cached currency rates:", error);
       return [];
     }
   }

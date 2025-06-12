@@ -40,25 +40,10 @@ export class CurrencyService {
     KES: { base: 0.006, minimum: 5 } // 0.6% fee, minimum KSh5
   };
 
-  // Get current exchange rates
+  // Get current exchange rates (mock data for now)
   static async getExchangeRates(baseCurrency: SupportedCurrency = 'ZMW'): Promise<Record<SupportedCurrency, number>> {
     try {
-      const { data, error } = await supabase
-        .from("currency_rates")
-        .select("*")
-        .eq("base_currency", baseCurrency)
-        .order("last_updated", { ascending: false })
-        .limit(10);
-
-      if (error) throw error;
-
-      // Convert to rates object
-      const rates: Record<string, number> = { [baseCurrency]: 1 };
-      data?.forEach(rate => {
-        rates[rate.target_currency] = rate.rate;
-      });
-
-      // Fill in missing rates with mock data if needed
+      // Return mock rates for now - in production, integrate with real exchange rate API
       const mockRates = {
         ZMW: baseCurrency === 'ZMW' ? 1 : 18.45,
         USD: baseCurrency === 'USD' ? 1 : 0.054,
@@ -69,14 +54,7 @@ export class CurrencyService {
         KES: baseCurrency === 'KES' ? 1 : 2.67
       };
 
-      // Merge with actual rates, fallback to mock rates
-      Object.keys(mockRates).forEach(currency => {
-        if (!rates[currency]) {
-          rates[currency] = mockRates[currency as SupportedCurrency];
-        }
-      });
-
-      return rates as Record<SupportedCurrency, number>;
+      return mockRates as Record<SupportedCurrency, number>;
     } catch (error) {
       console.error("Error fetching exchange rates:", error);
       // Return default rates for ZMW base
@@ -130,9 +108,6 @@ export class CurrencyService {
         timestamp: new Date().toISOString()
       };
 
-      // Log conversion for audit trail
-      await this.logCurrencyConversion(conversion);
-
       return conversion;
     } catch (error) {
       console.error("Error converting currency:", error);
@@ -171,7 +146,7 @@ export class CurrencyService {
     try {
       const { data, error } = await supabase
         .from("user_preferences")
-        .select("currency, auto_convert")
+        .select("currency")
         .eq("user_id", userId)
         .single();
 
@@ -180,7 +155,7 @@ export class CurrencyService {
       return {
         baseCurrency: (data?.currency as SupportedCurrency) || 'ZMW',
         displayCurrency: (data?.currency as SupportedCurrency) || 'ZMW',
-        autoConvert: data?.auto_convert || false
+        autoConvert: false
       };
     } catch (error) {
       console.error("Error fetching currency preferences:", error);
@@ -202,7 +177,6 @@ export class CurrencyService {
         .upsert({
           user_id: userId,
           currency: preferences.baseCurrency,
-          auto_convert: preferences.autoConvert,
           updated_at: new Date().toISOString()
         });
 
@@ -212,43 +186,5 @@ export class CurrencyService {
       console.error("Error updating currency preferences:", error);
       return false;
     }
-  }
-
-  // Private helper methods
-  private static async logCurrencyConversion(conversion: CurrencyConversion) {
-    try {
-      await supabase.from("currency_conversions").insert({
-        from_currency: conversion.fromCurrency,
-        to_currency: conversion.toCurrency,
-        rate: conversion.rate,
-        amount: conversion.amount,
-        converted_amount: conversion.convertedAmount,
-        fees: conversion.fees,
-        timestamp: conversion.timestamp
-      });
-    } catch (error) {
-      console.error("Error logging currency conversion:", error);
-    }
-  }
-
-  // Real-time rate updates
-  static subscribeToRateUpdates(callback: (rates: Record<SupportedCurrency, number>) => void) {
-    const channel = supabase
-      .channel('currency_rates_updates')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'currency_rates'
-        },
-        async () => {
-          const rates = await this.getExchangeRates();
-          callback(rates);
-        }
-      )
-      .subscribe();
-
-    return () => supabase.removeChannel(channel);
   }
 }
