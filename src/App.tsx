@@ -103,6 +103,7 @@ function App() {
                           <Route path="/" element={<Index />} />
                           <Route path="/auth" element={<Auth />} />
                           <Route path="/markets" element={<Markets />} />
+                          <Route path="/african-markets" element={<AfricanMarkets />} />
                           <Route path="/watchlist" element={<Watchlist />} />
                           <Route path="/portfolio" element={<Portfolio />} />
                           <Route path="/ipo" element={<IPO />} />
