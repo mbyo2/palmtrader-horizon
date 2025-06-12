@@ -799,6 +799,92 @@ export type Database = {
         }
         Relationships: []
       }
+      mobile_money_accounts: {
+        Row: {
+          account_name: string
+          created_at: string | null
+          id: string
+          is_primary: boolean | null
+          is_verified: boolean | null
+          phone_number: string
+          provider: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          account_name: string
+          created_at?: string | null
+          id?: string
+          is_primary?: boolean | null
+          is_verified?: boolean | null
+          phone_number: string
+          provider: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          account_name?: string
+          created_at?: string | null
+          id?: string
+          is_primary?: boolean | null
+          is_verified?: boolean | null
+          phone_number?: string
+          provider?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      mobile_money_transactions: {
+        Row: {
+          account_id: string
+          amount: number
+          completed_at: string | null
+          created_at: string | null
+          currency: string
+          external_reference: string | null
+          fees: number
+          id: string
+          status: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          account_id: string
+          amount: number
+          completed_at?: string | null
+          created_at?: string | null
+          currency?: string
+          external_reference?: string | null
+          fees?: number
+          id?: string
+          status?: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          account_id?: string
+          amount?: number
+          completed_at?: string | null
+          created_at?: string | null
+          currency?: string
+          external_reference?: string | null
+          fees?: number
+          id?: string
+          status?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mobile_money_transactions_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "mobile_money_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       options_trades: {
         Row: {
           contracts: number
