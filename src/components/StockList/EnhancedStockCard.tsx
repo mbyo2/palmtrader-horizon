@@ -27,7 +27,8 @@ const EnhancedStockCard = memo(({ stock }: EnhancedStockCardProps) => {
 
   const currentPrice = priceData?.price?.toFixed(2) || stock.price;
   const changePercent = priceData?.change?.toFixed(2) || parseFloat(stock.change.replace(/[+%]/g, '')) || 0;
-  const changeText = `${changePercent >= 0 ? '+' : ''}${changePercent}%`;
+  const changePercentNum = typeof changePercent === 'string' ? parseFloat(changePercent) : changePercent;
+  const changeText = `${changePercentNum >= 0 ? '+' : ''}${changePercentNum}%`;
   
   return (
     <Card className="card-gradient p-4 hover:shadow-lg transition-all duration-200 m-1">
@@ -57,7 +58,7 @@ const EnhancedStockCard = memo(({ stock }: EnhancedStockCardProps) => {
           }`}>
             ${currentPrice}
           </p>
-          <span className={`text-sm ${changePercent >= 0 ? "text-green-500" : "text-red-500"}`}>
+          <span className={`text-sm ${changePercentNum >= 0 ? "text-green-500" : "text-red-500"}`}>
             {changeText}
           </span>
         </div>
