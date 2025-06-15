@@ -1,177 +1,133 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
-export interface KYCDocument {
-  id: string;
-  documentType: 'passport' | 'drivers_license' | 'national_id' | 'utility_bill' | 'bank_statement';
-  fileName: string;
-  filePath: string;
-  status: 'pending' | 'verified' | 'rejected';
-  uploadedAt: Date;
-  verifiedAt?: Date;
-  rejectionReason?: string;
-}
-
 export interface KYCStatus {
   level: 'none' | 'basic' | 'intermediate' | 'advanced';
   identityVerified: boolean;
   addressVerified: boolean;
   phoneVerified: boolean;
   emailVerified: boolean;
-  documentsRequired: string[];
+  amlStatus: 'pending' | 'approved' | 'rejected';
+  riskScore: number;
   tradingLimits: {
     dailyLimit: number;
     monthlyLimit: number;
     positionLimit: number;
   };
+  lastVerificationDate?: Date;
+  expiryDate?: Date;
 }
 
-export interface IdentityVerificationData {
-  firstName: string;
-  lastName: string;
-  dateOfBirth: string;
-  nationality: string;
-  address: {
-    street: string;
-    city: string;
-    state: string;
-    postalCode: string;
-    country: string;
-  };
-  phoneNumber: string;
-  email: string;
-  occupation: string;
-  sourceOfIncome: string;
-  investmentExperience: 'none' | 'beginner' | 'intermediate' | 'advanced';
-  riskTolerance: 'conservative' | 'moderate' | 'aggressive';
+export interface KYCDocument {
+  id: string;
+  documentType: string;
+  fileName: string;
+  fileSize: number;
+  status: 'pending' | 'approved' | 'rejected';
+  rejectionReason?: string;
+  uploadedAt: Date;
 }
 
 export class KYCVerificationService {
-  static async getKYCStatus(userId: string): Promise<KYCStatus> {
+  static async getKYCStatus(userId: string): Promise<KYCStatus | null> {
     try {
-      const { data: verification, error } = await supabase
+      // Get KYC verification data
+      const { data: kycData, error: kycError } = await supabase
         .from('kyc_verifications')
         .select('*')
         .eq('user_id', userId)
         .single();
 
-      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
-        throw error;
+      // Get account details
+      const { data: accountData, error: accountError } = await supabase
+        .from('account_details')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (kycError && kycError.code !== 'PGRST116') throw kycError;
+      if (accountError) throw accountError;
+
+      // If no KYC record exists, create default status
+      if (!kycData) {
+        return {
+          level: 'none',
+          identityVerified: false,
+          addressVerified: false,
+          phoneVerified: accountData?.is_phone_verified || false,
+          emailVerified: accountData?.is_email_verified || false,
+          amlStatus: 'pending',
+          riskScore: 0,
+          tradingLimits: {
+            dailyLimit: 0,
+            monthlyLimit: 0,
+            positionLimit: 0
+          }
+        };
       }
 
-      if (!verification) {
-        return this.getDefaultKYCStatus();
+      // Determine verification level based on checks
+      let level: KYCStatus['level'] = 'none';
+      if (kycData.identity_verified && kycData.address_verified) {
+        level = 'advanced';
+      } else if (kycData.identity_verified || kycData.address_verified) {
+        level = 'intermediate';
+      } else if (kycData.phone_verified || kycData.email_verified) {
+        level = 'basic';
       }
 
-      const level = this.determineKYCLevel(verification);
-      const tradingLimits = this.getTradingLimits(level);
+      // Set trading limits based on verification level
+      const tradingLimits = this.getTradingLimitsByLevel(level);
 
       return {
         level,
-        identityVerified: verification.identity_verified || false,
-        addressVerified: verification.address_verified || false,
-        phoneVerified: verification.phone_verified || false,
-        emailVerified: verification.email_verified || false,
-        documentsRequired: this.getRequiredDocuments(level),
-        tradingLimits
+        identityVerified: kycData.identity_verified || false,
+        addressVerified: kycData.address_verified || false,
+        phoneVerified: kycData.phone_verified || false,
+        emailVerified: kycData.email_verified || false,
+        amlStatus: kycData.aml_status as 'pending' | 'approved' | 'rejected',
+        riskScore: kycData.risk_score || 0,
+        tradingLimits,
+        lastVerificationDate: kycData.last_verification_date ? new Date(kycData.last_verification_date) : undefined
       };
     } catch (error) {
       console.error('Error fetching KYC status:', error);
-      return this.getDefaultKYCStatus();
+      return null;
     }
   }
 
-  static async submitIdentityData(userId: string, data: IdentityVerificationData): Promise<{ success: boolean; error?: string }> {
-    try {
-      // Update account details
-      const { error: accountError } = await supabase
-        .from('account_details')
-        .upsert({
-          id: userId,
-          first_name: data.firstName,
-          last_name: data.lastName,
-          date_of_birth: data.dateOfBirth,
-          phone_number: data.phoneNumber
-        });
-
-      if (accountError) throw accountError;
-
-      // Update user profile
-      const { error: profileError } = await supabase
-        .from('user_profiles')
-        .upsert({
-          user_id: userId,
-          first_name: data.firstName,
-          last_name: data.lastName,
-          phone: data.phoneNumber,
-          investment_experience: data.investmentExperience,
-          risk_tolerance: data.riskTolerance
-        });
-
-      if (profileError) throw profileError;
-
-      // Create or update KYC verification record
-      const { error: kycError } = await supabase
-        .from('kyc_verifications')
-        .upsert({
-          user_id: userId,
-          verification_level: 'basic',
-          email_verified: true, // Assuming email is verified during signup
-          last_verification_date: new Date().toISOString()
-        });
-
-      if (kycError) throw kycError;
-
-      return { success: true };
-    } catch (error) {
-      console.error('Error submitting identity data:', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to submit identity data'
-      };
-    }
-  }
-
-  static async uploadDocument(
+  static async submitDocument(
     userId: string,
-    file: File,
-    documentType: KYCDocument['documentType']
+    documentType: string,
+    file: File
   ): Promise<{ success: boolean; documentId?: string; error?: string }> {
     try {
-      // Upload file to Supabase storage
-      const fileName = `${userId}/${documentType}/${Date.now()}-${file.name}`;
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('kyc-documents')
-        .upload(fileName, file);
-
-      if (uploadError) throw uploadError;
-
-      // Record document in database
-      const { data: documentData, error: documentError } = await supabase
+      // For demo purposes, we'll just record the document without actual file upload
+      const { data, error } = await supabase
         .from('kyc_documents')
         .insert({
           user_id: userId,
           document_type: documentType,
           file_name: file.name,
-          file_path: uploadData.path,
           file_size: file.size,
           mime_type: file.type,
+          file_path: `/mock/${file.name}`, // Mock path
           verification_status: 'pending'
         })
-        .select('id')
+        .select()
         .single();
 
-      if (documentError) throw documentError;
+      if (error) throw error;
 
       return {
         success: true,
-        documentId: documentData.id
+        documentId: data.id
       };
     } catch (error) {
-      console.error('Error uploading document:', error);
+      console.error('Error submitting document:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to upload document'
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
   }
@@ -186,15 +142,14 @@ export class KYCVerificationService {
 
       if (error) throw error;
 
-      return data.map(doc => ({
+      return (data || []).map(doc => ({
         id: doc.id,
-        documentType: doc.document_type as KYCDocument['documentType'],
+        documentType: doc.document_type,
         fileName: doc.file_name,
-        filePath: doc.file_path,
-        status: doc.verification_status as KYCDocument['status'],
-        uploadedAt: new Date(doc.created_at),
-        verifiedAt: doc.verified_at ? new Date(doc.verified_at) : undefined,
-        rejectionReason: doc.rejection_reason
+        fileSize: doc.file_size,
+        status: doc.verification_status as 'pending' | 'approved' | 'rejected',
+        rejectionReason: doc.rejection_reason || undefined,
+        uploadedAt: new Date(doc.created_at)
       }));
     } catch (error) {
       console.error('Error fetching documents:', error);
@@ -202,86 +157,69 @@ export class KYCVerificationService {
     }
   }
 
-  static async verifyPhone(userId: string, phoneNumber: string, verificationCode: string): Promise<{ success: boolean; error?: string }> {
+  static async updateVerificationStatus(
+    userId: string,
+    verificationType: keyof Pick<KYCStatus, 'identityVerified' | 'addressVerified' | 'phoneVerified' | 'emailVerified'>,
+    verified: boolean
+  ): Promise<boolean> {
     try {
-      // In a real implementation, this would verify the code with a SMS service
-      // For now, we'll simulate successful verification
-      
+      const columnMap = {
+        identityVerified: 'identity_verified',
+        addressVerified: 'address_verified',
+        phoneVerified: 'phone_verified',
+        emailVerified: 'email_verified'
+      };
+
+      // Try to update existing record
       const { error } = await supabase
         .from('kyc_verifications')
-        .upsert({
-          user_id: userId,
-          phone_verified: true,
-          last_verification_date: new Date().toISOString()
-        });
-
-      if (error) throw error;
-
-      // Update account details with verified phone
-      await supabase
-        .from('account_details')
         .update({
-          phone_number: phoneNumber,
-          is_phone_verified: true
+          [columnMap[verificationType]]: verified,
+          last_verification_date: new Date().toISOString()
         })
-        .eq('id', userId);
+        .eq('user_id', userId);
 
-      return { success: true };
-    } catch (error) {
-      console.error('Error verifying phone:', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Phone verification failed'
-      };
-    }
-  }
+      // If no record exists, create one
+      if (error && error.code === 'PGRST116') {
+        const { error: insertError } = await supabase
+          .from('kyc_verifications')
+          .insert({
+            user_id: userId,
+            [columnMap[verificationType]]: verified,
+            last_verification_date: new Date().toISOString()
+          });
 
-  private static getDefaultKYCStatus(): KYCStatus {
-    return {
-      level: 'none',
-      identityVerified: false,
-      addressVerified: false,
-      phoneVerified: false,
-      emailVerified: false,
-      documentsRequired: ['passport', 'utility_bill'],
-      tradingLimits: {
-        dailyLimit: 0,
-        monthlyLimit: 0,
-        positionLimit: 0
+        if (insertError) throw insertError;
+      } else if (error) {
+        throw error;
       }
-    };
-  }
 
-  private static determineKYCLevel(verification: any): KYCStatus['level'] {
-    if (verification.identity_verified && verification.address_verified && verification.phone_verified) {
-      return 'advanced';
-    } else if (verification.identity_verified && verification.phone_verified) {
-      return 'intermediate';
-    } else if (verification.email_verified) {
-      return 'basic';
+      return true;
+    } catch (error) {
+      console.error('Error updating verification status:', error);
+      return false;
     }
-    return 'none';
   }
 
-  private static getTradingLimits(level: KYCStatus['level']): KYCStatus['tradingLimits'] {
+  private static getTradingLimitsByLevel(level: KYCStatus['level']): KYCStatus['tradingLimits'] {
     switch (level) {
       case 'advanced':
         return {
           dailyLimit: 100000,
           monthlyLimit: 1000000,
-          positionLimit: 500000
+          positionLimit: 50000
         };
       case 'intermediate':
         return {
-          dailyLimit: 10000,
+          dailyLimit: 25000,
           monthlyLimit: 100000,
-          positionLimit: 50000
+          positionLimit: 10000
         };
       case 'basic':
         return {
-          dailyLimit: 1000,
-          monthlyLimit: 10000,
-          positionLimit: 5000
+          dailyLimit: 5000,
+          monthlyLimit: 20000,
+          positionLimit: 2000
         };
       default:
         return {
@@ -289,21 +227,6 @@ export class KYCVerificationService {
           monthlyLimit: 0,
           positionLimit: 0
         };
-    }
-  }
-
-  private static getRequiredDocuments(level: KYCStatus['level']): string[] {
-    switch (level) {
-      case 'none':
-        return ['passport', 'utility_bill'];
-      case 'basic':
-        return ['passport', 'utility_bill'];
-      case 'intermediate':
-        return ['bank_statement'];
-      case 'advanced':
-        return [];
-      default:
-        return ['passport', 'utility_bill'];
     }
   }
 }
