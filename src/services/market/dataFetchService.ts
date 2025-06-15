@@ -26,7 +26,7 @@ function generateMockHistoricalData(symbol: string, days: number): MarketData[] 
     
     data.push({
       symbol,
-      timestamp: String(currentDate.getTime()),
+      timestamp: currentDate.getTime(),
       price,
       open,
       high,
@@ -83,7 +83,7 @@ export async function fetchHistoricalData(symbol: string, days: number): Promise
     // Convert to MarketData format and ensure all required properties exist
     return data.map(item => ({
       symbol: item.symbol,
-      timestamp: String(item.timestamp),
+      timestamp: item.timestamp,
       price: item.price,
       open: item.open || item.price,
       high: item.high || item.price,

@@ -81,8 +81,8 @@ const AdvancedChart: React.FC<AdvancedChartProps> = ({
     
     result = result.map(item => ({
       ...item,
-      date: new Date(parseInt(item.timestamp)).toLocaleDateString(),
-      formattedDate: new Date(parseInt(item.timestamp)).toLocaleString(),
+      date: new Date(item.timestamp).toLocaleDateString(),
+      formattedDate: new Date(item.timestamp).toLocaleString(),
     }));
     
     // Add indicators if selected
@@ -126,7 +126,7 @@ const AdvancedChart: React.FC<AdvancedChartProps> = ({
     if (!data || data.length < 5) return [];
     
     const lastPrice = data[data.length - 1].price;
-    const lastDate = new Date(parseInt(data[data.length - 1].timestamp));
+    const lastDate = new Date(data[data.length - 1].timestamp);
     
     const result = [];
     for (let i = 1; i <= 5; i++) {

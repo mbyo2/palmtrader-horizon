@@ -40,11 +40,10 @@ const TradingInterface = () => {
 
             <StockInfo 
               symbol={symbol}
-              stockPrice={stockPrice}
-              isPriceLoading={isPriceLoading}
-              userPosition={userPosition}
-              orderAction={orderAction}
-              cashBalance={cashBalance}
+              price={stockPrice?.price || 0}
+              change={stockPrice?.change || 0}
+              changePercent={stockPrice?.changePercent || 0}
+              volume={stockPrice?.volume || 0}
             />
 
             <OrderForm 

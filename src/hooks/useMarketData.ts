@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { MarketDataService } from "@/services/MarketDataService";
-import { WebSocketService } from "@/services/market/websocketService";
+import { webSocketService } from "@/services/market/websocketService";
 import { MarketData } from "@/services/market/types";
 import { nanoid } from "nanoid";
 
@@ -50,12 +50,6 @@ export function useMarketData(
       try {
         setIsLoading(true);
         
-        // Check if we have cached data first
-        const cachedData = WebSocketService.getLatestData(symbol);
-        if (cachedData && cachedData.price) {
-          updatePrice(cachedData.price);
-        }
-        
         // Fetch latest price
         const latestData = await MarketDataService.fetchLatestPrice(symbol);
         if (latestData) {
@@ -91,8 +85,13 @@ export function useMarketData(
     }
     
     // Set up real-time updates if enabled
+    let unsubscribe: (() => void) | null = null;
     if (enableRealtime) {
-      WebSocketService.subscribe(symbol, componentId.current);
+      unsubscribe = webSocketService.subscribe(symbol, (data) => {
+        if (data.symbol === symbol && data.price) {
+          updatePrice(data.price);
+        }
+      });
     }
     
     // Cleanup function
@@ -103,31 +102,11 @@ export function useMarketData(
       }
       
       // Unsubscribe from real-time updates
-      if (enableRealtime) {
-        WebSocketService.unsubscribe(symbol, componentId.current);
+      if (unsubscribe) {
+        unsubscribe();
       }
     };
   }, [symbol, historicalDays, pollingInterval, enableRealtime, updatePrice]);
-  
-  // Listen for real-time updates
-  useEffect(() => {
-    if (!enableRealtime) return;
-    
-    const unsubscribe = WebSocketService.onMarketData((data) => {
-      if (data.symbol === symbol && data.price) {
-        updatePrice(data.price);
-      }
-    });
-    
-    return () => unsubscribe();
-  }, [symbol, enableRealtime, updatePrice]);
-  
-  // Clean up all subscriptions when component unmounts
-  useEffect(() => {
-    return () => {
-      WebSocketService.clearComponentSubscriptions(componentId.current);
-    };
-  }, []);
   
   return {
     currentPrice,
