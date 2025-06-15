@@ -19,16 +19,16 @@ interface EnhancedStockCardProps {
 }
 
 const EnhancedStockCard = memo(({ stock }: EnhancedStockCardProps) => {
-  const { priceData, isLoading, isConnected, source, lastUpdate, isRealTime } = useEnhancedMarketPrice(stock.symbol);
+  const { priceData, isLoading, isConnected, source, isRealTime } = useEnhancedMarketPrice(stock.symbol);
 
   if (isLoading) {
     return <Skeleton className="h-24" />;
   }
 
   const currentPrice = priceData?.price?.toFixed(2) || stock.price;
-  const changePercent = priceData?.change?.toFixed(2) || parseFloat(stock.change.replace(/[+%]/g, '')) || 0;
-  const changePercentNum = typeof changePercent === 'string' ? parseFloat(changePercent) : changePercent;
-  const changeText = `${changePercentNum >= 0 ? '+' : ''}${changePercentNum}%`;
+  const rawChangePercent = priceData?.change?.toFixed(2) || parseFloat(stock.change.replace(/[+%]/g, '')) || 0;
+  const changePercentNum = typeof rawChangePercent === 'string' ? parseFloat(rawChangePercent) : rawChangePercent;
+  const changeText = `${changePercentNum >= 0 ? '+' : ''}${changePercentNum.toFixed(2)}%`;
   
   return (
     <Card className="card-gradient p-4 hover:shadow-lg transition-all duration-200 m-1">
@@ -43,7 +43,7 @@ const EnhancedStockCard = memo(({ stock }: EnhancedStockCardProps) => {
           </div>
           <p className="text-sm text-foreground/70 truncate">{stock.name}</p>
           <PriceSourceIndicator 
-            source={source as any}
+            source={source as 'finnhub' | 'alpha_vantage' | 'cache' | 'mock'}
             timestamp={priceData?.timestamp}
             isRealTime={isRealTime}
           />

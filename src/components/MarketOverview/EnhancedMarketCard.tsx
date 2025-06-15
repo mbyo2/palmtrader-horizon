@@ -20,7 +20,8 @@ const EnhancedMarketCard = memo(({ market }: EnhancedMarketCardProps) => {
   const { priceData, isConnected, source, isRealTime } = useEnhancedMarketPrice(market.symbol);
   
   const currentValue = priceData ? `$${priceData.price.toFixed(2)}` : market.value;
-  const changeText = priceData ? `${priceData.change >= 0 ? '+' : ''}${priceData.change.toFixed(2)}%` : market.change;
+  const changeValue = priceData?.change || 0;
+  const changeText = priceData ? `${changeValue >= 0 ? '+' : ''}${changeValue.toFixed(2)}%` : market.change;
 
   return (
     <Card className="card-gradient p-3 sm:p-4">
@@ -46,7 +47,7 @@ const EnhancedMarketCard = memo(({ market }: EnhancedMarketCardProps) => {
           {changeText}
         </span>
         <PriceSourceIndicator 
-          source={source as any}
+          source={source as 'finnhub' | 'alpha_vantage' | 'cache' | 'mock'}
           timestamp={priceData?.timestamp}
           isRealTime={isRealTime}
         />
