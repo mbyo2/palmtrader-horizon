@@ -1,56 +1,54 @@
 
-import { MarketData } from './types';
+export interface MarketData {
+  symbol: string;
+  price: number;
+  change?: number;
+  changePercent?: number;
+  volume?: number;
+  timestamp?: number;
+}
 
 export class MarketDataService {
-  static async fetchLatestPrice(symbol: string): Promise<MarketData> {
-    // Mock implementation for now
-    return {
-      symbol,
-      price: Math.random() * 100 + 50,
-      change: (Math.random() - 0.5) * 10,
-      changePercent: (Math.random() - 0.5) * 5,
-      volume: Math.floor(Math.random() * 1000000),
-      timestamp: new Date().toISOString()
-    };
-  }
-
-  static async fetchHistoricalData(symbol: string, days: number = 30): Promise<MarketData[]> {
-    // Mock implementation for now
-    const data: MarketData[] = [];
-    const basePrice = Math.random() * 100 + 50;
-    
-    for (let i = 0; i < days; i++) {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
+  static async fetchLatestPrice(symbol: string): Promise<MarketData | null> {
+    try {
+      // For demo purposes, return mock data
+      const mockPrice = Math.random() * 100 + 50; // Random price between 50-150
       
-      const price = basePrice + (Math.random() - 0.5) * 20;
-      const change = (Math.random() - 0.5) * 5;
-      
-      data.push({
+      return {
         symbol,
-        price: price,
-        open: price * (0.98 + Math.random() * 0.04),
-        high: price * (1 + Math.random() * 0.02),
-        low: price * (1 - Math.random() * 0.02),
-        close: price,
-        change: change,
-        changePercent: (change / price) * 100,
+        price: mockPrice,
+        change: (Math.random() - 0.5) * 10,
+        changePercent: (Math.random() - 0.5) * 5,
         volume: Math.floor(Math.random() * 1000000),
-        timestamp: date.toISOString(),
-        type: 'stock'
-      });
+        timestamp: Date.now()
+      };
+    } catch (error) {
+      console.error(`Error fetching price for ${symbol}:`, error);
+      return null;
     }
-    
-    return data.reverse();
   }
 
-  static async fetchMultipleLatestPrices(symbols: string[]): Promise<Array<{ symbol: string; price: number; change?: number; volume?: number }>> {
-    // Mock implementation for now
-    return symbols.map(symbol => ({
-      symbol,
-      price: Math.random() * 100 + 50,
-      change: (Math.random() - 0.5) * 5,
-      volume: Math.floor(Math.random() * 1000000)
-    }));
+  static async fetchHistoricalData(symbol: string, days: number): Promise<MarketData[]> {
+    try {
+      // Generate mock historical data
+      const data: MarketData[] = [];
+      const basePrice = Math.random() * 100 + 50;
+      
+      for (let i = days; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        
+        data.push({
+          symbol,
+          price: basePrice + (Math.random() - 0.5) * 20,
+          timestamp: date.getTime()
+        });
+      }
+      
+      return data;
+    } catch (error) {
+      console.error(`Error fetching historical data for ${symbol}:`, error);
+      return [];
+    }
   }
 }
