@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { MarketData } from "./types";
 import { DataCache } from "./dataCache";

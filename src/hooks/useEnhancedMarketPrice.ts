@@ -121,7 +121,7 @@ export function useEnhancedMarketPrice(symbol: string) {
     priceData: priceData || initialData,
     isLoading,
     isConnected,
-    source: priceData?.source || initialData?.source || 'unknown',
+    source: (priceData?.source || initialData?.source || 'unknown') as 'finnhub' | 'alpha_vantage' | 'cache' | 'mock',
     lastUpdate: priceData?.lastUpdate || initialData?.lastUpdate,
     isRealTime: priceData?.isRealTime || false
   };

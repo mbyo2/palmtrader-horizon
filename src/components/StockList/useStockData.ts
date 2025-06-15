@@ -1,10 +1,17 @@
 
 import { useState, useEffect } from "react";
 import { finnhubSocket } from "@/utils/finnhubSocket";
-import { Stock } from "./StockCard";
 import { wsManager } from "@/services/market/WebSocketManager";
 import { supabase } from "@/integrations/supabase/client";
 import { nanoid } from "nanoid";
+
+export interface Stock {
+  symbol: string;
+  name: string;
+  price: string;
+  change: string;
+  previousPrice?: string;
+}
 
 export const useStockData = (searchQuery: string) => {
   const [loading, setLoading] = useState(true);
