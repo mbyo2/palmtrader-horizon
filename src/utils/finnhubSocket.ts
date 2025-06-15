@@ -2,7 +2,7 @@
 interface SocketManager {
   subscribe: (symbol: string) => void;
   unsubscribe: (symbol: string) => void;
-  onMarketData: (callback: (data: any) => void) => void;
+  onMarketData: (callback: (data: any) => void) => () => void;
 }
 
 class FinnhubSocketManager implements SocketManager {
@@ -43,8 +43,11 @@ class FinnhubSocketManager implements SocketManager {
     console.log(`Unsubscribed from ${symbol}`);
   }
 
-  onMarketData(callback: (data: any) => void): void {
+  onMarketData(callback: (data: any) => void): () => void {
     this.messageHandler = callback;
+    return () => {
+      this.messageHandler = null;
+    };
   }
 }
 

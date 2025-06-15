@@ -124,7 +124,7 @@ export const DataFetcher = {
         
         marketData.push({
           symbol,
-          timestamp: new Date(date).getTime().toString(),
+          timestamp: new Date(date).getTime(),
           price: closePrice,
           open: openPrice,
           high: parseFloat(dayData['2. high']),

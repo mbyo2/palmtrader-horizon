@@ -6,6 +6,11 @@ export interface MarketData {
   changePercent?: number;
   volume?: number;
   timestamp?: number;
+  open?: number;
+  high?: number;
+  low?: number;
+  close?: number;
+  type?: string;
 }
 
 export interface StockQuote {
@@ -29,3 +34,5 @@ export interface HistoricalDataPoint {
   close: number;
   volume: number;
 }
+
+export type MarketDataCallback = (data: MarketData) => void;

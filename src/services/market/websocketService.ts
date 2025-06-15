@@ -1,89 +1,116 @@
 
-import { finnhubSocket } from "@/utils/finnhubSocket";
+import { MarketDataCallback } from './types';
 
-// Map to track which components are subscribed to which symbols
-const subscriptionMap = new Map<string, Set<string>>();
-// Map to cache the latest data for each symbol
-const latestDataCache = new Map<string, any>();
+class WebSocketService {
+  private socket: WebSocket | null = null;
+  private subscribers: Map<string, Set<MarketDataCallback>> = new Map();
+  private reconnectAttempts = 0;
+  private maxReconnectAttempts = 5;
 
-export const WebSocketService = {
-  /**
-   * Subscribe to a symbol with a component ID
-   * This allows tracking which components are using which symbols
-   */
-  subscribe: (symbol: string, componentId: string): void => {
-    if (!symbol || !componentId) return;
-    
-    const formattedSymbol = symbol.toUpperCase();
-    
-    // Get or create the set of component IDs for this symbol
-    const subscribers = subscriptionMap.get(formattedSymbol) || new Set<string>();
-    subscribers.add(componentId);
-    subscriptionMap.set(formattedSymbol, subscribers);
-    
-    // Only subscribe to the WebSocket if this is the first component subscribing
-    if (subscribers.size === 1) {
-      console.log(`WebSocketService: First subscriber for ${formattedSymbol}, creating subscription`);
-      finnhubSocket.subscribe(formattedSymbol);
-    } else {
-      console.log(`WebSocketService: Additional subscriber for ${formattedSymbol}, reusing connection`);
+  connect(url: string): void {
+    try {
+      this.socket = new WebSocket(url);
+      
+      this.socket.onopen = () => {
+        console.log('WebSocket connected');
+        this.reconnectAttempts = 0;
+      };
+
+      this.socket.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          this.handleMessage(data);
+        } catch (error) {
+          console.error('Error parsing WebSocket message:', error);
+        }
+      };
+
+      this.socket.onclose = () => {
+        console.log('WebSocket disconnected');
+        this.handleReconnect();
+      };
+
+      this.socket.onerror = (error) => {
+        console.error('WebSocket error:', error);
+      };
+    } catch (error) {
+      console.error('Failed to create WebSocket connection:', error);
     }
-  },
-  
-  /**
-   * Unsubscribe a component from a symbol
-   */
-  unsubscribe: (symbol: string, componentId: string): void => {
-    if (!symbol || !componentId) return;
-    
-    const formattedSymbol = symbol.toUpperCase();
-    const subscribers = subscriptionMap.get(formattedSymbol);
-    
-    if (!subscribers) return;
-    
-    subscribers.delete(componentId);
-    
-    // If there are no more components listening to this symbol, unsubscribe from the WebSocket
-    if (subscribers.size === 0) {
-      console.log(`WebSocketService: No more subscribers for ${formattedSymbol}, removing subscription`);
-      subscriptionMap.delete(formattedSymbol);
-      finnhubSocket.unsubscribe(formattedSymbol);
-    } else {
-      subscriptionMap.set(formattedSymbol, subscribers);
-    }
-  },
-  
-  /**
-   * Get the latest cached data for a symbol
-   */
-  getLatestData: (symbol: string): any => {
-    return latestDataCache.get(symbol?.toUpperCase());
-  },
-  
-  /**
-   * Set up a listener for market data updates
-   */
-  onMarketData: (callback: (data: any) => void): (() => void) => {
-    const unsubscribe = finnhubSocket.onMarketData((data) => {
-      if (data && data.symbol) {
-        // Update the cache
-        latestDataCache.set(data.symbol, data);
-        // Call the callback
-        callback(data);
-      }
-    });
-    
-    return unsubscribe;
-  },
-  
-  /**
-   * Clear all subscriptions for a component
-   */
-  clearComponentSubscriptions: (componentId: string): void => {
-    subscriptionMap.forEach((subscribers, symbol) => {
-      if (subscribers.has(componentId)) {
-        WebSocketService.unsubscribe(symbol, componentId);
-      }
-    });
   }
-};
+
+  subscribe(symbol: string, callback: MarketDataCallback): () => void {
+    if (!this.subscribers.has(symbol)) {
+      this.subscribers.set(symbol, new Set());
+    }
+    
+    this.subscribers.get(symbol)!.add(callback);
+    
+    // Send subscription message if connected
+    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+      this.socket.send(JSON.stringify({
+        type: 'subscribe',
+        symbol: symbol
+      }));
+    }
+
+    // Return unsubscribe function
+    return () => {
+      const symbolSubscribers = this.subscribers.get(symbol);
+      if (symbolSubscribers) {
+        symbolSubscribers.delete(callback);
+        
+        if (symbolSubscribers.size === 0) {
+          this.subscribers.delete(symbol);
+          
+          // Send unsubscribe message if connected
+          if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+            this.socket.send(JSON.stringify({
+              type: 'unsubscribe',
+              symbol: symbol
+            }));
+          }
+        }
+      }
+    };
+  }
+
+  private handleMessage(data: any): void {
+    if (data.symbol && data.price) {
+      const callbacks = this.subscribers.get(data.symbol);
+      if (callbacks) {
+        callbacks.forEach(callback => {
+          try {
+            callback(data);
+          } catch (error) {
+            console.error('Error in market data callback:', error);
+          }
+        });
+      }
+    }
+  }
+
+  private handleReconnect(): void {
+    if (this.reconnectAttempts < this.maxReconnectAttempts) {
+      this.reconnectAttempts++;
+      const delay = Math.pow(2, this.reconnectAttempts) * 1000; // Exponential backoff
+      
+      console.log(`Attempting to reconnect in ${delay}ms (attempt ${this.reconnectAttempts})`);
+      
+      setTimeout(() => {
+        if (this.socket?.url) {
+          this.connect(this.socket.url);
+        }
+      }, delay);
+    }
+  }
+
+  disconnect(): void {
+    if (this.socket) {
+      this.socket.close();
+      this.socket = null;
+    }
+    this.subscribers.clear();
+  }
+}
+
+export const webSocketService = new WebSocketService();
