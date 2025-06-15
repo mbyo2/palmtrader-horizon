@@ -1,348 +1,241 @@
 
-import { finnhubSocket } from "@/utils/finnhubSocket";
 import { toast } from "sonner";
 
-interface ConnectionState {
-  isConnected: boolean;
-  isReconnecting: boolean;
+interface WebSocketConnection {
+  url: string;
+  socket: WebSocket | null;
   reconnectAttempts: number;
-  lastConnectTime: number;
-  errors: string[];
+  maxReconnectAttempts: number;
+  reconnectDelay: number;
+  isConnecting: boolean;
+  subscriptions: Set<string>;
 }
 
-interface RateLimitState {
-  requestCount: number;
-  windowStart: number;
-  isThrottled: boolean;
+interface ConnectionState {
+  connected: boolean;
+  connecting: boolean;
+  lastError?: string;
+  reconnectAttempts: number;
 }
 
 export class EnhancedWebSocketManager {
-  private static instance: EnhancedWebSocketManager;
-  private connectionState: ConnectionState = {
-    isConnected: false,
-    isReconnecting: false,
-    reconnectAttempts: 0,
-    lastConnectTime: 0,
-    errors: []
-  };
-  
-  private rateLimitState: RateLimitState = {
-    requestCount: 0,
-    windowStart: Date.now(),
-    isThrottled: false
-  };
-
-  private readonly MAX_RECONNECT_ATTEMPTS = 10;
-  private readonly RECONNECT_DELAY_BASE = 1000; // 1 second
-  private readonly RATE_LIMIT_WINDOW = 60000; // 1 minute
-  private readonly RATE_LIMIT_MAX_REQUESTS = 300; // 5 requests per second average
-  
-  private subscribers: Set<string> = new Set();
-  private messageQueue: Array<{ symbol: string; timestamp: number }> = [];
-  private healthCheckInterval: number | null = null;
-  private reconnectTimeoutId: number | null = null;
-
-  static getInstance(): EnhancedWebSocketManager {
-    if (!EnhancedWebSocketManager.instance) {
-      EnhancedWebSocketManager.instance = new EnhancedWebSocketManager();
-    }
-    return EnhancedWebSocketManager.instance;
-  }
+  private connections: Map<string, WebSocketConnection> = new Map();
+  private messageHandlers: Map<string, (data: any) => void> = new Map();
+  private globalErrorHandler?: (error: Error) => void;
 
   async initialize(): Promise<void> {
-    this.setupEventListeners();
-    this.startHealthCheck();
-    await this.connect();
+    console.log('Enhanced WebSocket Manager initialized');
   }
 
-  private setupEventListeners(): void {
-    // Network status monitoring
-    window.addEventListener('online', () => {
-      console.log('Network back online, attempting reconnection');
-      this.handleReconnect();
-    });
-
-    window.addEventListener('offline', () => {
-      console.log('Network offline detected');
-      this.connectionState.isConnected = false;
-      toast.error("Connection lost. Will reconnect when network is available.");
-    });
-
-    // Page visibility changes
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible' && !this.connectionState.isConnected) {
-        console.log('Page became visible, checking connection');
-        this.handleReconnect();
-      }
-    });
-  }
-
-  private async connect(): Promise<void> {
-    if (this.connectionState.isReconnecting) {
+  connect(url: string, options: { maxReconnectAttempts?: number; reconnectDelay?: number } = {}): void {
+    const connectionId = this.getConnectionId(url);
+    
+    if (this.connections.has(connectionId)) {
+      console.log(`Connection ${connectionId} already exists`);
       return;
     }
+
+    const connection: WebSocketConnection = {
+      url,
+      socket: null,
+      reconnectAttempts: 0,
+      maxReconnectAttempts: options.maxReconnectAttempts || 5,
+      reconnectDelay: options.reconnectDelay || 1000,
+      isConnecting: false,
+      subscriptions: new Set()
+    };
+
+    this.connections.set(connectionId, connection);
+    this.connectWebSocket(connectionId);
+  }
+
+  private connectWebSocket(connectionId: string): void {
+    const connection = this.connections.get(connectionId);
+    if (!connection || connection.isConnecting) return;
+
+    connection.isConnecting = true;
 
     try {
-      this.connectionState.isReconnecting = true;
-      
-      // Connect to Finnhub WebSocket
-      await finnhubSocket.connect();
-      
-      this.connectionState.isConnected = true;
-      this.connectionState.isReconnecting = false;
-      this.connectionState.reconnectAttempts = 0;
-      this.connectionState.lastConnectTime = Date.now();
-      
-      console.log('WebSocket connected successfully');
-      
-      // Resubscribe to all symbols
-      this.resubscribeAll();
-      
-      // Clear error state
-      this.connectionState.errors = [];
-      
-      if (this.connectionState.reconnectAttempts > 0) {
-        toast.success("Reconnected successfully");
-      }
-      
+      connection.socket = new WebSocket(connection.url);
+
+      connection.socket.onopen = () => {
+        console.log(`WebSocket connected: ${connectionId}`);
+        connection.isConnecting = false;
+        connection.reconnectAttempts = 0;
+        
+        // Resubscribe to all topics
+        connection.subscriptions.forEach(topic => {
+          this.sendMessage(connectionId, { type: 'subscribe', symbol: topic });
+        });
+      };
+
+      connection.socket.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          this.handleMessage(connectionId, data);
+        } catch (error) {
+          console.error('Failed to parse WebSocket message:', error);
+        }
+      };
+
+      connection.socket.onclose = (event) => {
+        console.log(`WebSocket closed: ${connectionId}`, event.code, event.reason);
+        connection.isConnecting = false;
+        connection.socket = null;
+        
+        if (connection.reconnectAttempts < connection.maxReconnectAttempts) {
+          this.scheduleReconnect(connectionId);
+        } else {
+          console.error(`Max reconnect attempts reached for ${connectionId}`);
+          toast.error(`Lost connection to market data`);
+        }
+      };
+
+      connection.socket.onerror = (error) => {
+        console.error(`WebSocket error: ${connectionId}`, error);
+        connection.isConnecting = false;
+        
+        if (this.globalErrorHandler) {
+          this.globalErrorHandler(new Error(`WebSocket error: ${connectionId}`));
+        }
+      };
+
     } catch (error) {
-      console.error('WebSocket connection failed:', error);
-      this.connectionState.isReconnecting = false;
-      this.connectionState.isConnected = false;
-      
-      const errorMessage = error instanceof Error ? error.message : 'Unknown connection error';
-      this.connectionState.errors.push(errorMessage);
-      
-      this.scheduleReconnect();
+      console.error(`Failed to create WebSocket connection: ${connectionId}`, error);
+      connection.isConnecting = false;
+      this.scheduleReconnect(connectionId);
     }
   }
 
-  private scheduleReconnect(): void {
-    if (this.connectionState.reconnectAttempts >= this.MAX_RECONNECT_ATTEMPTS) {
-      console.error('Max reconnection attempts reached');
-      toast.error("Unable to reconnect. Please refresh the page.");
-      return;
-    }
+  private scheduleReconnect(connectionId: string): void {
+    const connection = this.connections.get(connectionId);
+    if (!connection) return;
 
-    this.connectionState.reconnectAttempts++;
-    
-    // Exponential backoff with jitter
-    const delay = Math.min(
-      this.RECONNECT_DELAY_BASE * Math.pow(2, this.connectionState.reconnectAttempts - 1),
-      30000 // Max 30 seconds
-    ) + Math.random() * 1000; // Add jitter
+    connection.reconnectAttempts++;
+    const delay = connection.reconnectDelay * Math.pow(2, connection.reconnectAttempts - 1);
 
-    console.log(`Scheduling reconnect attempt ${this.connectionState.reconnectAttempts} in ${delay}ms`);
-    
-    this.reconnectTimeoutId = window.setTimeout(() => {
-      this.handleReconnect();
+    console.log(`Scheduling reconnect for ${connectionId} in ${delay}ms (attempt ${connection.reconnectAttempts})`);
+
+    setTimeout(() => {
+      this.connectWebSocket(connectionId);
     }, delay);
   }
 
-  private async handleReconnect(): Promise<void> {
-    if (this.reconnectTimeoutId) {
-      clearTimeout(this.reconnectTimeoutId);
-      this.reconnectTimeoutId = null;
-    }
-
-    if (!navigator.onLine) {
-      console.log('Still offline, skipping reconnect attempt');
-      return;
-    }
-
-    console.log('Attempting to reconnect...');
-    await this.connect();
-  }
-
-  private resubscribeAll(): void {
-    console.log(`Resubscribing to ${this.subscribers.size} symbols`);
-    
-    this.subscribers.forEach(symbol => {
-      try {
-        finnhubSocket.subscribe(symbol);
-      } catch (error) {
-        console.error(`Failed to resubscribe to ${symbol}:`, error);
-      }
-    });
-  }
-
-  private startHealthCheck(): void {
-    this.healthCheckInterval = window.setInterval(() => {
-      this.performHealthCheck();
-    }, 30000); // Check every 30 seconds
-  }
-
-  private performHealthCheck(): void {
-    if (!this.connectionState.isConnected) {
-      return;
-    }
-
-    // Check if we've received data recently
-    const now = Date.now();
-    const recentMessages = this.messageQueue.filter(msg => now - msg.timestamp < 60000);
-    
-    if (this.subscribers.size > 0 && recentMessages.length === 0) {
-      console.warn('No recent market data received, connection may be stale');
-      this.handleReconnect();
-    }
-
-    // Clean old messages from queue
-    this.messageQueue = this.messageQueue.filter(msg => now - msg.timestamp < 300000); // Keep 5 minutes
-  }
-
-  subscribe(symbol: string): boolean {
-    if (!symbol) return false;
-
-    // Rate limiting check
-    if (!this.checkRateLimit()) {
-      console.warn(`Rate limit exceeded, queueing subscription for ${symbol}`);
-      setTimeout(() => this.subscribe(symbol), 1000);
-      return false;
-    }
-
-    try {
-      this.subscribers.add(symbol);
-      
-      if (this.connectionState.isConnected) {
-        finnhubSocket.subscribe(symbol);
-        console.log(`Subscribed to ${symbol}`);
-      } else {
-        console.log(`Queued subscription for ${symbol} (not connected)`);
-      }
-      
-      return true;
-    } catch (error) {
-      console.error(`Failed to subscribe to ${symbol}:`, error);
-      return false;
-    }
-  }
-
-  unsubscribe(symbol: string): boolean {
-    if (!symbol) return false;
-
-    try {
-      this.subscribers.delete(symbol);
-      
-      if (this.connectionState.isConnected) {
-        finnhubSocket.unsubscribe(symbol);
-        console.log(`Unsubscribed from ${symbol}`);
-      }
-      
-      return true;
-    } catch (error) {
-      console.error(`Failed to unsubscribe from ${symbol}:`, error);
-      return false;
-    }
-  }
-
-  onMarketData(callback: (data: any) => void): () => void {
-    const unsubscribe = finnhubSocket.onMarketData((data) => {
-      if (data && data.symbol) {
-        // Track message for health monitoring
-        this.messageQueue.push({
-          symbol: data.symbol,
-          timestamp: Date.now()
-        });
-
-        // Validate data before passing to callback
-        if (this.validateMarketData(data)) {
-          callback(data);
+  private handleMessage(connectionId: string, data: any): void {
+    // Handle different message types
+    if (data.type === 'trade' && data.data) {
+      data.data.forEach((trade: any) => {
+        const handler = this.messageHandlers.get('trade');
+        if (handler) {
+          handler({
+            symbol: trade.s,
+            price: trade.p,
+            volume: trade.v,
+            timestamp: trade.t
+          });
         }
-      }
-    });
-
-    return unsubscribe;
+      });
+    }
   }
 
-  private validateMarketData(data: any): boolean {
-    // Basic validation
-    if (!data.symbol || typeof data.symbol !== 'string') {
-      console.warn('Invalid market data: missing or invalid symbol');
+  sendMessage(connectionId: string, message: any): boolean {
+    const connection = this.connections.get(connectionId);
+    if (!connection || !connection.socket || connection.socket.readyState !== WebSocket.OPEN) {
+      console.warn(`Cannot send message - connection ${connectionId} not ready`);
       return false;
     }
 
-    if (!data.price || typeof data.price !== 'number' || data.price <= 0) {
-      console.warn(`Invalid market data for ${data.symbol}: invalid price`);
+    try {
+      connection.socket.send(JSON.stringify(message));
+      return true;
+    } catch (error) {
+      console.error(`Failed to send message to ${connectionId}:`, error);
       return false;
     }
-
-    // Check for reasonable price ranges (prevent obvious errors)
-    if (data.price > 1000000 || data.price < 0.001) {
-      console.warn(`Invalid market data for ${data.symbol}: price out of reasonable range`);
-      return false;
-    }
-
-    return true;
   }
 
-  private checkRateLimit(): boolean {
-    const now = Date.now();
+  subscribe(topic: string, url?: string): void {
+    const connectionId = url ? this.getConnectionId(url) : this.getDefaultConnectionId();
+    const connection = this.connections.get(connectionId);
     
-    // Reset window if needed
-    if (now - this.rateLimitState.windowStart > this.RATE_LIMIT_WINDOW) {
-      this.rateLimitState.windowStart = now;
-      this.rateLimitState.requestCount = 0;
-      this.rateLimitState.isThrottled = false;
+    if (!connection) {
+      console.warn(`No connection found for ${connectionId}`);
+      return;
     }
 
-    // Check if we're at the limit
-    if (this.rateLimitState.requestCount >= this.RATE_LIMIT_MAX_REQUESTS) {
-      this.rateLimitState.isThrottled = true;
-      return false;
+    connection.subscriptions.add(topic);
+    
+    if (connection.socket && connection.socket.readyState === WebSocket.OPEN) {
+      this.sendMessage(connectionId, { type: 'subscribe', symbol: topic });
+    }
+  }
+
+  unsubscribe(topic: string, url?: string): void {
+    const connectionId = url ? this.getConnectionId(url) : this.getDefaultConnectionId();
+    const connection = this.connections.get(connectionId);
+    
+    if (!connection) return;
+
+    connection.subscriptions.delete(topic);
+    
+    if (connection.socket && connection.socket.readyState === WebSocket.OPEN) {
+      this.sendMessage(connectionId, { type: 'unsubscribe', symbol: topic });
+    }
+  }
+
+  onMessage(type: string, handler: (data: any) => void): void {
+    this.messageHandlers.set(type, handler);
+  }
+
+  onError(handler: (error: Error) => void): void {
+    this.globalErrorHandler = handler;
+  }
+
+  getConnectionState(url?: string): ConnectionState {
+    const connectionId = url ? this.getConnectionId(url) : this.getDefaultConnectionId();
+    const connection = this.connections.get(connectionId);
+    
+    if (!connection) {
+      return { connected: false, connecting: false, reconnectAttempts: 0 };
     }
 
-    // Increment request count
-    this.rateLimitState.requestCount++;
-    return true;
+    return {
+      connected: connection.socket?.readyState === WebSocket.OPEN,
+      connecting: connection.isConnecting,
+      reconnectAttempts: connection.reconnectAttempts,
+      lastError: undefined
+    };
   }
 
-  getConnectionState(): ConnectionState {
-    return { ...this.connectionState };
-  }
-
-  getRateLimitState(): RateLimitState {
-    return { ...this.rateLimitState };
-  }
-
-  getSubscriberCount(): number {
-    return this.subscribers.size;
+  disconnect(url?: string): void {
+    const connectionId = url ? this.getConnectionId(url) : this.getDefaultConnectionId();
+    const connection = this.connections.get(connectionId);
+    
+    if (connection) {
+      if (connection.socket) {
+        connection.socket.close();
+      }
+      this.connections.delete(connectionId);
+    }
   }
 
   destroy(): void {
-    console.log('Destroying WebSocket manager');
-    
-    if (this.healthCheckInterval) {
-      clearInterval(this.healthCheckInterval);
-      this.healthCheckInterval = null;
-    }
-
-    if (this.reconnectTimeoutId) {
-      clearTimeout(this.reconnectTimeoutId);
-      this.reconnectTimeoutId = null;
-    }
-
-    // Unsubscribe from all symbols
-    this.subscribers.forEach(symbol => {
-      try {
-        finnhubSocket.unsubscribe(symbol);
-      } catch (error) {
-        console.error(`Error unsubscribing from ${symbol}:`, error);
+    this.connections.forEach((connection, connectionId) => {
+      if (connection.socket) {
+        connection.socket.close();
       }
     });
+    this.connections.clear();
+    this.messageHandlers.clear();
+  }
 
-    this.subscribers.clear();
-    this.messageQueue = [];
-    
-    // Close WebSocket connection
-    try {
-      finnhubSocket.close();
-    } catch (error) {
-      console.error('Error closing WebSocket:', error);
-    }
+  private getConnectionId(url: string): string {
+    return url.replace(/^wss?:\/\//, '').replace(/[\/\:]/g, '_');
+  }
 
-    this.connectionState.isConnected = false;
-    this.connectionState.isReconnecting = false;
+  private getDefaultConnectionId(): string {
+    return this.connections.keys().next().value || 'default';
   }
 }
 
-export const enhancedWSManager = EnhancedWebSocketManager.getInstance();
+export const enhancedWSManager = new EnhancedWebSocketManager();
