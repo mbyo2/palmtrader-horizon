@@ -1,6 +1,7 @@
+
 import { memo } from "react";
 import { FixedSizeList as List } from "react-window";
-import EnhancedStockCard from "./EnhancedStockCard";
+import EnhancedStockCard, { Stock } from "./EnhancedStockCard";
 
 interface VirtualListProps {
   stocks: Stock[];

@@ -26,7 +26,7 @@ const EnhancedStockCard = memo(({ stock }: EnhancedStockCardProps) => {
   }
 
   const currentPrice = priceData?.price?.toFixed(2) || stock.price;
-  const changePercent = priceData?.change?.toFixed(2) || "0.00";
+  const changePercent = priceData?.change?.toFixed(2) || parseFloat(stock.change.replace(/[+%]/g, '')) || 0;
   const changeText = `${changePercent >= 0 ? '+' : ''}${changePercent}%`;
   
   return (

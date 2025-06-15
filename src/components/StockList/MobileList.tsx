@@ -1,5 +1,6 @@
+
 import { memo } from "react";
-import EnhancedStockCard from "./EnhancedStockCard";
+import EnhancedStockCard, { Stock } from "./EnhancedStockCard";
 
 interface MobileListProps {
   stocks: Stock[];
