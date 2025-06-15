@@ -1,7 +1,6 @@
-
 import { memo } from "react";
 import { FixedSizeList as List } from "react-window";
-import StockCard, { Stock } from "./StockCard";
+import EnhancedStockCard from "./EnhancedStockCard";
 
 interface VirtualListProps {
   stocks: Stock[];
@@ -10,7 +9,7 @@ interface VirtualListProps {
 const VirtualList = memo(({ stocks }: VirtualListProps) => {
   const Row = memo(({ index, style }: { index: number; style: React.CSSProperties }) => (
     <div style={style}>
-      <StockCard stock={stocks[index]} />
+      <EnhancedStockCard stock={stocks[index]} />
     </div>
   ));
 

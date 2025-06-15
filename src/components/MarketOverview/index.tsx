@@ -2,7 +2,7 @@
 import { useState, useEffect, memo } from "react";
 import { useRealTimeMarketData } from "@/hooks/useRealTimeMarketData";
 import { MarketDataService } from "@/services/MarketDataService";
-import MarketCard, { Market } from "./MarketCard";
+import EnhancedMarketCard, { Market } from "./EnhancedMarketCard";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const formatCurrency = (value: number | string): string => {
@@ -106,7 +106,7 @@ const MarketOverview = () => {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 content-visibility-auto">
       {markets.map((market) => (
-        <MarketCard key={market.symbol} market={market} />
+        <EnhancedMarketCard key={market.symbol} market={market} />
       ))}
     </div>
   );

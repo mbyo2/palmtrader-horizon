@@ -3,16 +3,16 @@ export class DataCache {
   private static cache = new Map<string, { data: any; timestamp: number; ttl: number }>();
   private static priceCache = new Map<string, { price: number; timestamp: number }>();
 
-  // Dynamic TTL based on market hours
+  // More aggressive TTL for better real-time accuracy
   static getDynamicTTL(type: 'price' | 'historical' = 'price'): number {
     const now = new Date();
     const hour = now.getHours();
     const isMarketHours = hour >= 9 && hour <= 16; // NYSE hours (9:30 AM - 4:00 PM EST)
     
     if (type === 'price') {
-      return isMarketHours ? 15000 : 60000; // 15s during market hours, 1min after hours
+      return isMarketHours ? 10000 : 30000; // 10s during market hours, 30s after hours (reduced from 15s/60s)
     } else {
-      return isMarketHours ? 180000 : 600000; // 3min during market hours, 10min after hours
+      return isMarketHours ? 120000 : 300000; // 2min during market hours, 5min after hours (reduced from 3min/10min)
     }
   }
 
@@ -84,6 +84,17 @@ export class DataCache {
     return {
       totalEntries: this.cache.size,
       priceEntries: this.priceCache.size
+    };
+  }
+
+  // New method to get cache metadata
+  static getCacheInfo(symbol: string): { age: number; source: 'cache' | 'none' } {
+    const item = this.priceCache.get(symbol);
+    if (!item) return { age: 0, source: 'none' };
+    
+    return {
+      age: Date.now() - item.timestamp,
+      source: 'cache'
     };
   }
 }
