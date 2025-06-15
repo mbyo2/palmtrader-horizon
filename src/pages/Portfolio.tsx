@@ -3,7 +3,7 @@ import { useProtectedRoute } from "@/hooks/useProtectedRoute";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PortfolioManager from "@/components/Portfolio/PortfolioManager";
 import EnhancedTradingInterface from "@/components/Trading/EnhancedTradingInterface";
-import OrderHistory from "@/components/Trading/OrderHistory";
+import EnhancedOrderHistory from "@/components/Trading/EnhancedOrderHistory";
 import RecurringInvestments from "@/components/Trading/RecurringInvestments";
 
 const Portfolio = () => {
@@ -34,7 +34,7 @@ const Portfolio = () => {
         </TabsContent>
         
         <TabsContent value="history" className="space-y-6">
-          <OrderHistory />
+          <EnhancedOrderHistory />
         </TabsContent>
         
         <TabsContent value="recurring" className="space-y-6">

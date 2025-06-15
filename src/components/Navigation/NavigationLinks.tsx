@@ -1,35 +1,56 @@
-
-import { Link } from "react-router-dom";
-import { BarChart3, Activity, TrendingUp, DollarSign, Settings, Globe } from "lucide-react";
+import { Home, TrendingUp, PieChart, CreditCard, Shield, Settings, Building, Star, Bitcoin, Rocket, Globe } from "lucide-react";
+import { NavLink, useLocation } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { cn } from "@/lib/utils";
 
 interface NavigationLinksProps {
-  onClick?: () => void;
+  onItemClick: () => void;
 }
 
-export const NavigationLinks = ({ onClick }: NavigationLinksProps) => {
-  const navLinks = [
-    { to: "/markets", label: "Global Markets", icon: <BarChart3 className="h-4 w-4 mr-2" /> },
-    { to: "/african-markets", label: "African Markets", icon: <Globe className="h-4 w-4 mr-2" /> },
-    { to: "/crypto", label: "Crypto", icon: <Activity className="h-4 w-4 mr-2" /> },
-    { to: "/portfolio", label: "Portfolio", icon: <TrendingUp className="h-4 w-4 mr-2" /> },
-    { to: "/watchlist", label: "Watchlist", icon: <DollarSign className="h-4 w-4 mr-2" /> },
-    { to: "/ipo", label: "IPO", icon: <BarChart3 className="h-4 w-4 mr-2" /> },
-    { to: "/pwa-settings", label: "Notifications", icon: <Settings className="h-4 w-4 mr-2" /> },
+export const NavigationLinks = ({ onItemClick }: NavigationLinksProps) => {
+  const { user, accountDetails } = useAuth();
+  const location = useLocation();
+
+  const isAdmin = accountDetails?.role === 'admin';
+
+  const navigationItems = [
+    { to: "/", label: "Home", icon: Home },
+    { to: "/markets", label: "Markets", icon: TrendingUp },
+    ...(user ? [
+      { to: "/portfolio", label: "Portfolio", icon: PieChart },
+      { to: "/transfers", label: "Transfers", icon: CreditCard },
+      { to: "/kyc", label: "KYC", icon: Shield },
+      { to: "/banking", label: "Banking", icon: Building },
+      { to: "/watchlist", label: "Watchlist", icon: Star },
+      { to: "/crypto", label: "Crypto", icon: Bitcoin },
+      { to: "/ipo", label: "IPO", icon: Rocket },
+      { to: "/african-markets", label: "African Markets", icon: Globe },
+    ] : []),
+    ...(isAdmin ? [
+      { to: "/admin", label: "Admin", icon: Settings },
+    ] : []),
   ];
 
   return (
-    <>
-      {navLinks.map((link) => (
-        <Link
-          key={link.to}
-          to={link.to}
-          className="py-2 px-3 text-sm font-medium hover:bg-accent/50 rounded-md transition-colors flex items-center"
-          onClick={onClick}
+    <div className="flex flex-col space-y-1">
+      {navigationItems.map((item) => (
+        <NavLink
+          key={item.to}
+          to={item.to}
+          onClick={onItemClick}
+          className={({ isActive }) =>
+            cn(
+              "group flex items-center space-x-2 rounded-md p-2 text-sm font-medium transition-colors hover:bg-secondary hover:text-foreground",
+              isActive
+                ? "bg-secondary text-foreground"
+                : "text-muted-foreground"
+            )
+          }
         >
-          {link.icon}
-          <span>{link.label}</span>
-        </Link>
+          <item.icon className="h-4 w-4" />
+          <span>{item.label}</span>
+        </NavLink>
       ))}
-    </>
+    </div>
   );
 };
