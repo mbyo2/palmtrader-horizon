@@ -1,3 +1,4 @@
+
 import { Home, TrendingUp, PieChart, CreditCard, Shield, Settings, Building, Star, Bitcoin, Rocket, Globe } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -32,7 +33,7 @@ export const NavigationLinks = ({ onItemClick }: NavigationLinksProps) => {
   ];
 
   return (
-    <div className="flex flex-col space-y-1">
+    <div className="flex flex-col lg:flex-row space-y-1 lg:space-y-0 lg:space-x-1">
       {navigationItems.map((item) => (
         <NavLink
           key={item.to}
@@ -40,10 +41,10 @@ export const NavigationLinks = ({ onItemClick }: NavigationLinksProps) => {
           onClick={onItemClick}
           className={({ isActive }) =>
             cn(
-              "group flex items-center space-x-2 rounded-md p-2 text-sm font-medium transition-colors hover:bg-secondary hover:text-foreground",
+              "group flex items-center space-x-2 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 hover:bg-accent hover:text-accent-foreground",
               isActive
-                ? "bg-secondary text-foreground"
-                : "text-muted-foreground"
+                ? "bg-accent text-accent-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
             )
           }
         >
