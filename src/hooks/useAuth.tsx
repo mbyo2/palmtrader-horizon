@@ -13,6 +13,10 @@ interface AccountDetails {
   first_name?: string;
   last_name?: string;
   phone_number?: string;
+  is_email_verified?: boolean;
+  is_phone_verified?: boolean;
+  date_of_birth?: string;
+  tax_id?: string;
 }
 
 interface AuthContextType {

@@ -21,6 +21,8 @@ import Help from '@/pages/Help';
 import Banking from '@/pages/Banking';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import KYC from "@/pages/KYC";
+import Verification from "@/pages/Verification";
+import Profile from "@/pages/Profile";
 import Transfers from "@/pages/Transfers";
 
 const queryClient = new QueryClient({
@@ -54,6 +56,8 @@ function App() {
                     <Route path="/banking" element={<Banking />} />
                     <Route path="/admin" element={<Admin />} />
                     <Route path="/kyc" element={<KYC />} />
+                    <Route path="/verification" element={<Verification />} />
+                    <Route path="/profile" element={<Profile />} />
                     <Route path="/transfers" element={<Transfers />} />
                     <Route path="/settings" element={<Settings />} />
                     <Route path="/account-settings" element={<AccountSettings />} />

@@ -24,8 +24,8 @@ export const NavigationLinks = ({ onItemClick }: NavigationLinksProps) => {
       { to: "/crypto", label: "Crypto", icon: Bitcoin },
       { to: "/ipo", label: "IPO", icon: Rocket },
       { to: "/african-markets", label: "African Markets", icon: Globe },
-      { to: "/kyc", label: "KYC", icon: Shield },
-      { to: "/account-settings", label: "Profile", icon: User },
+      { to: "/verification", label: "Verification", icon: Shield },
+      { to: "/profile", label: "Profile", icon: User },
       { to: "/settings", label: "Settings", icon: Settings },
     ] : []),
     ...(isAdmin ? [
