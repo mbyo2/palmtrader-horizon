@@ -14,6 +14,11 @@ import Crypto from '@/pages/Crypto';
 import IPO from '@/pages/IPO';
 import AfricanMarkets from '@/pages/AfricanMarkets';
 import Admin from '@/pages/Admin';
+import Auth from '@/pages/Auth';
+import Settings from '@/pages/Settings';
+import AccountSettings from '@/pages/AccountSettings';
+import Help from '@/pages/Help';
+import Banking from '@/pages/Banking';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import KYC from "@/pages/KYC";
 import Transfers from "@/pages/Transfers";
@@ -39,15 +44,20 @@ function App() {
                 <main className="flex-1">
                   <Routes>
                     <Route path="/" element={<Home />} />
+                    <Route path="/auth" element={<Auth />} />
                     <Route path="/markets" element={<Markets />} />
                     <Route path="/portfolio" element={<Portfolio />} />
                     <Route path="/watchlist" element={<Watchlist />} />
                     <Route path="/crypto" element={<Crypto />} />
                     <Route path="/ipo" element={<IPO />} />
                     <Route path="/african-markets" element={<AfricanMarkets />} />
+                    <Route path="/banking" element={<Banking />} />
                     <Route path="/admin" element={<Admin />} />
                     <Route path="/kyc" element={<KYC />} />
                     <Route path="/transfers" element={<Transfers />} />
+                    <Route path="/settings" element={<Settings />} />
+                    <Route path="/account-settings" element={<AccountSettings />} />
+                    <Route path="/help" element={<Help />} />
                   </Routes>
                 </main>
                 <Footer />

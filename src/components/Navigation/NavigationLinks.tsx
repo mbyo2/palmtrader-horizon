@@ -1,6 +1,6 @@
 
-import { Home, TrendingUp, PieChart, CreditCard, Shield, Settings, Building, Star, Bitcoin, Rocket, Globe } from "lucide-react";
-import { NavLink, useLocation } from "react-router-dom";
+import { Home, TrendingUp, PieChart, CreditCard, Shield, Settings, Building, Star, Bitcoin, Rocket, Globe, User, Bell, HelpCircle } from "lucide-react";
+import { NavLink } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 
@@ -10,7 +10,6 @@ interface NavigationLinksProps {
 
 export const NavigationLinks = ({ onItemClick }: NavigationLinksProps) => {
   const { user, accountDetails } = useAuth();
-  const location = useLocation();
 
   const isAdmin = accountDetails?.role === 'admin';
 
@@ -20,16 +19,19 @@ export const NavigationLinks = ({ onItemClick }: NavigationLinksProps) => {
     ...(user ? [
       { to: "/portfolio", label: "Portfolio", icon: PieChart },
       { to: "/transfers", label: "Transfers", icon: CreditCard },
-      { to: "/kyc", label: "KYC", icon: Shield },
       { to: "/banking", label: "Banking", icon: Building },
       { to: "/watchlist", label: "Watchlist", icon: Star },
       { to: "/crypto", label: "Crypto", icon: Bitcoin },
       { to: "/ipo", label: "IPO", icon: Rocket },
       { to: "/african-markets", label: "African Markets", icon: Globe },
+      { to: "/kyc", label: "KYC", icon: Shield },
+      { to: "/account-settings", label: "Profile", icon: User },
+      { to: "/settings", label: "Settings", icon: Settings },
     ] : []),
     ...(isAdmin ? [
       { to: "/admin", label: "Admin", icon: Settings },
     ] : []),
+    { to: "/help", label: "Help", icon: HelpCircle },
   ];
 
   return (

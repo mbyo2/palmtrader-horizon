@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -20,7 +19,6 @@ import { Menu, Bell, Star, Settings, LogOut, User, Wallet } from "lucide-react";
 const Navbar = () => {
   const { user, signOut, accountDetails } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const location = useLocation();
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm">
@@ -116,7 +114,7 @@ const Navbar = () => {
                   <Link to="/auth">Sign In</Link>
                 </Button>
                 <Button asChild className="bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-white shadow-lg hover:shadow-xl transition-all duration-200">
-                  <Link to="/auth">Sign Up</Link>
+                  <Link to="/auth">Get Started</Link>
                 </Button>
               </div>
             )}
