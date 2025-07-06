@@ -9,12 +9,14 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
+import PasswordReset from '@/components/Auth/PasswordReset';
 
 const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showPasswordReset, setShowPasswordReset] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -111,7 +113,7 @@ const Auth = () => {
         description: "Welcome to Palm Cacia! You can now start trading.",
       });
 
-      navigate('/');
+      navigate('/onboarding');
     } catch (error: any) {
       toast({
         title: "Sign Up Failed",
@@ -122,6 +124,14 @@ const Auth = () => {
       setLoading(false);
     }
   };
+
+  if (showPasswordReset) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 p-4">
+        <PasswordReset onBack={() => setShowPasswordReset(false)} />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 p-4">
@@ -179,6 +189,17 @@ const Auth = () => {
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </Button>
                 </div>
+              </div>
+              
+              <div className="flex justify-end">
+                <Button 
+                  variant="link" 
+                  size="sm"
+                  onClick={() => setShowPasswordReset(true)}
+                  className="p-0 h-auto text-xs"
+                >
+                  Forgot password?
+                </Button>
               </div>
               
               <Button 
