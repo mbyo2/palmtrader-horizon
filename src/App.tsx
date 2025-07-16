@@ -24,6 +24,10 @@ import KYC from "@/pages/KYC";
 import Verification from "@/pages/Verification";
 import Profile from "@/pages/Profile";
 import Transfers from "@/pages/Transfers";
+import NotFound from "@/pages/NotFound";
+import IPODetails from "@/pages/IPODetails";
+import Onboarding from "@/pages/Onboarding";
+import PWASettings from "@/pages/PWASettings";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -47,11 +51,13 @@ function App() {
                   <Routes>
                     <Route path="/" element={<Home />} />
                     <Route path="/auth" element={<Auth />} />
+                    <Route path="/onboarding" element={<Onboarding />} />
                     <Route path="/markets" element={<Markets />} />
                     <Route path="/portfolio" element={<Portfolio />} />
                     <Route path="/watchlist" element={<Watchlist />} />
                     <Route path="/crypto" element={<Crypto />} />
                     <Route path="/ipo" element={<IPO />} />
+                    <Route path="/ipo/:id" element={<IPODetails />} />
                     <Route path="/african-markets" element={<AfricanMarkets />} />
                     <Route path="/banking" element={<Banking />} />
                     <Route path="/admin" element={<Admin />} />
@@ -61,7 +67,9 @@ function App() {
                     <Route path="/transfers" element={<Transfers />} />
                     <Route path="/settings" element={<Settings />} />
                     <Route path="/account-settings" element={<AccountSettings />} />
+                    <Route path="/pwa-settings" element={<PWASettings />} />
                     <Route path="/help" element={<Help />} />
+                    <Route path="*" element={<NotFound />} />
                   </Routes>
                 </main>
                 <Footer />
