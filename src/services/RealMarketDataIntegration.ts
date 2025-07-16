@@ -141,7 +141,7 @@ export class RealMarketDataIntegration {
   // Get government securities (bonds, treasury bills)
   static async fetchGovernmentSecurities() {
     try {
-      // Mock government securities data
+      // Mock government securities data - using mock data since table doesn't exist
       const securities = [
         {
           id: 'GRZ-10Y-2024',
@@ -178,7 +178,8 @@ export class RealMarketDataIntegration {
         }
       ];
 
-      await supabase.from('government_securities').upsert(securities);
+      // Store in local storage as fallback since table doesn't exist
+      localStorage.setItem('government_securities', JSON.stringify(securities));
       return securities;
     } catch (error) {
       console.error('Error fetching government securities:', error);
@@ -203,13 +204,14 @@ export class RealMarketDataIntegration {
       const exchangeRate = parseFloat(data['Realtime Currency Exchange Rate']['5. Exchange Rate']);
       const convertedAmount = amount * exchangeRate;
 
-      // Cache the rate
-      await supabase.from('currency_rates').upsert({
+      // Cache the rate in localStorage since table doesn't exist
+      const rateData = {
         from_currency: from,
         to_currency: to,
         rate: exchangeRate,
         updated_at: new Date().toISOString()
-      });
+      };
+      localStorage.setItem(`currency_rate_${from}_${to}`, JSON.stringify(rateData));
 
       return {
         amount: convertedAmount,
@@ -312,7 +314,8 @@ export class RealMarketDataIntegration {
 
   private static async cacheZambianStocks(stocks: ZambianStock[]) {
     try {
-      await supabase.from('zambian_stocks').upsert(stocks);
+      // Cache in localStorage since table doesn't exist
+      localStorage.setItem('zambian_stocks', JSON.stringify(stocks));
     } catch (error) {
       console.error('Error caching Zambian stocks:', error);
     }
@@ -320,10 +323,9 @@ export class RealMarketDataIntegration {
 
   private static async getCachedZambianStocks(): Promise<ZambianStock[]> {
     try {
-      const { data } = await supabase
-        .from('zambian_stocks')
-        .select('*');
-      return data || [];
+      // Get from localStorage since table doesn't exist
+      const cached = localStorage.getItem('zambian_stocks');
+      return cached ? JSON.parse(cached) : [];
     } catch (error) {
       console.error('Error getting cached Zambian stocks:', error);
       return [];
