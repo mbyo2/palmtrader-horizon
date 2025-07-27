@@ -24,35 +24,81 @@ interface GovernmentSecurity {
   lastAuctionDate?: string;
 }
 
-// Mock data service for now
+// Fetch government securities from localStorage (can be enhanced to use API later)
 const fetchGovernmentSecurities = async (): Promise<GovernmentSecurity[]> => {
-  // Simulate API call
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  return [
-    {
-      id: "ZMW-TB-91D",
-      name: "91-Day Treasury Bill",
-      type: "treasury_bill" as const,
-      currency: "ZMW",
-      yield: 12.5,
-      minimumInvestment: 1000,
-      maturityDays: 91,
-      issuer: "Bank of Zambia",
-      lastAuctionDate: "2024-01-15"
-    },
-    {
-      id: "ZMW-GB-5Y",
-      name: "5-Year Government Bond",
-      type: "government_bond" as const,
-      currency: "ZMW",
-      yield: 15.2,
-      minimumInvestment: 5000,
-      maturityYears: 5,
-      issuer: "Ministry of Finance",
-      couponRate: 14.5
+  try {
+    // Try to get from localStorage first
+    const stored = localStorage.getItem('government_securities');
+    if (stored) {
+      return JSON.parse(stored);
     }
-  ];
+    
+    // Default data if nothing in localStorage
+    const defaultSecurities = [
+      {
+        id: "ZMW-TB-91D",
+        name: "91-Day Treasury Bill",
+        type: "treasury_bill" as const,
+        currency: "ZMW",
+        yield: 12.5,
+        minimumInvestment: 1000,
+        maturityDays: 91,
+        issuer: "Bank of Zambia",
+        lastAuctionDate: "2024-01-15"
+      },
+      {
+        id: "ZMW-TB-182D",
+        name: "182-Day Treasury Bill",
+        type: "treasury_bill" as const,
+        currency: "ZMW",
+        yield: 13.2,
+        minimumInvestment: 1000,
+        maturityDays: 182,
+        issuer: "Bank of Zambia",
+        lastAuctionDate: "2024-01-15"
+      },
+      {
+        id: "ZMW-GB-2Y",
+        name: "2-Year Government Bond",
+        type: "government_bond" as const,
+        currency: "ZMW",
+        yield: 14.8,
+        minimumInvestment: 2500,
+        maturityYears: 2,
+        issuer: "Ministry of Finance",
+        couponRate: 14.0
+      },
+      {
+        id: "ZMW-GB-5Y",
+        name: "5-Year Government Bond",
+        type: "government_bond" as const,
+        currency: "ZMW",
+        yield: 15.2,
+        minimumInvestment: 5000,
+        maturityYears: 5,
+        issuer: "Ministry of Finance",
+        couponRate: 14.5
+      },
+      {
+        id: "ZMW-GB-10Y",
+        name: "10-Year Government Bond",
+        type: "government_bond" as const,
+        currency: "ZMW",
+        yield: 16.1,
+        minimumInvestment: 10000,
+        maturityYears: 10,
+        issuer: "Ministry of Finance",
+        couponRate: 15.5
+      }
+    ];
+    
+    // Store default data in localStorage
+    localStorage.setItem('government_securities', JSON.stringify(defaultSecurities));
+    return defaultSecurities;
+  } catch (error) {
+    console.error("Error fetching government securities:", error);
+    throw error;
+  }
 };
 
 const GovernmentSecurities = () => {

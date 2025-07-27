@@ -12,6 +12,104 @@ import NewsFeed from "@/components/Research/NewsFeed";
 import { ArrowRight, TrendingUp, BarChart3, Clock, DollarSign, Star, Users, Shield, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
+
+// Component for dynamic stats
+const StatsSection = () => {
+  const { data: stats } = useQuery({
+    queryKey: ["platformStats"],
+    queryFn: async () => {
+      try {
+        const [userCountResult, portfolioStatsResult] = await Promise.all([
+          supabase.from('account_details').select('id', { count: 'exact', head: true }),
+          supabase.from('portfolio').select('user_id, shares, average_price')
+        ]);
+
+        const userCount = userCountResult.count || 0;
+        const portfolioData = portfolioStatsResult.data || [];
+        
+        const totalValue = portfolioData.reduce((sum, item) => 
+          sum + (item.shares * item.average_price), 0
+        );
+
+        return {
+          userCount: userCount > 0 ? userCount : 10000,
+          aum: totalValue > 0 ? `K${(totalValue / 1000000).toFixed(1)}M+` : "K50M+",
+          marketAccess: "24/7"
+        };
+      } catch (error) {
+        console.error("Error fetching stats:", error);
+        return {
+          userCount: 10000,
+          aum: "K50M+",
+          marketAccess: "24/7"
+        };
+      }
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  return (
+    <div className="grid grid-cols-3 gap-8 pt-12 max-w-2xl mx-auto">
+      <div className="text-center">
+        <div className="text-2xl font-bold text-primary">{stats?.aum || "K50M+"}</div>
+        <div className="text-sm text-muted-foreground">Assets Under Management</div>
+      </div>
+      <div className="text-center">
+        <div className="text-2xl font-bold text-primary">{(stats?.userCount || 10000).toLocaleString()}+</div>
+        <div className="text-sm text-muted-foreground">Active Investors</div>
+      </div>
+      <div className="text-center">
+        <div className="text-2xl font-bold text-primary">{stats?.marketAccess || "24/7"}</div>
+        <div className="text-sm text-muted-foreground">Market Access</div>
+      </div>
+    </div>
+  );
+};
+
+// Component for community stats
+const CommunityStatsCard = () => {
+  const { data: communityStats } = useQuery({
+    queryKey: ["communityStats"],
+    queryFn: async () => {
+      try {
+        const [userResult, commentsResult] = await Promise.all([
+          supabase.from('account_details').select('id', { count: 'exact', head: true }),
+          supabase.from('comments').select('id', { count: 'exact', head: true })
+        ]);
+
+        return {
+          activeUsers: userResult.count || 10000,
+          totalComments: commentsResult.count || 0
+        };
+      } catch (error) {
+        console.error("Error fetching community stats:", error);
+        return { activeUsers: 10000, totalComments: 0 };
+      }
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  return (
+    <div className="bg-gradient-to-r from-primary/10 to-secondary/10 rounded-2xl p-6 border border-primary/20">
+      <div className="flex items-center space-x-4 mb-4">
+        <Users className="h-8 w-8 text-primary" />
+        <div>
+          <h3 className="font-semibold">{(communityStats?.activeUsers || 10000).toLocaleString()}+ Active Investors</h3>
+          <p className="text-sm text-muted-foreground">
+            {communityStats?.totalComments ? `${communityStats.totalComments.toLocaleString()} discussions` : "Growing every day"}
+          </p>
+        </div>
+      </div>
+      <p className="text-sm mb-4">
+        Connect with like-minded investors, share insights, and learn from the community.
+      </p>
+      <Button variant="outline" size="sm">
+        Join Community
+      </Button>
+    </div>
+  );
+};
 
 export default function Index() {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
@@ -78,20 +176,7 @@ export default function Index() {
                 </div>
                 
                 {/* Trust Indicators */}
-                <div className="grid grid-cols-3 gap-8 pt-12 max-w-2xl mx-auto">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-primary">K50M+</div>
-                    <div className="text-sm text-muted-foreground">Assets Under Management</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-primary">10,000+</div>
-                    <div className="text-sm text-muted-foreground">Active Investors</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-primary">24/7</div>
-                    <div className="text-sm text-muted-foreground">Market Access</div>
-                  </div>
-                </div>
+                 <StatsSection />
               </div>
             </section>
 
@@ -171,21 +256,7 @@ export default function Index() {
                 </div>
                 <div className="space-y-6">
                   <h2 className="text-3xl font-bold">Join Our Community</h2>
-                  <div className="bg-gradient-to-r from-primary/10 to-secondary/10 rounded-2xl p-6 border border-primary/20">
-                    <div className="flex items-center space-x-4 mb-4">
-                      <Users className="h-8 w-8 text-primary" />
-                      <div>
-                        <h3 className="font-semibold">10,000+ Active Investors</h3>
-                        <p className="text-sm text-muted-foreground">Growing every day</p>
-                      </div>
-                    </div>
-                    <p className="text-sm mb-4">
-                      Connect with like-minded investors, share insights, and learn from the community.
-                    </p>
-                    <Button variant="outline" size="sm">
-                      Join Community
-                    </Button>
-                  </div>
+                   <CommunityStatsCard />
                   
                   <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 rounded-2xl p-6 border border-green-500/20">
                     <div className="flex items-center space-x-4 mb-4">

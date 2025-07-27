@@ -4,6 +4,7 @@ import { useRealTimeMarketData } from "@/hooks/useRealTimeMarketData";
 import { MarketDataService } from "@/services/MarketDataService";
 import EnhancedMarketCard, { Market } from "./EnhancedMarketCard";
 import { Skeleton } from "@/components/ui/skeleton";
+import { supabase } from "@/integrations/supabase/client";
 
 const formatCurrency = (value: number | string): string => {
   const numValue = typeof value === 'string' ? parseFloat(value.replace(/,/g, '')) : value;
@@ -15,21 +16,63 @@ const formatCurrency = (value: number | string): string => {
   }).format(numValue);
 };
 
-// Dynamic market symbols - these could be fetched from a config or user preferences
-const MARKET_SYMBOLS = [
-  { symbol: "AAPL", name: "Apple Inc." },
-  { symbol: "MSFT", name: "Microsoft Corp." },
-  { symbol: "AMZN", name: "Amazon.com Inc." },
-  { symbol: "GOOGL", name: "Alphabet Inc." },
-  { symbol: "NVDA", name: "NVIDIA Corp." },
-  { symbol: "META", name: "Meta Platforms Inc." }
-];
+// Dynamic market symbols fetched from database
+const useMarketSymbols = () => {
+  const [symbols, setSymbols] = useState([
+    { symbol: "AAPL", name: "Apple Inc." },
+    { symbol: "MSFT", name: "Microsoft Corp." },
+    { symbol: "AMZN", name: "Amazon.com Inc." },
+    { symbol: "GOOGL", name: "Alphabet Inc." },
+    { symbol: "NVDA", name: "NVIDIA Corp." },
+    { symbol: "META", name: "Meta Platforms Inc." }
+  ]);
+
+  useEffect(() => {
+    const fetchPopularSymbols = async () => {
+      try {
+        const { data } = await supabase.rpc("get_popular_stocks");
+        if (data && data.length > 0) {
+          const popularSymbols = data.slice(0, 6).map((stock: any) => ({
+            symbol: stock.symbol,
+            name: `${stock.symbol} Inc.`
+          }));
+          
+          // Combine with default symbols if we don't have enough popular ones
+          const defaultSymbols = [
+            { symbol: "AAPL", name: "Apple Inc." },
+            { symbol: "MSFT", name: "Microsoft Corp." },
+            { symbol: "AMZN", name: "Amazon.com Inc." },
+            { symbol: "GOOGL", name: "Alphabet Inc." },
+            { symbol: "NVDA", name: "NVIDIA Corp." },
+            { symbol: "META", name: "Meta Platforms Inc." }
+          ];
+          
+          const combinedSymbols = [...popularSymbols];
+          defaultSymbols.forEach(defaultSymbol => {
+            if (!combinedSymbols.find(s => s.symbol === defaultSymbol.symbol)) {
+              combinedSymbols.push(defaultSymbol);
+            }
+          });
+          
+          setSymbols(combinedSymbols.slice(0, 6));
+        }
+      } catch (error) {
+        console.error("Error fetching popular symbols:", error);
+        // Keep default symbols on error
+      }
+    };
+
+    fetchPopularSymbols();
+  }, []);
+
+  return symbols;
+};
 
 const MarketOverview = () => {
   const [markets, setMarkets] = useState<Market[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
-  // Get all symbols for the markets
+  const MARKET_SYMBOLS = useMarketSymbols();
   const symbols = MARKET_SYMBOLS.map(m => m.symbol);
   
   // Fetch initial data for all symbols
