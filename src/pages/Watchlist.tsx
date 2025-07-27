@@ -2,7 +2,7 @@ import { useProtectedRoute } from "@/hooks/useProtectedRoute";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import EnhancedStockCard from "@/components/StockList/EnhancedStockCard";
-import { useWatchlistData } from "@/components/StockList/useWatchlistData";
+import useWatchlistData from "@/components/StockList/useWatchlistData";
 import { Star, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";

@@ -14,7 +14,7 @@ import { User, Settings, LogOut } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 
-export const UserMenu = () => {
+const UserMenu = () => {
   const { user, signOut } = useAuth();
 
   if (!user) {
@@ -60,3 +60,5 @@ export const UserMenu = () => {
     </DropdownMenu>
   );
 };
+
+export default UserMenu;

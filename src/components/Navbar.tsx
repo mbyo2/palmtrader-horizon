@@ -11,8 +11,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { NavigationLinks } from "@/components/Navigation/NavigationLinks";
-import { MobileNav } from "@/components/Navigation/MobileNav";
+import NavigationLinks from "@/components/Navigation/NavigationLinks";
+import MobileNav from "@/components/Navigation/MobileNav";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Menu, Bell, Star, Settings, LogOut, User, Wallet } from "lucide-react";
 

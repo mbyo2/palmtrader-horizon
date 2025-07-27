@@ -1,13 +1,13 @@
 
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { NavigationLinks } from "./NavigationLinks";
+import NavigationLinks from "./NavigationLinks";
 
 interface MobileNavProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-export const MobileNav = ({ isOpen, onClose }: MobileNavProps) => {
+const MobileNav = ({ isOpen, onClose }: MobileNavProps) => {
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent side="left" className="w-64">
@@ -18,3 +18,5 @@ export const MobileNav = ({ isOpen, onClose }: MobileNavProps) => {
     </Sheet>
   );
 };
+
+export default MobileNav;

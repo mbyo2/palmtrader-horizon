@@ -8,7 +8,7 @@ interface NavigationLinksProps {
   onItemClick: () => void;
 }
 
-export const NavigationLinks = ({ onItemClick }: NavigationLinksProps) => {
+const NavigationLinks = ({ onItemClick }: NavigationLinksProps) => {
   const { user, accountDetails } = useAuth();
 
   const isAdmin = accountDetails?.role === 'admin';
@@ -57,3 +57,5 @@ export const NavigationLinks = ({ onItemClick }: NavigationLinksProps) => {
     </div>
   );
 };
+
+export default NavigationLinks;

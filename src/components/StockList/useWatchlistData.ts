@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Stock } from "./useStockData";
 
-export const useWatchlistData = () => {
+const useWatchlistData = () => {
   const { user } = useAuth();
   const [watchlistStocks, setWatchlistStocks] = useState<Stock[]>([]);
   const [loading, setLoading] = useState(true);
@@ -76,3 +76,5 @@ export const useWatchlistData = () => {
 
   return { watchlistStocks, loading, error };
 };
+
+export default useWatchlistData;
