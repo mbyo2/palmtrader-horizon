@@ -1,6 +1,7 @@
 import { Copyright, Github, Twitter, Globe } from "lucide-react";
 import { Button } from "./ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
+import { Link } from "react-router-dom";
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -27,15 +28,27 @@ const Footer = () => {
         </div>
         <div className="flex flex-col md:flex-row items-center gap-4">
           <nav className="flex gap-4 text-sm text-muted-foreground">
-            <a href="/markets" className="hover:text-primary transition-colors">
+            <Link to="/markets" className="hover:text-primary transition-colors">
               Markets
-            </a>
-            <a href="/portfolio" className="hover:text-primary transition-colors">
+            </Link>
+            <Link to="/portfolio" className="hover:text-primary transition-colors">
               Portfolio
-            </a>
-            <a href="/watchlist" className="hover:text-primary transition-colors">
+            </Link>
+            <Link to="/watchlist" className="hover:text-primary transition-colors">
               Watchlist
-            </a>
+            </Link>
+            <Link to="/about" className="hover:text-primary transition-colors">
+              About
+            </Link>
+            <Link to="/contact" className="hover:text-primary transition-colors">
+              Contact
+            </Link>
+            <Link to="/terms" className="hover:text-primary transition-colors">
+              Terms
+            </Link>
+            <Link to="/cookies" className="hover:text-primary transition-colors">
+              Cookies
+            </Link>
           </nav>
           <div className="flex items-center gap-2">
             {/* GitHub */}
