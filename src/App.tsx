@@ -48,29 +48,33 @@ function App() {
               <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
                 <Navbar />
                 <main className="flex-1">
-                  <Routes>
-                    <Route path="/" element={<Home />} />
-                    <Route path="/auth" element={<Auth />} />
-                    <Route path="/onboarding" element={<Onboarding />} />
-                    <Route path="/markets" element={<Markets />} />
-                    <Route path="/portfolio" element={<Portfolio />} />
-                    <Route path="/watchlist" element={<Watchlist />} />
-                    <Route path="/crypto" element={<Crypto />} />
-                    <Route path="/ipo" element={<IPO />} />
-                    <Route path="/ipo/:id" element={<IPODetails />} />
-                    <Route path="/african-markets" element={<AfricanMarkets />} />
-                    <Route path="/banking" element={<Banking />} />
-                    <Route path="/admin" element={<Admin />} />
-                    <Route path="/kyc" element={<KYC />} />
-                    <Route path="/verification" element={<Verification />} />
-                    <Route path="/profile" element={<Profile />} />
-                    <Route path="/transfers" element={<Transfers />} />
-                    <Route path="/settings" element={<Settings />} />
-                    <Route path="/account-settings" element={<AccountSettings />} />
-                    <Route path="/pwa-settings" element={<PWASettings />} />
-                    <Route path="/help" element={<Help />} />
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
+                    <Routes>
+                      <Route path="/" element={<Home />} />
+                      <Route path="/auth" element={<Auth />} />
+                      <Route path="/onboarding" element={<Onboarding />} />
+                      <Route path="/markets" element={<Markets />} />
+                      <Route path="/portfolio" element={<Portfolio />} />
+                      <Route path="/watchlist" element={<Watchlist />} />
+                      <Route path="/crypto" element={<Crypto />} />
+                      <Route path="/ipo" element={<IPO />} />
+                      <Route path="/ipo/:id" element={<IPODetails />} />
+                      <Route path="/african-markets" element={<AfricanMarkets />} />
+                      <Route path="/banking" element={<Banking />} />
+                      <Route path="/admin" element={<Admin />} />
+                      <Route path="/kyc" element={<KYC />} />
+                      <Route path="/verification" element={<Verification />} />
+                      {/* Route aliases to connect related pages */}
+                      <Route path="/verify" element={<Verification />} />
+                      <Route path="/support" element={<Help />} />
+                      <Route path="/upgrade" element={<Settings />} />
+                      <Route path="/profile" element={<Profile />} />
+                      <Route path="/transfers" element={<Transfers />} />
+                      <Route path="/settings" element={<Settings />} />
+                      <Route path="/account-settings" element={<AccountSettings />} />
+                      <Route path="/pwa-settings" element={<PWASettings />} />
+                      <Route path="/help" element={<Help />} />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
                 </main>
                 <Footer />
                 <Toaster />
