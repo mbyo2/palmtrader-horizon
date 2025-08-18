@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.12 (cd3cf9e)"
@@ -890,6 +890,39 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          created_at: string
+          data: Json | null
+          id: string
+          message: string
+          read: boolean
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json | null
+          id?: string
+          message: string
+          read?: boolean
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json | null
+          id?: string
+          message?: string
+          read?: boolean
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       options_trades: {
         Row: {
           contracts: number
@@ -931,6 +964,111 @@ export type Database = {
           symbol?: string
           total_premium?: number
           updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      order_history: {
+        Row: {
+          average_fill_price: number | null
+          created_at: string
+          filled_quantity: number | null
+          id: string
+          order_id: string
+          order_type: string
+          price: number | null
+          quantity: number
+          side: string
+          status: string
+          status_reason: string | null
+          symbol: string
+          user_id: string
+        }
+        Insert: {
+          average_fill_price?: number | null
+          created_at?: string
+          filled_quantity?: number | null
+          id?: string
+          order_id: string
+          order_type: string
+          price?: number | null
+          quantity: number
+          side: string
+          status: string
+          status_reason?: string | null
+          symbol: string
+          user_id: string
+        }
+        Update: {
+          average_fill_price?: number | null
+          created_at?: string
+          filled_quantity?: number | null
+          id?: string
+          order_id?: string
+          order_type?: string
+          price?: number | null
+          quantity?: number
+          side?: string
+          status?: string
+          status_reason?: string | null
+          symbol?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      orders: {
+        Row: {
+          average_fill_price: number | null
+          created_at: string
+          expires_at: string | null
+          filled_quantity: number | null
+          id: string
+          limit_price: number | null
+          order_type: string
+          price: number | null
+          quantity: number
+          side: string
+          status: string
+          stop_price: number | null
+          symbol: string
+          time_in_force: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          average_fill_price?: number | null
+          created_at?: string
+          expires_at?: string | null
+          filled_quantity?: number | null
+          id?: string
+          limit_price?: number | null
+          order_type: string
+          price?: number | null
+          quantity: number
+          side: string
+          status?: string
+          stop_price?: number | null
+          symbol: string
+          time_in_force?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          average_fill_price?: number | null
+          created_at?: string
+          expires_at?: string | null
+          filled_quantity?: number | null
+          id?: string
+          limit_price?: number | null
+          order_type?: string
+          price?: number | null
+          quantity?: number
+          side?: string
+          status?: string
+          stop_price?: number | null
+          symbol?: string
+          time_in_force?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
@@ -1002,6 +1140,45 @@ export type Database = {
           id?: string
           shares?: number
           symbol?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      positions: {
+        Row: {
+          average_cost: number
+          created_at: string
+          id: string
+          market_value: number | null
+          quantity: number
+          realized_pnl: number | null
+          symbol: string
+          unrealized_pnl: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          average_cost: number
+          created_at?: string
+          id?: string
+          market_value?: number | null
+          quantity?: number
+          realized_pnl?: number | null
+          symbol: string
+          unrealized_pnl?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          average_cost?: number
+          created_at?: string
+          id?: string
+          market_value?: number | null
+          quantity?: number
+          realized_pnl?: number | null
+          symbol?: string
+          unrealized_pnl?: number | null
           updated_at?: string
           user_id?: string
         }
@@ -1198,7 +1375,10 @@ export type Database = {
       }
       trades: {
         Row: {
+          commission: number | null
           created_at: string
+          executed_at: string | null
+          fees: number | null
           id: string
           is_fractional: boolean | null
           limit_price: number | null
@@ -1218,7 +1398,10 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          commission?: number | null
           created_at?: string
+          executed_at?: string | null
+          fees?: number | null
           id?: string
           is_fractional?: boolean | null
           limit_price?: number | null
@@ -1238,7 +1421,10 @@ export type Database = {
           user_id: string
         }
         Update: {
+          commission?: number | null
           created_at?: string
+          executed_at?: string | null
+          fees?: number | null
           id?: string
           is_fractional?: boolean | null
           limit_price?: number | null
@@ -1467,8 +1653,8 @@ export type Database = {
       get_popular_stocks: {
         Args: Record<PropertyKey, never>
         Returns: {
-          symbol: string
           comment_count: number
+          symbol: string
           unique_users: number
         }[]
       }

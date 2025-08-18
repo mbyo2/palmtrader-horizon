@@ -14,7 +14,8 @@ import {
 import NavigationLinks from "@/components/Navigation/NavigationLinks";
 import MobileNav from "@/components/Navigation/MobileNav";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { Menu, Bell, Star, Settings, LogOut, User, Wallet } from "lucide-react";
+import NotificationCenter from "@/components/Notifications/NotificationCenter";
+import { Menu, Star, Settings, LogOut, User, Wallet } from "lucide-react";
 
 const Navbar = () => {
   const { user, signOut, accountDetails } = useAuth();
@@ -43,13 +44,7 @@ const Navbar = () => {
             {user ? (
               <>
                 <ThemeToggle />
-                
-                <Button variant="ghost" size="sm" className="relative hover:bg-accent">
-                  <Bell className="h-4 w-4" />
-                  <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 text-xs bg-primary">
-                    3
-                  </Badge>
-                </Button>
+                <NotificationCenter />
                 
                 <Button variant="ghost" size="sm" asChild className="hover:bg-accent">
                   <Link to="/watchlist">
