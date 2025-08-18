@@ -46,14 +46,6 @@ const queryClient = new QueryClient({
     },
   },
 });
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      retry: 2,
-    },
-  },
-});
 
 function App() {
   // Initialize services on app mount
