@@ -21,26 +21,37 @@ export const useStockData = (searchQuery: string) => {
 
   // Fetch dynamic stock list from database or popular symbols
   useEffect(() => {
+    let cleanup: (() => void) | undefined;
+    let isActive = true;
+
     const fetchStockList = async () => {
       try {
         setLoading(true);
+        setError(null);
         
         // Try to get stocks from watchlists and trades to make it dynamic
-        const { data: watchlistStocks } = await supabase
+        const { data: watchlistStocks, error: watchlistError } = await supabase
           .from('watchlists')
           .select('symbol')
           .limit(20);
 
-        const { data: tradedStocks } = await supabase
+        const { data: tradedStocks, error: tradesError } = await supabase
           .from('trades')
           .select('symbol')
           .limit(20);
 
+        if (watchlistError) console.warn('Error fetching watchlist stocks:', watchlistError);
+        if (tradesError) console.warn('Error fetching traded stocks:', tradesError);
+
         // Combine and deduplicate symbols
         const allSymbols = new Set<string>();
         
-        watchlistStocks?.forEach(item => allSymbols.add(item.symbol));
-        tradedStocks?.forEach(item => allSymbols.add(item.symbol));
+        watchlistStocks?.forEach(item => {
+          if (item.symbol) allSymbols.add(item.symbol);
+        });
+        tradedStocks?.forEach(item => {
+          if (item.symbol) allSymbols.add(item.symbol);
+        });
 
         // If we don't have enough dynamic data, add some popular symbols
         const popularSymbols = [
@@ -58,6 +69,8 @@ export const useStockData = (searchQuery: string) => {
           change: "+0.0%"
         }));
 
+        if (!isActive) return;
+
         setStocks(stockList);
         
         // Subscribe to real-time updates for all stocks
@@ -65,13 +78,13 @@ export const useStockData = (searchQuery: string) => {
           try {
             wsManager.subscribe(stock.symbol, subscriberId);
           } catch (e) {
-            console.error(`Error subscribing to ${stock.symbol}:`, e);
+            console.warn(`Failed to subscribe to ${stock.symbol}:`, e);
           }
         });
 
         // Set up data handler
         const unsubscribe = finnhubSocket.onMarketData(({ symbol, price }) => {
-          if (!symbol || !price) return;
+          if (!symbol || !price || !isActive) return;
           
           setStocks(prevStocks => 
             prevStocks.map(stock => {
@@ -91,29 +104,41 @@ export const useStockData = (searchQuery: string) => {
           );
         });
 
-        setLoading(false);
+        if (isActive) {
+          setLoading(false);
+        }
 
-        // Cleanup function
-        return () => {
-          console.log("Cleaning up stock data subscriptions");
+        // Set up cleanup function
+        cleanup = () => {
           stockList.forEach(stock => {
             try {
               wsManager.unsubscribe(stock.symbol, subscriberId);
             } catch (e) {
-              console.error(`Error unsubscribing from ${stock.symbol}:`, e);
+              console.warn(`Failed to unsubscribe from ${stock.symbol}:`, e);
             }
           });
           unsubscribe();
         };
+
       } catch (err) {
-        console.error("Error in useStockData:", err);
-        setError(err instanceof Error ? err : new Error('Unknown error'));
-        setLoading(false);
+        if (isActive) {
+          console.warn("Error in useStockData:", err);
+          setError(err instanceof Error ? err : new Error('Unknown error'));
+          setLoading(false);
+        }
       }
     };
 
     fetchStockList();
-  }, []);
+
+    // Cleanup function
+    return () => {
+      isActive = false;
+      if (cleanup) {
+        cleanup();
+      }
+    };
+  }, [subscriberId]);
 
   // Filter stocks based on search query
   const filteredStocks = stocks.filter(

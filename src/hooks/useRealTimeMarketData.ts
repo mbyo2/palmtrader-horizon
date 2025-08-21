@@ -86,7 +86,9 @@ export function useRealTimeMarketData(
       return;
     }
     
-    console.log(`[useRealTimeMarketData:${instanceId.current}] Subscribing to ${symbolsArray.length} symbols`);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[useRealTimeMarketData:${instanceId.current}] Subscribing to ${symbolsArray.length} symbols`);
+    }
     
     // Subscribe to all symbols
     symbolsArray.forEach(symbol => {
@@ -114,7 +116,9 @@ export function useRealTimeMarketData(
     
     // Cleanup on unmount
     return () => {
-      console.log(`[useRealTimeMarketData:${instanceId.current}] Unsubscribing`);
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[useRealTimeMarketData:${instanceId.current}] Unsubscribing`);
+      }
       isMounted.current = false;
       
       // Unsubscribe from all symbols

@@ -37,6 +37,7 @@ import About from '@/pages/About';
 import Contact from '@/pages/Contact';
 import Terms from '@/pages/Terms';
 import Cookies from '@/pages/Cookies';
+import { setupGlobalErrorHandlers } from '@/utils/errorHandling';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -51,6 +52,11 @@ function App() {
   // Initialize services on app mount
   React.useEffect(() => {
     APIService.initialize();
+    
+    // Set up global error handling
+    const cleanup = setupGlobalErrorHandlers();
+    
+    return cleanup;
   }, []);
 
   return (

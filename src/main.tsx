@@ -12,6 +12,7 @@ if (process.env.NODE_ENV === 'development') {
   // Dynamic import to not include in production
   import('@axe-core/react').then(({ default: axe }) => {
     axe(React, ReactDOM, 1000);
+    // Only log in development
     console.log('Accessibility testing enabled with axe-core');
   });
 }
@@ -20,7 +21,10 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <EnhancedErrorBoundary
       onError={(error) => {
-        console.error("Root level error caught:", error);
+        // Only log in development
+        if (process.env.NODE_ENV === 'development') {
+          console.error("Root level error caught:", error);
+        }
         logError(error, { componentStack: "Root level error" });
       }}
     >
