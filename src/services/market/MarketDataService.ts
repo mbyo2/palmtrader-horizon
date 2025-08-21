@@ -16,21 +16,69 @@ export interface MarketData {
 export class MarketDataService {
   static async fetchLatestPrice(symbol: string): Promise<MarketData | null> {
     try {
-      // For demo purposes, return mock data
-      const mockPrice = Math.random() * 100 + 50; // Random price between 50-150
+      // First try to get real-time data from Finnhub
+      const { supabase } = await import("@/integrations/supabase/client");
       
-      return {
-        symbol,
-        price: mockPrice,
-        change: (Math.random() - 0.5) * 10,
-        changePercent: (Math.random() - 0.5) * 5,
-        volume: Math.floor(Math.random() * 1000000),
-        timestamp: Date.now(),
-        open: mockPrice * (0.98 + Math.random() * 0.04),
-        high: mockPrice * (1.01 + Math.random() * 0.02),
-        low: mockPrice * (0.97 + Math.random() * 0.02),
-        close: mockPrice
-      };
+      const { data, error } = await supabase.functions.invoke('finnhub-websocket', {
+        body: { action: 'get_quote', symbol }
+      });
+
+      if (!error && data && typeof data.c === 'number') {
+        const marketData: MarketData = {
+          symbol,
+          price: data.c, // Current price
+          change: data.d || 0, // Change
+          changePercent: data.dp || 0, // Change percent
+          volume: data.v || 0, // Volume
+          timestamp: Date.now(),
+          open: data.o || data.c, // Open
+          high: data.h || data.c, // High
+          low: data.l || data.c, // Low
+          close: data.c, // Close (same as current)
+          type: 'realtime'
+        };
+
+        // Cache in database
+        await supabase.from('market_data').upsert({
+          symbol: marketData.symbol,
+          price: marketData.price,
+          open: marketData.open,
+          high: marketData.high,
+          low: marketData.low,
+          close: marketData.close,
+          timestamp: marketData.timestamp,
+          type: 'realtime'
+        });
+
+        return marketData;
+      }
+
+      // Fallback to cached data if API fails
+      const { data: cachedData } = await supabase
+        .from('market_data')
+        .select('*')
+        .eq('symbol', symbol)
+        .order('timestamp', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (cachedData) {
+        return {
+          symbol: cachedData.symbol,
+          price: cachedData.price,
+          change: 0,
+          changePercent: 0,
+          volume: 0,
+          timestamp: cachedData.timestamp,
+          open: cachedData.open,
+          high: cachedData.high,
+          low: cachedData.low,
+          close: cachedData.close,
+          type: 'cached'
+        };
+      }
+
+      return null;
     } catch (error) {
       console.error(`Error fetching price for ${symbol}:`, error);
       return null;
@@ -39,29 +87,81 @@ export class MarketDataService {
 
   static async fetchHistoricalData(symbol: string, days: number): Promise<MarketData[]> {
     try {
-      // Generate mock historical data
-      const data: MarketData[] = [];
-      const basePrice = Math.random() * 100 + 50;
+      const { supabase } = await import("@/integrations/supabase/client");
       
-      for (let i = days; i >= 0; i--) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
+      // Try Alpha Vantage for historical data
+      const { data, error } = await supabase.functions.invoke('alpha-vantage', {
+        body: {
+          function: 'TIME_SERIES_DAILY',
+          symbol: symbol,
+          outputsize: days > 100 ? 'full' : 'compact'
+        }
+      });
+
+      if (!error && data && data['Time Series (Daily)']) {
+        const timeSeries = data['Time Series (Daily)'];
+        const historicalData: MarketData[] = [];
         
-        const price = basePrice + (Math.random() - 0.5) * 20;
-        data.push({
-          symbol,
-          price,
-          timestamp: date.getTime(),
-          open: price * (0.98 + Math.random() * 0.04),
-          high: price * (1.01 + Math.random() * 0.02),
-          low: price * (0.97 + Math.random() * 0.02),
-          close: price,
-          volume: Math.floor(Math.random() * 1000000),
-          type: 'historical'
-        });
+        const entries = Object.entries(timeSeries)
+          .sort(([a], [b]) => new Date(b).getTime() - new Date(a).getTime())
+          .slice(0, days);
+
+        for (const [date, values] of entries) {
+          const dateObj = new Date(date);
+          historicalData.push({
+            symbol,
+            price: parseFloat(values['4. close']),
+            timestamp: dateObj.getTime(),
+            open: parseFloat(values['1. open']),
+            high: parseFloat(values['2. high']),
+            low: parseFloat(values['3. low']),
+            close: parseFloat(values['4. close']),
+            volume: parseInt(values['5. volume']),
+            type: 'historical'
+          });
+        }
+
+        // Cache in database
+        for (const item of historicalData) {
+          await supabase.from('market_data').upsert({
+            symbol: item.symbol,
+            price: item.price,
+            open: item.open,
+            high: item.high,
+            low: item.low,
+            close: item.close,
+            timestamp: item.timestamp,
+            type: 'daily'
+          });
+        }
+
+        return historicalData.reverse(); // Return in ascending order
       }
-      
-      return data;
+
+      // Fallback to cached data
+      const { data: cachedData } = await supabase
+        .from('market_data')
+        .select('*')
+        .eq('symbol', symbol)
+        .eq('type', 'daily')
+        .order('timestamp', { ascending: true })
+        .limit(days);
+
+      if (cachedData && cachedData.length > 0) {
+        return cachedData.map(item => ({
+          symbol: item.symbol,
+          price: item.price,
+          timestamp: item.timestamp,
+          open: item.open,
+          high: item.high,
+          low: item.low,
+          close: item.close,
+          volume: 0,
+          type: 'historical'
+        }));
+      }
+
+      return [];
     } catch (error) {
       console.error(`Error fetching historical data for ${symbol}:`, error);
       return [];

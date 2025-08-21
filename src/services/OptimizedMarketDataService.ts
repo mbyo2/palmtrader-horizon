@@ -113,23 +113,54 @@ export class OptimizedMarketDataService {
 
   private static async fetchMultiplePricesInternal(symbols: string[]): Promise<Array<{ symbol: string; price: number; change?: number }>> {
     try {
-      // Use real-time data if available
+      const { supabase } = await import("@/integrations/supabase/client");
       const results: Array<{ symbol: string; price: number; change?: number }> = [];
       
-      for (const symbol of symbols) {
-        // Check price cache first
-        const cached = this.priceCache.get(symbol);
-        if (cached && Date.now() - cached.timestamp < this.cacheTTL.price) {
-          results.push({ symbol, price: cached.price });
-          continue;
-        }
-
-        // Generate mock data for demo (replace with real API)
-        const price = Math.random() * 100 + 50;
-        const change = (Math.random() - 0.5) * 5;
+      // Batch API calls to avoid rate limiting
+      const batchSize = 5;
+      for (let i = 0; i < symbols.length; i += batchSize) {
+        const batch = symbols.slice(i, i + batchSize);
         
-        this.priceCache.set(symbol, { price, timestamp: Date.now() });
-        results.push({ symbol, price, change });
+        const batchResults = await Promise.allSettled(
+          batch.map(async symbol => {
+            // Check price cache first
+            const cached = this.priceCache.get(symbol);
+            if (cached && Date.now() - cached.timestamp < this.cacheTTL.price) {
+              return { symbol, price: cached.price };
+            }
+
+            // Fetch from Finnhub API
+            try {
+              const { data, error } = await supabase.functions.invoke('finnhub-websocket', {
+                body: { action: 'get_quote', symbol }
+              });
+
+              if (!error && data && typeof data.c === 'number') {
+                const price = data.c;
+                const change = data.d || 0;
+                
+                this.priceCache.set(symbol, { price, timestamp: Date.now() });
+                return { symbol, price, change };
+              }
+            } catch (error) {
+              console.error(`Error fetching price for ${symbol}:`, error);
+            }
+
+            return null;
+          })
+        );
+
+        // Process batch results
+        batchResults.forEach((result, index) => {
+          if (result.status === 'fulfilled' && result.value) {
+            results.push(result.value);
+          }
+        });
+
+        // Small delay between batches to respect rate limits
+        if (i + batchSize < symbols.length) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
       }
 
       return results;
@@ -190,6 +221,8 @@ export class OptimizedMarketDataService {
   }
 
   private static generateOptimizedHistoricalData(symbol: string, days: number) {
+    // This method should be replaced with real API calls in production
+    // Keeping as fallback for when API is unavailable
     const data = [];
     const basePrice = Math.random() * 100 + 50;
     let currentPrice = basePrice;
@@ -218,6 +251,7 @@ export class OptimizedMarketDataService {
       });
     }
     
+    console.warn(`Using fallback mock data for ${symbol} historical data. Consider implementing real API integration.`);
     return data.reverse();
   }
 
