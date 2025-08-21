@@ -8,6 +8,7 @@ interface PriceData {
   symbol: string;
   price: number;
   change?: number;
+  changePercent?: number;
   timestamp?: number;
 }
 
@@ -38,19 +39,20 @@ export function useRealTimeMarketData(
   const [isLoading, setIsLoading] = useState(symbolsArray.length > 0);
   
   // Handler for price updates
-  const handlePriceUpdate = useCallback(({ symbol, price, timestamp }: PriceData) => {
+  const handlePriceUpdate = useCallback(({ symbol, price, change, changePercent, timestamp }: PriceData) => {
     if (!isMounted.current) return;
     
     setPriceData(prevData => {
       const prevPrice = prevData[symbol]?.price;
-      const change = prevPrice ? (price - prevPrice) / prevPrice * 100 : 0;
+      const calculatedChange = prevPrice ? (price - prevPrice) / prevPrice * 100 : 0;
       
       const newData = {
         ...prevData,
         [symbol]: { 
           symbol, 
           price, 
-          change,
+          change: change ?? calculatedChange,
+          changePercent: changePercent ?? calculatedChange,
           timestamp 
         }
       };
@@ -63,7 +65,8 @@ export function useRealTimeMarketData(
         onUpdate({
           symbol,
           price,
-          change,
+          change: change ?? calculatedChange,
+          changePercent: changePercent ?? calculatedChange,
           timestamp
         });
       }

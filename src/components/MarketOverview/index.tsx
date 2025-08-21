@@ -89,7 +89,7 @@ const MarketOverview = () => {
               name,
               symbol,
               value: formatCurrency(data.price),
-              change: `${data.change ? (data.change >= 0 ? '+' : '') + data.change.toFixed(2) : '+0.00'}%`
+              change: `${data.changePercent ? (data.changePercent >= 0 ? '+' : '') + data.changePercent.toFixed(2) : '+0.00'}%`
             });
           } catch (error) {
             console.error(`Failed to fetch data for ${symbol}:`, error);
@@ -122,13 +122,13 @@ const MarketOverview = () => {
         if (market.symbol === data.symbol) {
           const previousValue = market.value;
           const newValue = formatCurrency(data.price);
-          const change = data.change ?? 0;
+          const changePercent = data.changePercent ?? 0;
           
           return {
             ...market,
             previousValue,
             value: newValue,
-            change: `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`
+            change: `${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%`
           };
         }
         return market;
