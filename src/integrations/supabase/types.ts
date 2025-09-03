@@ -1658,6 +1658,14 @@ export type Database = {
           unique_users: number
         }[]
       }
+      get_user_follower_count: {
+        Args: { target_user_id: string }
+        Returns: number
+      }
+      get_user_following_count: {
+        Args: { target_user_id: string }
+        Returns: number
+      }
     }
     Enums: {
       account_role: "basic" | "premium" | "admin"

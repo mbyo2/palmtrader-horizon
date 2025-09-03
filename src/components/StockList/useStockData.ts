@@ -4,6 +4,7 @@ import { finnhubSocket } from "@/utils/finnhubSocket";
 import { wsManager } from "@/services/market/WebSocketManager";
 import { supabase } from "@/integrations/supabase/client";
 import { nanoid } from "nanoid";
+import { devConsole } from "@/utils/productionConsole";
 
 export interface Stock {
   symbol: string;
@@ -40,8 +41,8 @@ export const useStockData = (searchQuery: string) => {
           .select('symbol')
           .limit(20);
 
-        if (watchlistError) console.warn('Error fetching watchlist stocks:', watchlistError);
-        if (tradesError) console.warn('Error fetching traded stocks:', tradesError);
+        if (watchlistError) devConsole.warn('Error fetching watchlist stocks:', watchlistError);
+        if (tradesError) devConsole.warn('Error fetching traded stocks:', tradesError);
 
         // Combine and deduplicate symbols
         const allSymbols = new Set<string>();
@@ -78,7 +79,7 @@ export const useStockData = (searchQuery: string) => {
           try {
             wsManager.subscribe(stock.symbol, subscriberId);
           } catch (e) {
-            console.warn(`Failed to subscribe to ${stock.symbol}:`, e);
+            devConsole.warn(`Failed to subscribe to ${stock.symbol}:`, e);
           }
         });
 
@@ -114,7 +115,7 @@ export const useStockData = (searchQuery: string) => {
             try {
               wsManager.unsubscribe(stock.symbol, subscriberId);
             } catch (e) {
-              console.warn(`Failed to unsubscribe from ${stock.symbol}:`, e);
+              devConsole.warn(`Failed to unsubscribe from ${stock.symbol}:`, e);
             }
           });
           unsubscribe();
@@ -122,7 +123,7 @@ export const useStockData = (searchQuery: string) => {
 
       } catch (err) {
         if (isActive) {
-          console.warn("Error in useStockData:", err);
+          devConsole.warn("Error in useStockData:", err);
           setError(err instanceof Error ? err : new Error('Unknown error'));
           setLoading(false);
         }

@@ -1,18 +1,18 @@
 
+import { devConsole } from '@/utils/productionConsole';
 import { toast } from "sonner";
 
 export const logError = (error: Error, info: { componentStack: string }) => {
-  console.error("Caught error:", error, info);
+  devConsole.error("Caught error:", error, info);
   
   // Format stack trace for better readability
   const formattedStack = error.stack?.split('\n').map(line => line.trim()).join('\n');
   
   // Log additional details that might help with debugging
-  console.group("Detailed Error Information");
-  console.error("Error message:", error.message);
-  console.error("Component stack:", info.componentStack);
-  console.error("Error stack:", formattedStack);
-  console.groupEnd();
+  devConsole.info("Detailed Error Information");
+  devConsole.error("Error message:", error.message);
+  devConsole.error("Component stack:", info.componentStack);
+  devConsole.error("Error stack:", formattedStack);
   
   // Show user-friendly message based on error type
   if (error.message.includes('Failed to fetch') || error.message.includes('network')) {
@@ -27,11 +27,11 @@ export const logError = (error: Error, info: { componentStack: string }) => {
 };
 
 export const handleRejection = (event: PromiseRejectionEvent) => {
-  console.error("Unhandled Promise rejection:", event.reason);
+  devConsole.error("Unhandled Promise rejection:", event.reason);
   
   // Log detailed information about the rejection
   if (event.reason instanceof Error) {
-    console.error("Rejection stack:", event.reason.stack);
+    devConsole.error("Rejection stack:", event.reason.stack);
     
     // Handle specific promise rejection types
     if (event.reason.message.includes('Failed to fetch')) {
@@ -48,16 +48,15 @@ export const handleRejection = (event: PromiseRejectionEvent) => {
 
 export const setupGlobalErrorHandlers = () => {
   const handleError = (event: ErrorEvent) => {
-    console.error("Global error:", event.error);
+    devConsole.error("Global error:", event.error);
     
     // Log additional context that might be useful
-    console.group("Global Error Details");
-    console.error("Message:", event.message);
-    console.error("Filename:", event.filename);
-    console.error("Line number:", event.lineno);
-    console.error("Column number:", event.colno);
-    console.error("Error object:", event.error);
-    console.groupEnd();
+    devConsole.info("Global Error Details");
+    devConsole.error("Message:", event.message);
+    devConsole.error("Filename:", event.filename);
+    devConsole.error("Line number:", event.lineno);
+    devConsole.error("Column number:", event.colno);
+    devConsole.error("Error object:", event.error);
     
     // Don't show toast for script loading errors or syntax errors
     if (event.error instanceof SyntaxError || 
@@ -86,7 +85,7 @@ export const safeJsonParse = <T>(json: string, fallback: T): T => {
   try {
     return JSON.parse(json) as T;
   } catch (error) {
-    console.error("Error parsing JSON:", error);
+    devConsole.error("Error parsing JSON:", error);
     return fallback;
   }
 };
