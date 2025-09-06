@@ -1,5 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { devConsole } from "@/utils/consoleCleanup";
 
 export interface CryptoOrderRequest {
   userId: string;
@@ -72,7 +73,7 @@ export class CryptoExchangeService {
         fees
       };
     } catch (error) {
-      console.error("Crypto execution error:", error);
+      devConsole.error("Crypto execution error:", error);
       return {
         success: false,
         error: error instanceof Error ? error.message : "Crypto order failed"
@@ -104,7 +105,7 @@ export class CryptoExchangeService {
       const data = await response.json();
       return data[coinId]?.usd || null;
     } catch (error) {
-      console.error("Error fetching crypto price:", error);
+      devConsole.error("Error fetching crypto price:", error);
       return null;
     }
   }

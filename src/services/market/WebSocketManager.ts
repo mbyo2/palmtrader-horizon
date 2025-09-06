@@ -1,6 +1,7 @@
 
 import { finnhubSocket } from "@/utils/finnhubSocket";
 import { toast } from "sonner";
+import { devConsole } from "@/utils/consoleCleanup";
 
 class WebSocketManager {
   private static instance: WebSocketManager;
@@ -8,6 +9,8 @@ class WebSocketManager {
   private reconnectAttempts: number = 0;
   private maxReconnectAttempts: number = 5;
   private reconnectDelay: number = 1000;
+
+  private cleanupHandlers: (() => void)[] = [];
 
   private constructor() {
     this.setupErrorHandling();
@@ -21,10 +24,19 @@ class WebSocketManager {
   }
 
   private setupErrorHandling() {
-    window.addEventListener('online', () => this.handleReconnect());
-    window.addEventListener('offline', () => {
+    const onlineHandler = () => this.handleReconnect();
+    const offlineHandler = () => {
       toast.error("Lost connection. Waiting for network...");
-    });
+    };
+
+    window.addEventListener('online', onlineHandler);
+    window.addEventListener('offline', offlineHandler);
+
+    // Store cleanup functions to prevent memory leaks
+    this.cleanupHandlers.push(
+      () => window.removeEventListener('online', onlineHandler),
+      () => window.removeEventListener('offline', offlineHandler)
+    );
   }
 
   private async handleReconnect() {
@@ -47,7 +59,7 @@ class WebSocketManager {
       toast.success("Reconnected successfully");
       this.reconnectAttempts = 0;
     } catch (error) {
-      console.error("Reconnection failed:", error);
+      devConsole.error("Reconnection failed:", error);
       setTimeout(() => this.handleReconnect(), this.reconnectDelay * this.reconnectAttempts);
     }
   }
@@ -77,6 +89,20 @@ class WebSocketManager {
 
   public getSubscriberCount(symbol: string): number {
     return this.subscriptions.get(symbol)?.size || 0;
+  }
+
+  public cleanup(): void {
+    // Clean up event listeners to prevent memory leaks
+    this.cleanupHandlers.forEach(cleanup => cleanup());
+    this.cleanupHandlers = [];
+    
+    // Unsubscribe from all symbols
+    this.subscriptions.clear();
+  }
+
+  public destroy(): void {
+    this.cleanup();
+    WebSocketManager.instance = null as any;
   }
 }
 

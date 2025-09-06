@@ -1,5 +1,6 @@
 
 import { toast } from "sonner";
+import { devConsole } from "@/utils/consoleCleanup";
 
 interface WebSocketConnection {
   url: string;
@@ -24,14 +25,14 @@ export class EnhancedWebSocketManager {
   private globalErrorHandler?: (error: Error) => void;
 
   async initialize(): Promise<void> {
-    console.log('Enhanced WebSocket Manager initialized');
+    devConsole.log('Enhanced WebSocket Manager initialized');
   }
 
   connect(url: string, options: { maxReconnectAttempts?: number; reconnectDelay?: number } = {}): void {
     const connectionId = this.getConnectionId(url);
     
     if (this.connections.has(connectionId)) {
-      console.log(`Connection ${connectionId} already exists`);
+      devConsole.log(`Connection ${connectionId} already exists`);
       return;
     }
 
@@ -114,7 +115,7 @@ export class EnhancedWebSocketManager {
     connection.reconnectAttempts++;
     const delay = connection.reconnectDelay * Math.pow(2, connection.reconnectAttempts - 1);
 
-    console.log(`Scheduling reconnect for ${connectionId} in ${delay}ms (attempt ${connection.reconnectAttempts})`);
+    devConsole.log(`Scheduling reconnect for ${connectionId} in ${delay}ms (attempt ${connection.reconnectAttempts})`);
 
     setTimeout(() => {
       this.connectWebSocket(connectionId);
@@ -141,7 +142,7 @@ export class EnhancedWebSocketManager {
   sendMessage(connectionId: string, message: any): boolean {
     const connection = this.connections.get(connectionId);
     if (!connection || !connection.socket || connection.socket.readyState !== WebSocket.OPEN) {
-      console.warn(`Cannot send message - connection ${connectionId} not ready`);
+      devConsole.warn(`Cannot send message - connection ${connectionId} not ready`);
       return false;
     }
 
@@ -149,7 +150,7 @@ export class EnhancedWebSocketManager {
       connection.socket.send(JSON.stringify(message));
       return true;
     } catch (error) {
-      console.error(`Failed to send message to ${connectionId}:`, error);
+      devConsole.error(`Failed to send message to ${connectionId}:`, error);
       return false;
     }
   }
@@ -159,7 +160,7 @@ export class EnhancedWebSocketManager {
     const connection = this.connections.get(connectionId);
     
     if (!connection) {
-      console.warn(`No connection found for ${connectionId}`);
+      devConsole.warn(`No connection found for ${connectionId}`);
       return;
     }
 

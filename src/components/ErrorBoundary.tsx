@@ -1,5 +1,6 @@
 
 import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { devConsole } from '@/utils/consoleCleanup';
 
 interface Props {
   children: ReactNode;
@@ -45,8 +46,8 @@ class ErrorBoundary extends Component<Props, State> {
     }
 
     // Log the error to the console
-    console.error('Error caught by ErrorBoundary:', error);
-    console.error('Component stack:', errorInfo.componentStack);
+    devConsole.error('Error caught by ErrorBoundary:', error);
+    devConsole.error('Component stack:', errorInfo.componentStack);
   }
 
   render(): ReactNode {
