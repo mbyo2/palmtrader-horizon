@@ -1621,6 +1621,39 @@ export type Database = {
         }
         Relationships: []
       }
+      wallet_balances: {
+        Row: {
+          available_balance: number
+          created_at: string
+          currency: string
+          id: string
+          reserved_balance: number
+          total_balance: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          available_balance?: number
+          created_at?: string
+          currency: string
+          id?: string
+          reserved_balance?: number
+          total_balance?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          available_balance?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          reserved_balance?: number
+          total_balance?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       watchlists: {
         Row: {
           created_at: string

@@ -60,7 +60,7 @@ export class EnhancedWebSocketManager {
       connection.socket = new WebSocket(connection.url);
 
       connection.socket.onopen = () => {
-        console.log(`WebSocket connected: ${connectionId}`);
+        devConsole.log(`WebSocket connected: ${connectionId}`);
         connection.isConnecting = false;
         connection.reconnectAttempts = 0;
         
@@ -75,25 +75,25 @@ export class EnhancedWebSocketManager {
           const data = JSON.parse(event.data);
           this.handleMessage(connectionId, data);
         } catch (error) {
-          console.error('Failed to parse WebSocket message:', error);
+          devConsole.error('Failed to parse WebSocket message:', error);
         }
       };
 
       connection.socket.onclose = (event) => {
-        console.log(`WebSocket closed: ${connectionId}`, event.code, event.reason);
+        devConsole.log(`WebSocket closed: ${connectionId}`, event.code, event.reason);
         connection.isConnecting = false;
         connection.socket = null;
         
         if (connection.reconnectAttempts < connection.maxReconnectAttempts) {
           this.scheduleReconnect(connectionId);
         } else {
-          console.error(`Max reconnect attempts reached for ${connectionId}`);
+          devConsole.error(`Max reconnect attempts reached for ${connectionId}`);
           toast.error(`Lost connection to market data`);
         }
       };
 
       connection.socket.onerror = (error) => {
-        console.error(`WebSocket error: ${connectionId}`, error);
+        devConsole.error(`WebSocket error: ${connectionId}`, error);
         connection.isConnecting = false;
         
         if (this.globalErrorHandler) {
@@ -102,7 +102,7 @@ export class EnhancedWebSocketManager {
       };
 
     } catch (error) {
-      console.error(`Failed to create WebSocket connection: ${connectionId}`, error);
+      devConsole.error(`Failed to create WebSocket connection: ${connectionId}`, error);
       connection.isConnecting = false;
       this.scheduleReconnect(connectionId);
     }
