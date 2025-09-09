@@ -3,6 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AfricanMarketOverview from "@/components/African/AfricanMarketOverview";
 import GovernmentSecurities from "@/components/African/GovernmentSecurities";
 import MobileMoneyForm from "@/components/Banking/MobileMoneyForm";
+import CommodityTrading from "@/components/African/CommodityTrading";
 
 const AfricanMarkets = () => {
   return (
@@ -38,12 +39,7 @@ const AfricanMarkets = () => {
           </TabsContent>
 
           <TabsContent value="commodities">
-            <div className="text-center py-12">
-              <h3 className="text-lg font-semibold">Commodity Trading</h3>
-              <p className="text-muted-foreground mt-2">
-                Copper, gold, and agricultural commodity trading coming soon
-              </p>
-            </div>
+            <CommodityTrading />
           </TabsContent>
         </Tabs>
       </div>

@@ -47,7 +47,17 @@ class WebSocketManager {
 
     try {
       this.reconnectAttempts++;
-      toast.loading("Reconnecting...");
+      const isFirstAttempt = this.reconnectAttempts === 1;
+      
+      if (isFirstAttempt) {
+        toast.loading("Reconnecting...");
+      } else {
+        toast.loading(`Reconnecting... (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+      }
+      
+      // Exponential backoff delay
+      const delay = Math.min(this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1), 30000);
+      await new Promise(resolve => setTimeout(resolve, delay));
       
       // Resubscribe to all symbols
       for (const [symbol, subscribers] of this.subscriptions.entries()) {
@@ -60,7 +70,10 @@ class WebSocketManager {
       this.reconnectAttempts = 0;
     } catch (error) {
       devConsole.error("Reconnection failed:", error);
-      setTimeout(() => this.handleReconnect(), this.reconnectDelay * this.reconnectAttempts);
+      
+      // Exponential backoff for retry
+      const retryDelay = Math.min(this.reconnectDelay * Math.pow(2, this.reconnectAttempts), 30000);
+      setTimeout(() => this.handleReconnect(), retryDelay);
     }
   }
 
