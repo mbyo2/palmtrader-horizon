@@ -9,6 +9,7 @@ import { useStockData } from "./useStockData";
 import { toast } from "sonner";
 import ErrorPage from "@/components/ErrorPage";
 import EnhancedErrorBoundary from "@/components/EnhancedErrorBoundary";
+import { devConsole } from "@/utils/consoleCleanup";
 
 const StockList = () => {
   const [search, setSearch] = useState("");
@@ -34,7 +35,7 @@ const StockList = () => {
     <EnhancedErrorBoundary
       onError={(error) => {
         toast.error("An error occurred while displaying stocks");
-        console.error("StockList error:", error);
+        devConsole.error("StockList error:", error);
       }}
     >
       <div className="space-y-4">

@@ -5,12 +5,13 @@ import { RealMarketDataService } from "./RealMarketDataService";
 import { DataSyncService } from "./DataSyncService";
 import { PortfolioService } from "./PortfolioService";
 import { PositionService } from "./PositionService";
+import { devConsole } from "@/utils/consoleCleanup";
 
 export class APIService {
   // Initialize all services and start data synchronization
   static async initialize(): Promise<void> {
     try {
-      console.log("Initializing API services...");
+      devConsole.log("Initializing API services...");
       
       // Setup real-time subscriptions
       DataSyncService.setupRealtimeSubscriptions();
@@ -18,9 +19,9 @@ export class APIService {
       // Start syncing market news
       await DataSyncService.syncMarketNews();
       
-      console.log("API services initialized successfully");
+      devConsole.log("API services initialized successfully");
     } catch (error) {
-      console.error("Error initializing API services:", error);
+      devConsole.error("Error initializing API services:", error);
     }
   }
 
@@ -53,7 +54,7 @@ export class APIService {
       const priceData = await RealMarketDataService.fetchRealTimePrice('AAPL');
       results.finnhub = priceData !== null;
     } catch (error) {
-      console.error("Finnhub health check failed:", error);
+      devConsole.error("Finnhub health check failed:", error);
     }
 
     try {
@@ -61,7 +62,7 @@ export class APIService {
       const fundamentals = await RealMarketDataService.fetchCompanyFundamentals('AAPL');
       results.alphaVantage = fundamentals !== null;
     } catch (error) {
-      console.error("Alpha Vantage health check failed:", error);
+      devConsole.error("Alpha Vantage health check failed:", error);
     }
 
     try {
@@ -69,7 +70,7 @@ export class APIService {
       const profile = await AuthService.getProfile('test-user-id');
       results.database = true; // If no error thrown, database is accessible
     } catch (error) {
-      console.error("Database health check failed:", error);
+      devConsole.error("Database health check failed:", error);
     }
 
     return results;
@@ -77,7 +78,7 @@ export class APIService {
 
   // Batch operations for efficiency
   static async batchSyncSymbols(symbols: string[]): Promise<void> {
-    console.log(`Starting batch sync for ${symbols.length} symbols...`);
+    devConsole.log(`Starting batch sync for ${symbols.length} symbols...`);
     
     // Start real-time sync for all symbols
     DataSyncService.startRealTimeSync(symbols);
@@ -91,7 +92,7 @@ export class APIService {
     // Sync fundamentals for all symbols
     await DataSyncService.syncCompanyFundamentals(symbols);
     
-    console.log("Batch sync completed");
+    devConsole.log("Batch sync completed");
   }
 
   // Get system status

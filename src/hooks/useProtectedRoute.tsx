@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { devConsole } from "@/utils/consoleCleanup";
 
 export const useProtectedRoute = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -27,7 +28,7 @@ export const useProtectedRoute = () => {
           navigate('/auth');
         }
       } catch (error) {
-        console.error('Auth check error:', error);
+        devConsole.error('Auth check error:', error);
       } finally {
         setIsLoading(false);
       }

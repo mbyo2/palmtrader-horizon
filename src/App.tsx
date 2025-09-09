@@ -37,6 +37,8 @@ import About from '@/pages/About';
 import Contact from '@/pages/Contact';
 import Terms from '@/pages/Terms';
 import Cookies from '@/pages/Cookies';
+import Compliance from '@/pages/Compliance';
+import OptionsTrading from '@/pages/OptionsTrading';
 import { setupGlobalErrorHandlers } from '@/utils/errorHandling';
 
 const queryClient = new QueryClient({
@@ -85,6 +87,8 @@ function App() {
                         <Route path="/admin" element={<Admin />} />
                         <Route path="/kyc" element={<KYC />} />
                         <Route path="/verification" element={<Verification />} />
+                        <Route path="/compliance" element={<Compliance />} />
+                        <Route path="/options-trading" element={<OptionsTrading />} />
                         {/* Route aliases to connect related pages */}
                         <Route path="/verify" element={<Verification />} />
                         <Route path="/support" element={<Help />} />
