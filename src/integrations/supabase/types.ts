@@ -1307,6 +1307,36 @@ export type Database = {
         }
         Relationships: []
       }
+      system_logs: {
+        Row: {
+          created_at: string
+          id: string
+          level: string
+          message: string
+          metadata: Json | null
+          resolved: boolean | null
+          service: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          level: string
+          message: string
+          metadata?: Json | null
+          resolved?: boolean | null
+          service: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          level?: string
+          message?: string
+          metadata?: Json | null
+          resolved?: boolean | null
+          service?: string
+        }
+        Relationships: []
+      }
       tax_documents: {
         Row: {
           created_at: string
@@ -1636,6 +1666,39 @@ export type Database = {
           available_balance?: number
           created_at?: string
           currency: string
+          id?: string
+          reserved_balance?: number
+          total_balance?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          available_balance?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          reserved_balance?: number
+          total_balance?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      wallets: {
+        Row: {
+          available_balance: number
+          created_at: string
+          currency: string
+          id: string
+          reserved_balance: number
+          total_balance: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          available_balance?: number
+          created_at?: string
+          currency?: string
           id?: string
           reserved_balance?: number
           total_balance?: number | null
