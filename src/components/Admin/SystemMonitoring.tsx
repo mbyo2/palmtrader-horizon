@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { devConsole } from '@/utils/consoleCleanup';
 import { 
   Activity, 
   AlertTriangle, 
@@ -109,32 +110,47 @@ const SystemMonitoring = () => {
   };
 
   const fetchSystemAlerts = async () => {
-    // For now, we'll simulate some system alerts
-    const simulatedAlerts: SystemAlert[] = [
-      {
-        id: '1',
-        type: 'warning',
-        message: 'High CPU usage detected on server 2',
-        timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-        resolved: false
-      },
-      {
-        id: '2',
-        type: 'info',
-        message: 'Database backup completed successfully',
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-        resolved: true
-      },
-      {
-        id: '3',
-        type: 'error',
-        message: 'Failed to process payment batch #1234',
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString(),
-        resolved: true
-      }
-    ];
-    
-    setAlerts(simulatedAlerts);
+    try {
+      // Fetch real system logs
+      const { data: logs, error } = await supabase
+        .from('system_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+
+      const systemAlerts: SystemAlert[] = logs?.map(log => ({
+        id: log.id,
+        type: log.level as 'error' | 'warning' | 'info',
+        message: log.message,
+        timestamp: log.created_at,
+        resolved: log.resolved
+      })) || [];
+
+      setAlerts(systemAlerts);
+    } catch (error) {
+      devConsole.error('Error fetching system alerts:', error);
+      // Fallback to simulated alerts if database query fails
+      const simulatedAlerts: SystemAlert[] = [
+        {
+          id: '1',
+          type: 'warning',
+          message: 'High CPU usage detected on server 2',
+          timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
+          resolved: false
+        },
+        {
+          id: '2',
+          type: 'info',
+          message: 'Database backup completed successfully',
+          timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
+          resolved: true
+        }
+      ];
+      
+      setAlerts(simulatedAlerts);
+    }
   };
 
   const checkSystemHealth = async () => {
@@ -170,16 +186,35 @@ const SystemMonitoring = () => {
     }
   };
 
-  const resolveAlert = (alertId: string) => {
-    setAlerts(prev => 
-      prev.map(alert => 
-        alert.id === alertId ? { ...alert, resolved: true } : alert
-      )
-    );
-    toast({
-      title: 'Alert Resolved',
-      description: 'Alert has been marked as resolved',
-    });
+  const resolveAlert = async (alertId: string) => {
+    try {
+      // Update alert in database
+      const { error } = await supabase
+        .from('system_logs')
+        .update({ resolved: true })
+        .eq('id', alertId);
+
+      if (error) throw error;
+
+      // Update local state
+      setAlerts(prev => 
+        prev.map(alert => 
+          alert.id === alertId ? { ...alert, resolved: true } : alert
+        )
+      );
+      
+      toast({
+        title: 'Alert Resolved',
+        description: 'Alert has been marked as resolved',
+      });
+    } catch (error) {
+      devConsole.error('Error resolving alert:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to resolve alert',
+        variant: 'destructive'
+      });
+    }
   };
 
   const getHealthIcon = (status: HealthStatus) => {

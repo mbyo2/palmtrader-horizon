@@ -5,6 +5,7 @@ import PortfolioManager from "@/components/Portfolio/PortfolioManager";
 import EnhancedTradingInterface from "@/components/Trading/EnhancedTradingInterface";
 import EnhancedOrderHistory from "@/components/Trading/EnhancedOrderHistory";
 import RecurringInvestments from "@/components/Trading/RecurringInvestments";
+import WalletManager from "@/components/Trading/WalletManager";
 
 const Portfolio = () => {
   const { isLoading } = useProtectedRoute();
@@ -20,6 +21,7 @@ const Portfolio = () => {
       <Tabs defaultValue="portfolio" className="space-y-6">
         <TabsList>
           <TabsTrigger value="portfolio">Portfolio</TabsTrigger>
+          <TabsTrigger value="wallet">Wallet</TabsTrigger>
           <TabsTrigger value="trading">Enhanced Trading</TabsTrigger>
           <TabsTrigger value="history">Order History</TabsTrigger>
           <TabsTrigger value="recurring">Recurring</TabsTrigger>
@@ -27,6 +29,10 @@ const Portfolio = () => {
         
         <TabsContent value="portfolio" className="space-y-6">
           <PortfolioManager />
+        </TabsContent>
+        
+        <TabsContent value="wallet" className="space-y-6">
+          <WalletManager />
         </TabsContent>
         
         <TabsContent value="trading" className="space-y-6">

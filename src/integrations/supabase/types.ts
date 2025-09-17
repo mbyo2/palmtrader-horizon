@@ -1766,6 +1766,15 @@ export type Database = {
         Args: { target_user_id: string }
         Returns: number
       }
+      update_wallet_balance: {
+        Args: {
+          p_amount: number
+          p_currency: string
+          p_operation: string
+          p_user_id: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       account_role: "basic" | "premium" | "admin"

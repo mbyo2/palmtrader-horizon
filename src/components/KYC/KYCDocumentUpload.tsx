@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,9 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Upload, FileText, CheckCircle, X, Loader2 } from "lucide-react";
-import { KYCVerificationService } from "@/services/KYCVerificationService";
+import { RealFileUploadService } from "@/services/RealFileUploadService";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { devConsole } from "@/utils/consoleCleanup";
 
 const KYCDocumentUpload = () => {
   const { user } = useAuth();
@@ -17,6 +18,10 @@ const KYCDocumentUpload = () => {
   const [documentType, setDocumentType] = useState<string>("");
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedDocuments, setUploadedDocuments] = useState<any[]>([]);
+
+  useEffect(() => {
+    loadDocuments();
+  }, [user]);
 
   const documentTypes = [
     { value: "national_id", label: "National ID" },
@@ -56,10 +61,10 @@ const KYCDocumentUpload = () => {
     setIsUploading(true);
 
     try {
-      const result = await KYCVerificationService.submitDocument(
+      const result = await RealFileUploadService.uploadKYCDocument(
         user.id,
-        documentType,
-        selectedFile
+        selectedFile,
+        documentType
       );
 
       if (result.success) {
@@ -82,10 +87,16 @@ const KYCDocumentUpload = () => {
     if (!user) return;
 
     try {
-      const documents = await KYCVerificationService.getDocuments(user.id);
-      setUploadedDocuments(documents);
+      const documents = await RealFileUploadService.getUserDocuments(user.id);
+      setUploadedDocuments(documents.map(doc => ({
+        id: doc.id,
+        documentType: doc.document_type,
+        fileName: doc.file_name,
+        status: doc.verification_status,
+        uploadedAt: new Date(doc.created_at)
+      })));
     } catch (error) {
-      console.error("Error loading documents:", error);
+      devConsole.error("Error loading documents:", error);
     }
   };
 

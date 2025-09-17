@@ -219,3 +219,5 @@ export const WalletManager: React.FC = () => {
     </div>
   );
 };
+
+export default WalletManager;

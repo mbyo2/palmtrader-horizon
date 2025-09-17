@@ -118,16 +118,43 @@ export class WalletService {
     currency: string = 'USD'
   ): Promise<{ success: boolean; transactionId?: string; error?: string }> {
     try {
-      // Update wallet balance
-      const { error: walletError } = await supabase
-        .rpc('update_wallet_balance', {
-          p_user_id: userId,
-          p_currency: currency,
-          p_amount: amount,
-          p_operation: 'deposit'
+      // Ensure wallet exists
+      const { error: upsertError } = await supabase
+        .from("wallets")
+        .upsert({
+          user_id: userId,
+          currency,
+          available_balance: 0
+        }, {
+          onConflict: 'user_id,currency',
+          ignoreDuplicates: true
         });
 
-      if (walletError) throw walletError;
+      if (upsertError) throw upsertError;
+
+      // Get current balance and update
+      const { data: currentWallet, error: fetchError } = await supabase
+        .from("wallets")
+        .select("available_balance")
+        .eq("user_id", userId)
+        .eq("currency", currency)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      const newBalance = (currentWallet?.available_balance || 0) + amount;
+
+      // Update wallet balance
+      const { error: updateError } = await supabase
+        .from("wallets")
+        .update({
+          available_balance: newBalance,
+          updated_at: new Date().toISOString()
+        })
+        .eq("user_id", userId)
+        .eq("currency", currency);
+
+      if (updateError) throw updateError;
 
       // Record transaction
       const { data, error } = await supabase
@@ -162,23 +189,34 @@ export class WalletService {
   ): Promise<{ success: boolean; transactionId?: string; error?: string }> {
     try {
       // Check available balance first
-      const balances = await this.getWalletBalances(userId);
-      const balance = balances.find(b => b.currency === currency);
+      const { data: currentWallet, error: fetchError } = await supabase
+        .from("wallets")
+        .select("available_balance")
+        .eq("user_id", userId)
+        .eq("currency", currency)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      const currentBalance = currentWallet?.available_balance || 0;
       
-      if (!balance || balance.available < amount) {
+      if (currentBalance < amount) {
         return { success: false, error: 'Insufficient funds' };
       }
 
-      // Update wallet balance (reduce available funds)
-      const { error: walletError } = await supabase
-        .rpc('update_wallet_balance', {
-          p_user_id: userId,
-          p_currency: currency,
-          p_amount: -amount,
-          p_operation: 'withdrawal'
-        });
+      const newBalance = currentBalance - amount;
 
-      if (walletError) throw walletError;
+      // Update wallet balance
+      const { error: updateError } = await supabase
+        .from("wallets")
+        .update({
+          available_balance: newBalance,
+          updated_at: new Date().toISOString()
+        })
+        .eq("user_id", userId)
+        .eq("currency", currency);
+
+      if (updateError) throw updateError;
 
       // Record transaction
       const { data, error } = await supabase
