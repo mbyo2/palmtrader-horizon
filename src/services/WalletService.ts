@@ -21,7 +21,15 @@ export interface WalletTransaction {
 export class WalletService {
   static async getWalletBalances(userId: string): Promise<WalletBalance[]> {
     try {
-      // Get portfolio positions for crypto balances
+      // Get real wallet balances
+      const { data: wallets, error: walletsError } = await supabase
+        .from("wallets")
+        .select("currency, available_balance, reserved_balance, total_balance")
+        .eq("user_id", userId);
+
+      if (walletsError) throw walletsError;
+
+      // Get portfolio positions for additional crypto balances
       const { data: positions } = await supabase
         .from("portfolio")
         .select("symbol, shares")
@@ -36,17 +44,24 @@ export class WalletService {
 
       const balances: WalletBalance[] = [];
 
-      // Add USD balance (simulated for now)
-      balances.push({
-        currency: 'USD',
-        available: 10000, // TODO: Get from actual wallet table
-        reserved: 0,
-        total: 10000
-      });
+      // Add real wallet balances
+      if (wallets) {
+        for (const wallet of wallets) {
+          balances.push({
+            currency: wallet.currency,
+            available: wallet.available_balance,
+            reserved: wallet.reserved_balance,
+            total: wallet.total_balance
+          });
+        }
+      }
 
-      // Add crypto balances
+      // Add crypto balances from portfolio
       if (positions) {
         for (const position of positions) {
+          // Skip if we already have this currency in wallets
+          if (balances.find(b => b.currency === position.symbol)) continue;
+
           const reserved = pendingOrders
             ?.filter(order => order.symbol === position.symbol && order.side === 'sell')
             .reduce((sum, order) => sum + order.quantity, 0) || 0;
@@ -103,7 +118,18 @@ export class WalletService {
     currency: string = 'USD'
   ): Promise<{ success: boolean; transactionId?: string; error?: string }> {
     try {
-      // In production, integrate with payment processor
+      // Update wallet balance
+      const { error: walletError } = await supabase
+        .rpc('update_wallet_balance', {
+          p_user_id: userId,
+          p_currency: currency,
+          p_amount: amount,
+          p_operation: 'deposit'
+        });
+
+      if (walletError) throw walletError;
+
+      // Record transaction
       const { data, error } = await supabase
         .from("transactions")
         .insert({
@@ -143,6 +169,18 @@ export class WalletService {
         return { success: false, error: 'Insufficient funds' };
       }
 
+      // Update wallet balance (reduce available funds)
+      const { error: walletError } = await supabase
+        .rpc('update_wallet_balance', {
+          p_user_id: userId,
+          p_currency: currency,
+          p_amount: -amount,
+          p_operation: 'withdrawal'
+        });
+
+      if (walletError) throw walletError;
+
+      // Record transaction
       const { data, error } = await supabase
         .from("transactions")
         .insert({
