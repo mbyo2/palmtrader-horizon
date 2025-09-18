@@ -1073,6 +1073,56 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_logs: {
+        Row: {
+          action: string
+          created_at: string | null
+          error_message: string | null
+          id: string
+          processing_time_ms: number | null
+          provider: string
+          request_data: Json | null
+          response_data: Json | null
+          status: string
+          transaction_id: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          processing_time_ms?: number | null
+          provider: string
+          request_data?: Json | null
+          response_data?: Json | null
+          status: string
+          transaction_id?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          processing_time_ms?: number | null
+          provider?: string
+          request_data?: Json | null
+          response_data?: Json | null
+          status?: string
+          transaction_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_logs_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_methods: {
         Row: {
           account_mask: string | null
@@ -1271,6 +1321,39 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_limits: {
+        Row: {
+          created_at: string | null
+          endpoint: string
+          expires_at: string
+          id: string
+          ip_address: unknown | null
+          request_count: number
+          user_id: string | null
+          window_start: string
+        }
+        Insert: {
+          created_at?: string | null
+          endpoint: string
+          expires_at: string
+          id?: string
+          ip_address?: unknown | null
+          request_count?: number
+          user_id?: string | null
+          window_start?: string
+        }
+        Update: {
+          created_at?: string | null
+          endpoint?: string
+          expires_at?: string
+          id?: string
+          ip_address?: unknown | null
+          request_count?: number
+          user_id?: string | null
+          window_start?: string
+        }
+        Relationships: []
+      }
       recurring_investments: {
         Row: {
           amount: number
@@ -1307,6 +1390,51 @@ export type Database = {
         }
         Relationships: []
       }
+      storage_access_logs: {
+        Row: {
+          action: string
+          bucket_name: string
+          content_type: string | null
+          created_at: string | null
+          error_message: string | null
+          file_path: string
+          file_size: number | null
+          id: string
+          ip_address: unknown | null
+          success: boolean
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          bucket_name: string
+          content_type?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          file_path: string
+          file_size?: number | null
+          id?: string
+          ip_address?: unknown | null
+          success?: boolean
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          bucket_name?: string
+          content_type?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          file_path?: string
+          file_size?: number | null
+          id?: string
+          ip_address?: unknown | null
+          success?: boolean
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       system_logs: {
         Row: {
           created_at: string
@@ -1334,6 +1462,36 @@ export type Database = {
           metadata?: Json | null
           resolved?: boolean | null
           service?: string
+        }
+        Relationships: []
+      }
+      system_metrics: {
+        Row: {
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          metric_name: string
+          metric_type: string
+          metric_value: number
+          timestamp: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          metric_name: string
+          metric_type: string
+          metric_value: number
+          timestamp?: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          metric_name?: string
+          metric_type?: string
+          metric_value?: number
+          timestamp?: string
         }
         Relationships: []
       }
@@ -1746,6 +1904,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_old_logs: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
