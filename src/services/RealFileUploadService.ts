@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { devConsole } from "@/utils/consoleCleanup";
+import { EnhancedStorageService } from "./EnhancedStorageService";
 
 export interface FileUploadResult {
   success: boolean;
@@ -15,23 +16,21 @@ export class RealFileUploadService {
     documentType: string
   ): Promise<FileUploadResult> {
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${userId}/${documentType}_${Date.now()}.${fileExt}`;
-      
-      // Upload file to Supabase storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('kyc-documents')
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: false
-        });
+      // Use enhanced storage service with validation and logging
+      const uploadResult = await EnhancedStorageService.uploadFile(
+        'kyc-documents',
+        file,
+        userId,
+        {
+          path: `${userId}/${documentType}_${Date.now()}.${file.name.split('.').pop()}`,
+          category: 'documents',
+          isPublic: false
+        }
+      );
 
-      if (uploadError) throw uploadError;
-
-      // Get public URL
-      const { data: urlData } = supabase.storage
-        .from('kyc-documents')
-        .getPublicUrl(fileName);
+      if (!uploadResult.success) {
+        return uploadResult;
+      }
 
       // Save document record to database
       const { data: docData, error: docError } = await supabase
@@ -39,7 +38,7 @@ export class RealFileUploadService {
         .insert({
           user_id: userId,
           document_type: documentType,
-          file_path: uploadData.path,
+          file_path: uploadResult.filePath!,
           file_name: file.name,
           file_size: file.size,
           mime_type: file.type,
@@ -52,8 +51,8 @@ export class RealFileUploadService {
 
       return {
         success: true,
-        fileUrl: urlData.publicUrl,
-        filePath: uploadData.path
+        fileUrl: uploadResult.fileUrl,
+        filePath: uploadResult.filePath
       };
     } catch (error) {
       devConsole.error('Error uploading KYC document:', error);
@@ -70,23 +69,21 @@ export class RealFileUploadService {
     documentType: string
   ): Promise<FileUploadResult> {
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `business/${businessId}/${documentType}_${Date.now()}.${fileExt}`;
-      
-      // Upload file to Supabase storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('business_documents')
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: false
-        });
+      // Use enhanced storage service
+      const uploadResult = await EnhancedStorageService.uploadFile(
+        'business_documents',
+        file,
+        businessId, // Using businessId as userId for logging
+        {
+          path: `business/${businessId}/${documentType}_${Date.now()}.${file.name.split('.').pop()}`,
+          category: 'documents',
+          isPublic: false
+        }
+      );
 
-      if (uploadError) throw uploadError;
-
-      // Get public URL
-      const { data: urlData } = supabase.storage
-        .from('business_documents')
-        .getPublicUrl(fileName);
+      if (!uploadResult.success) {
+        return uploadResult;
+      }
 
       // Save document record to database
       const { data: docData, error: docError } = await supabase
@@ -94,7 +91,7 @@ export class RealFileUploadService {
         .insert({
           business_id: businessId,
           document_type: documentType as any, // Type assertion for flexibility
-          file_path: uploadData.path
+          file_path: uploadResult.filePath!
         })
         .select()
         .single();
@@ -103,8 +100,8 @@ export class RealFileUploadService {
 
       return {
         success: true,
-        fileUrl: urlData.publicUrl,
-        filePath: uploadData.path
+        fileUrl: uploadResult.fileUrl,
+        filePath: uploadResult.filePath
       };
     } catch (error) {
       devConsole.error('Error uploading business document:', error);
