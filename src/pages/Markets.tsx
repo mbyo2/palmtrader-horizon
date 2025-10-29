@@ -82,38 +82,38 @@ const Markets = () => {
   };
 
   return (
-    <div className="container py-6">
-      <h1 className="text-3xl font-bold mb-6">Markets</h1>
+    <div className="container py-4 sm:py-6 px-3 sm:px-4">
+      <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6">Markets</h1>
       
       {/* Market Overview section with real-time updates */}
-      <div className="mb-8">
-        <h2 className="text-2xl font-semibold mb-4">Market Overview</h2>
+      <div className="mb-6 sm:mb-8">
+        <h2 className="text-xl sm:text-2xl font-semibold mb-3 sm:mb-4">Market Overview</h2>
         <MarketOverview />
       </div>
       
-      <Tabs defaultValue="chart" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="chart">Charts & Analysis</TabsTrigger>
-          <TabsTrigger value="trading">Trading</TabsTrigger>
-          <TabsTrigger value="social">Social</TabsTrigger>
+      <Tabs defaultValue="chart" className="space-y-4 sm:space-y-6">
+        <TabsList className="grid w-full grid-cols-3 h-auto">
+          <TabsTrigger value="chart" className="text-xs sm:text-sm px-2 sm:px-4">Charts</TabsTrigger>
+          <TabsTrigger value="trading" className="text-xs sm:text-sm px-2 sm:px-4">Trading</TabsTrigger>
+          <TabsTrigger value="social" className="text-xs sm:text-sm px-2 sm:px-4">Social</TabsTrigger>
         </TabsList>
         
-        <TabsContent value="chart" className="space-y-6">
+        <TabsContent value="chart" className="space-y-4 sm:space-y-6 mt-4">
           {isLoading ? (
             <Card className="p-4">
-              <Skeleton className="h-[400px] w-full" />
+              <Skeleton className="h-[300px] sm:h-[400px] w-full" />
             </Card>
           ) : marketData.length > 0 ? (
             <AdvancedChart symbol={symbol} data={marketData} />
           ) : (
-            <Card className="p-6 text-center">
-              <p className="text-muted-foreground mb-2">No market data available for {symbol}</p>
-              <p className="text-sm">Using demonstration data. Check your connection or try again later.</p>
+            <Card className="p-4 sm:p-6 text-center">
+              <p className="text-sm sm:text-base text-muted-foreground mb-2">No market data available for {symbol}</p>
+              <p className="text-xs sm:text-sm">Using demonstration data. Check your connection or try again later.</p>
             </Card>
           )}
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="md:col-span-2">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+            <div className="lg:col-span-2">
               <ResearchTools onSymbolChange={handleSymbolChange} initialSymbol={symbol} />
             </div>
             <div>
@@ -122,26 +122,28 @@ const Markets = () => {
           </div>
         </TabsContent>
         
-        <TabsContent value="trading" className="space-y-6">
+        <TabsContent value="trading" className="space-y-4 sm:space-y-6 mt-4">
           <TradingInterface />
         </TabsContent>
         
-        <TabsContent value="social" className="space-y-6">
-          <Card className="p-6">
-            <div className="flex flex-col space-y-6">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <TabsContent value="social" className="space-y-4 sm:space-y-6 mt-4">
+          <Card className="p-4 sm:p-6">
+            <div className="flex flex-col space-y-4 sm:space-y-6">
+              <div className="flex flex-col gap-4">
                 <div>
-                  <h2 className="text-2xl font-bold">{symbol}</h2>
-                  <p className="text-muted-foreground">Share your thoughts and insights about {symbol} with the community</p>
+                  <h2 className="text-xl sm:text-2xl font-bold">{symbol}</h2>
+                  <p className="text-sm sm:text-base text-muted-foreground">Share your thoughts and insights about {symbol} with the community</p>
                 </div>
-                <SocialShare 
-                  symbol={symbol} 
-                  title={`Check out ${symbol} on TradeHub!`} 
-                  description={`I'm analyzing ${symbol} on TradeHub. What do you think about this stock?`}
-                />
+                <div className="flex justify-start sm:justify-end">
+                  <SocialShare 
+                    symbol={symbol} 
+                    title={`Check out ${symbol} on TradeHub!`} 
+                    description={`I'm analyzing ${symbol} on TradeHub. What do you think about this stock?`}
+                  />
+                </div>
               </div>
               
-              <div className="border-t pt-6">
+              <div className="border-t pt-4 sm:pt-6">
                 <Comments symbol={symbol} limit={5} />
               </div>
             </div>

@@ -106,9 +106,9 @@ export function AdvancedStockChart({ symbol, data, compact = false }: AdvancedSt
   // If compact mode is enabled, reduce the UI complexity
   if (compact) {
     return (
-      <div className="h-[400px] w-full">
+      <div className="h-[300px] sm:h-[400px] w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={formattedData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+          <AreaChart data={formattedData} margin={{ top: 10, right: 5, left: -20, bottom: 0 }}>
             <defs>
               <linearGradient id="colorClose" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor={colors.primary} stopOpacity={0.8} />
@@ -118,14 +118,22 @@ export function AdvancedStockChart({ symbol, data, compact = false }: AdvancedSt
             <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} />
             <XAxis 
               dataKey="displayDate" 
-              tick={{ fontSize: 12 }}
+              tick={{ fontSize: 10 }}
               interval="preserveStartEnd"
-              tickMargin={10}
+              tickMargin={8}
+              angle={-45}
+              textAnchor="end"
+              height={60}
             />
-            <YAxis domain={['auto', 'auto']} tick={{ fontSize: 12 }} />
+            <YAxis 
+              domain={['auto', 'auto']} 
+              tick={{ fontSize: 10 }}
+              width={60}
+            />
             <Tooltip
               formatter={(value: any) => [`$${value}`, "Price"]}
               labelFormatter={(label) => `Date: ${label}`}
+              contentStyle={{ fontSize: '12px' }}
             />
             <Area
               type="monotone"
@@ -142,13 +150,13 @@ export function AdvancedStockChart({ symbol, data, compact = false }: AdvancedSt
 
   return (
     <Card className="w-full">
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <div>
-          <CardTitle className="text-xl">{symbol}</CardTitle>
-          <CardDescription className="flex items-center mt-1">
-            <span className="text-lg font-semibold">${currentPrice.toFixed(2)}</span>
+      <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2">
+        <div className="w-full sm:w-auto">
+          <CardTitle className="text-lg sm:text-xl">{symbol}</CardTitle>
+          <CardDescription className="flex flex-wrap items-center gap-2 mt-1">
+            <span className="text-base sm:text-lg font-semibold">${currentPrice.toFixed(2)}</span>
             <span
-              className={`ml-2 ${
+              className={`text-sm sm:text-base ${
                 priceChange >= 0 ? "text-green-500" : "text-red-500"
               }`}
             >
@@ -157,9 +165,9 @@ export function AdvancedStockChart({ symbol, data, compact = false }: AdvancedSt
             </span>
           </CardDescription>
         </div>
-        <div className="flex space-x-2">
+        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
           <Select value={timeRange} onValueChange={(value: any) => setTimeRange(value)}>
-            <SelectTrigger className="w-[80px]">
+            <SelectTrigger className="w-[80px] h-9">
               <SelectValue placeholder={timeRange} />
             </SelectTrigger>
             <SelectContent>
@@ -171,7 +179,7 @@ export function AdvancedStockChart({ symbol, data, compact = false }: AdvancedSt
             </SelectContent>
           </Select>
           <Tabs defaultValue="area" value={chartType} onValueChange={(value: any) => setChartType(value)}>
-            <TabsList className="grid grid-cols-4 h-8">
+            <TabsList className="grid grid-cols-4 h-9">
               <TabsTrigger value="area" className="px-2 text-xs">Area</TabsTrigger>
               <TabsTrigger value="line" className="px-2 text-xs">Line</TabsTrigger>
               <TabsTrigger value="candle" className="px-2 text-xs">Candle</TabsTrigger>
@@ -181,10 +189,10 @@ export function AdvancedStockChart({ symbol, data, compact = false }: AdvancedSt
         </div>
       </CardHeader>
       <CardContent>
-        <div className="h-[400px] w-full">
+        <div className="h-[300px] sm:h-[400px] lg:h-[500px] w-full">
           {chartType === "area" && (
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={formattedData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+              <AreaChart data={formattedData} margin={{ top: 10, right: 5, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorClose" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor={colors.primary} stopOpacity={0.8} />
@@ -194,14 +202,22 @@ export function AdvancedStockChart({ symbol, data, compact = false }: AdvancedSt
                 <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} />
                 <XAxis 
                   dataKey="displayDate" 
-                  tick={{ fontSize: 12 }}
+                  tick={{ fontSize: 10 }}
                   interval="preserveStartEnd"
-                  tickMargin={10}
+                  tickMargin={8}
+                  angle={-45}
+                  textAnchor="end"
+                  height={60}
                 />
-                <YAxis domain={['auto', 'auto']} tick={{ fontSize: 12 }} />
+                <YAxis 
+                  domain={['auto', 'auto']} 
+                  tick={{ fontSize: 10 }}
+                  width={60}
+                />
                 <Tooltip
                   formatter={(value: any) => [`$${value}`, "Price"]}
                   labelFormatter={(label) => `Date: ${label}`}
+                  contentStyle={{ fontSize: '12px' }}
                 />
                 <Area
                   type="monotone"
@@ -216,20 +232,28 @@ export function AdvancedStockChart({ symbol, data, compact = false }: AdvancedSt
 
           {chartType === "line" && (
             <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={formattedData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+              <ComposedChart data={formattedData} margin={{ top: 10, right: 5, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} />
                 <XAxis 
                   dataKey="displayDate" 
-                  tick={{ fontSize: 12 }}
+                  tick={{ fontSize: 10 }}
                   interval="preserveStartEnd"
-                  tickMargin={10}
+                  tickMargin={8}
+                  angle={-45}
+                  textAnchor="end"
+                  height={60}
                 />
-                <YAxis domain={['auto', 'auto']} tick={{ fontSize: 12 }} />
+                <YAxis 
+                  domain={['auto', 'auto']} 
+                  tick={{ fontSize: 10 }}
+                  width={60}
+                />
                 <Tooltip
                   formatter={(value: any) => [`$${value}`, "Price"]}
                   labelFormatter={(label) => `Date: ${label}`}
+                  contentStyle={{ fontSize: '12px' }}
                 />
-                <Legend />
+                <Legend wrapperStyle={{ fontSize: '12px' }} />
                 <Line
                   type="monotone"
                   dataKey="close"
@@ -252,42 +276,62 @@ export function AdvancedStockChart({ symbol, data, compact = false }: AdvancedSt
 
           {chartType === "candle" && (
             <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={formattedData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+              <ComposedChart data={formattedData} margin={{ top: 10, right: 5, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} />
                 <XAxis 
                   dataKey="displayDate" 
-                  tick={{ fontSize: 12 }}
+                  tick={{ fontSize: 10 }}
                   interval="preserveStartEnd"
-                  tickMargin={10}
+                  tickMargin={8}
+                  angle={-45}
+                  textAnchor="end"
+                  height={60}
                 />
-                <YAxis domain={['auto', 'auto']} tick={{ fontSize: 12 }} />
+                <YAxis 
+                  domain={['auto', 'auto']} 
+                  tick={{ fontSize: 10 }}
+                  width={60}
+                />
                 <Tooltip
-                  formatter={(value: any) => [`$${value}`, "Price"]}
+                  formatter={(value: any, name: any) => {
+                    const labels: Record<string, string> = {
+                      high: 'High',
+                      low: 'Low',
+                      open: 'Open',
+                      close: 'Close'
+                    };
+                    return [`$${value}`, labels[name] || name];
+                  }}
                   labelFormatter={(label) => `Date: ${label}`}
+                  contentStyle={{ fontSize: '12px' }}
                 />
-                <Legend />
+                <Legend wrapperStyle={{ fontSize: '12px' }} />
                 <Bar 
                   dataKey="high" 
                   fill="transparent" 
                   stroke={colors.secondary} 
-                  barSize={3}
+                  barSize={2}
+                  name="High"
                 />
                 <Bar 
                   dataKey="low" 
                   fill="transparent" 
                   stroke={colors.secondary} 
-                  barSize={3}
+                  barSize={2}
+                  name="Low"
                 />
                 <Bar 
                   dataKey="close" 
                   fill={colors.positive} 
-                  barSize={10}
+                  barSize={8}
+                  name="Close"
                 />
                 <Line
                   type="monotone"
                   dataKey="close"
                   stroke={colors.primary}
                   dot={false}
+                  strokeWidth={1}
                 />
               </ComposedChart>
             </ResponsiveContainer>
@@ -295,30 +339,38 @@ export function AdvancedStockChart({ symbol, data, compact = false }: AdvancedSt
 
           {chartType === "bar" && (
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={formattedData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+              <BarChart data={formattedData} margin={{ top: 10, right: 5, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} />
                 <XAxis 
                   dataKey="displayDate" 
-                  tick={{ fontSize: 12 }}
+                  tick={{ fontSize: 10 }}
                   interval="preserveStartEnd"
-                  tickMargin={10}
+                  tickMargin={8}
+                  angle={-45}
+                  textAnchor="end"
+                  height={60}
                 />
-                <YAxis domain={['auto', 'auto']} tick={{ fontSize: 12 }} />
+                <YAxis 
+                  domain={['auto', 'auto']} 
+                  tick={{ fontSize: 10 }}
+                  width={60}
+                />
                 <Tooltip
                   formatter={(value: any) => [`$${value}`, "Price"]}
                   labelFormatter={(label) => `Date: ${label}`}
+                  contentStyle={{ fontSize: '12px' }}
                 />
-                <Legend />
+                <Legend wrapperStyle={{ fontSize: '12px' }} />
                 <Bar 
                   dataKey="close" 
                   fill={colors.primary} 
-                  barSize={4}
+                  barSize={3}
                   name="Close Price"
                 />
                 <Bar 
                   dataKey="open" 
                   fill={colors.secondary} 
-                  barSize={4}
+                  barSize={3}
                   name="Open Price"
                 />
               </BarChart>

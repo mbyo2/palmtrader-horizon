@@ -27,52 +27,57 @@ const StockChart = ({
 }: StockChartProps) => {
   return (
     <Card className="w-full">
-      <CardHeader>
-        <CardTitle>Market Data</CardTitle>
-        <CardDescription>Real-time price, historical data, and recent account activity</CardDescription>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-lg sm:text-xl">Market Data</CardTitle>
+        <CardDescription className="text-sm">Real-time price, historical data, and recent account activity</CardDescription>
       </CardHeader>
-      <Tabs defaultValue="chart">
-        <TabsList className="px-6">
-          <TabsTrigger value="chart">Stock Chart</TabsTrigger>
-          <TabsTrigger value="transactions">Recent Activity</TabsTrigger>
+      <Tabs defaultValue="chart" className="w-full">
+        <TabsList className="px-4 sm:px-6 grid w-full grid-cols-2">
+          <TabsTrigger value="chart" className="text-xs sm:text-sm">Stock Chart</TabsTrigger>
+          <TabsTrigger value="transactions" className="text-xs sm:text-sm">Recent Activity</TabsTrigger>
         </TabsList>
-        <TabsContent value="chart">
-          <CardContent>
+        <TabsContent value="chart" className="mt-0">
+          <CardContent className="p-3 sm:p-6">
             {isHistoricalLoading ? (
-              <div className="h-[400px] flex items-center justify-center">
+              <div className="h-[300px] sm:h-[400px] flex items-center justify-center">
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
               </div>
             ) : historicalData && historicalData.length > 0 ? (
               <AdvancedStockChart symbol={symbol} data={historicalData} compact={true} />
             ) : (
-              <div className="h-[400px] flex items-center justify-center text-muted-foreground">
+              <div className="h-[300px] sm:h-[400px] flex items-center justify-center text-muted-foreground text-sm text-center px-4">
                 No historical data available for {symbol}
               </div>
             )}
           </CardContent>
         </TabsContent>
-        <TabsContent value="transactions">
-          <CardContent>
+        <TabsContent value="transactions" className="mt-0">
+          <CardContent className="p-3 sm:p-6">
             {recentTransactions.length === 0 ? (
-              <div className="h-[250px] flex items-center justify-center text-muted-foreground">
+              <div className="h-[200px] sm:h-[250px] flex items-center justify-center text-muted-foreground text-sm text-center">
                 No recent transactions
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2 sm:space-y-3 max-h-[400px] overflow-y-auto">
                 {recentTransactions.map((transaction) => (
-                  <div key={transaction.id} className="flex items-center justify-between p-3 border rounded-md">
-                    <div>
-                      <div className="font-medium capitalize">
+                  <div key={transaction.id} className="flex items-center justify-between p-2 sm:p-3 border rounded-md hover:bg-accent/50 transition-colors">
+                    <div className="min-w-0 flex-1">
+                      <div className="font-medium capitalize text-sm sm:text-base truncate">
                         {transaction.type === "buy" ? "Buy" : 
                          transaction.type === "sell" ? "Sell" :
                          transaction.type === "deposit" ? "Deposit" : "Withdrawal"}
                       </div>
-                      <div className="text-sm text-muted-foreground">
-                        {new Date(transaction.timestamp).toLocaleString()}
+                      <div className="text-xs sm:text-sm text-muted-foreground">
+                        {new Date(transaction.timestamp).toLocaleString(undefined, {
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className={`font-medium ${
+                    <div className="text-right ml-4">
+                      <div className={`font-medium text-sm sm:text-base ${
                         transaction.type === "buy" || transaction.type === "withdrawal" 
                           ? "text-red-500" 
                           : "text-green-500"
@@ -80,7 +85,7 @@ const StockChart = ({
                         {transaction.type === "buy" || transaction.type === "withdrawal" ? "-" : "+"}
                         ${transaction.amount.toFixed(2)}
                       </div>
-                      <div className="text-sm capitalize">
+                      <div className="text-xs sm:text-sm capitalize text-muted-foreground">
                         {transaction.status}
                       </div>
                     </div>

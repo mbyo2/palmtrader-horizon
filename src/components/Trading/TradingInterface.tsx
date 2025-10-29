@@ -25,11 +25,11 @@ const TradingInterface = () => {
   const cashBalance = 10000;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle>Trade Stocks</CardTitle>
-          <CardDescription>Buy and sell stocks with real-time pricing</CardDescription>
+    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
+      <Card className="w-full order-2 xl:order-1">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg sm:text-xl">Trade Stocks</CardTitle>
+          <CardDescription className="text-sm">Buy and sell stocks with real-time pricing</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -59,11 +59,13 @@ const TradingInterface = () => {
         </CardContent>
       </Card>
       
-      <StockChart 
-        symbol={symbol}
-        historicalData={historicalData || []}
-        isHistoricalLoading={isHistoricalLoading}
-      />
+      <div className="order-1 xl:order-2">
+        <StockChart 
+          symbol={symbol}
+          historicalData={historicalData || []}
+          isHistoricalLoading={isHistoricalLoading}
+        />
+      </div>
     </div>
   );
 };
