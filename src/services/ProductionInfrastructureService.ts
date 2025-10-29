@@ -251,7 +251,7 @@ export class ProductionInfrastructureService {
     // Store backup configuration
     try {
       const { error } = await supabase
-        .from('backup_configurations')
+        .from('backup_configurations' as any)
         .upsert(backupConfigs.map(config => ({
           backup_id: config.id,
           backup_type: config.type,
@@ -383,7 +383,7 @@ export class ProductionInfrastructureService {
     // Store CDN configuration
     try {
       const { error } = await supabase
-        .from('cdn_configurations')
+        .from('cdn_configurations' as any)
         .upsert({
           provider: cdnConfig.provider,
           enabled: cdnConfig.enabled,

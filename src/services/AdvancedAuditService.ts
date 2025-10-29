@@ -95,7 +95,7 @@ export class AdvancedAuditService {
       };
 
       const { error } = await supabase
-        .from('audit_events')
+        .from('audit_events' as any)
         .insert({
           user_id: auditEvent.userId,
           session_id: auditEvent.sessionId,
@@ -220,10 +220,10 @@ export class AdvancedAuditService {
     action: AuditAction,
     entityType: string,
     entityId: string,
-    oldValues?: Record<string, any>,
-    newValues?: Record<string, any>,
     ipAddress: string,
     userAgent: string,
+    oldValues?: Record<string, any>,
+    newValues?: Record<string, any>,
     metadata?: Record<string, any>
   ): Promise<void> {
     await this.logEvent({
@@ -248,7 +248,7 @@ export class AdvancedAuditService {
   static async queryEvents(query: AuditQuery): Promise<{ events: AuditEvent[]; totalCount: number }> {
     try {
       let supabaseQuery = supabase
-        .from('audit_events')
+        .from('audit_events' as any)
         .select('*', { count: 'exact' });
 
       // Apply filters
@@ -292,7 +292,7 @@ export class AdvancedAuditService {
       if (error) throw error;
 
       return {
-        events: (data || []) as AuditEvent[],
+        events: (data || []) as any as AuditEvent[],
         totalCount: count || 0
       };
     } catch (error) {
@@ -440,7 +440,7 @@ export class AdvancedAuditService {
   private static async triggerSecurityAlert(userId: string, event: AuditEvent): Promise<void> {
     try {
       await supabase
-        .from('notifications')
+        .from('notifications' as any)
         .insert({
           user_id: userId,
           type: 'security_alert',
@@ -557,12 +557,12 @@ export class AdvancedAuditService {
   private static async storeComplianceReport(report: ComplianceReport): Promise<void> {
     try {
       const { error } = await supabase
-        .from('compliance_reports')
+        .from('compliance_reports' as any)
         .insert({
           report_type: report.reportType,
-          generated_at: report.generatedAt,
-          period_start: report.periodStart,
-          period_end: report.periodEnd,
+          generated_at: report.generatedAt.toISOString(),
+          period_start: report.periodStart.toISOString(),
+          period_end: report.periodEnd.toISOString(),
           total_events: report.totalEvents,
           critical_events: report.criticalEvents,
           failed_logins: report.failedLogins,
@@ -586,7 +586,7 @@ export class AdvancedAuditService {
   static async cleanupExpiredEvents(): Promise<void> {
     try {
       const { error } = await supabase
-        .from('audit_events')
+        .from('audit_events' as any)
         .delete()
         .lt('retention_date', new Date().toISOString());
 

@@ -77,8 +77,8 @@ export class DeviceManagementService {
       }
 
       const { data, error } = await supabase
-        .from('user_devices')
-        .insert(device)
+        .from('user_devices' as any)
+        .insert(device as any)
         .select()
         .single();
 
@@ -87,7 +87,7 @@ export class DeviceManagementService {
       // Check for suspicious activity
       await this.checkForSuspiciousActivity(userId, device as UserDevice);
 
-      return data as UserDevice;
+      return data as any as UserDevice;
     } catch (error) {
       console.error('Failed to register device:', error);
       throw error;
@@ -108,21 +108,21 @@ export class DeviceManagementService {
         
         // Check if IP changed significantly
         const { data: device } = await supabase
-          .from('user_devices')
+          .from('user_devices' as any)
           .select('ip_address, user_id')
           .eq('device_id', deviceId)
           .single();
 
-        if (device && device.ip_address !== ipAddress) {
-          await this.logSuspiciousActivity(device.user_id, deviceId, 'ip_change', {
-            oldIp: device.ip_address,
+        if (device && (device as any).ip_address !== ipAddress) {
+          await this.logSuspiciousActivity((device as any).user_id, deviceId, 'ip_change', {
+            oldIp: (device as any).ip_address,
             newIp: ipAddress
           });
         }
       }
 
       const { error } = await supabase
-        .from('user_devices')
+        .from('user_devices' as any)
         .update(updates)
         .eq('device_id', deviceId);
 
@@ -138,14 +138,14 @@ export class DeviceManagementService {
   static async getUserDevices(userId: string): Promise<UserDevice[]> {
     try {
       const { data, error } = await supabase
-        .from('user_devices')
+        .from('user_devices' as any)
         .select('*')
         .eq('user_id', userId)
         .eq('is_active', true)
         .order('last_active', { ascending: false });
 
       if (error) throw error;
-      return (data || []) as UserDevice[];
+      return (data || []) as any as UserDevice[];
     } catch (error) {
       console.error('Failed to get user devices:', error);
       return [];
@@ -158,8 +158,8 @@ export class DeviceManagementService {
   static async trustDevice(userId: string, deviceId: string): Promise<void> {
     try {
       const { error } = await supabase
-        .from('user_devices')
-        .update({ is_trusted: true })
+        .from('user_devices' as any)
+        .update({ is_trusted: true } as any)
         .eq('user_id', userId)
         .eq('device_id', deviceId);
 
@@ -176,8 +176,8 @@ export class DeviceManagementService {
   static async revokeDevice(userId: string, deviceId: string): Promise<void> {
     try {
       const { error } = await supabase
-        .from('user_devices')
-        .update({ is_active: false })
+        .from('user_devices' as any)
+        .update({ is_active: false } as any)
         .eq('user_id', userId)
         .eq('device_id', deviceId);
 
@@ -197,7 +197,7 @@ export class DeviceManagementService {
   static async logLoginAttempt(attempt: Partial<LoginAttempt>): Promise<void> {
     try {
       const { error } = await supabase
-        .from('login_attempts')
+        .from('login_attempts' as any)
         .insert({
           user_id: attempt.userId,
           email: attempt.email,
@@ -228,14 +228,14 @@ export class DeviceManagementService {
     try {
       // Check for new device from unusual location
       const { data: userDevices } = await supabase
-        .from('user_devices')
+        .from('user_devices' as any)
         .select('location')
         .eq('user_id', userId)
         .eq('is_trusted', true);
 
       if (userDevices && userDevices.length > 0 && device.location) {
         const knownLocations = userDevices
-          .map(d => d.location)
+          .map(d => (d as any).location)
           .filter(Boolean);
 
         const isUnusualLocation = !knownLocations.some(loc => 
@@ -254,7 +254,7 @@ export class DeviceManagementService {
 
       // Check for new device
       const { data: existingDevice } = await supabase
-        .from('user_devices')
+        .from('user_devices' as any)
         .select('id')
         .eq('user_id', userId)
         .eq('device_id', device.deviceId)
@@ -287,7 +287,7 @@ export class DeviceManagementService {
       const description = this.getDescriptionForActivity(activityType, metadata);
 
       const { error } = await supabase
-        .from('suspicious_activities')
+        .from('suspicious_activities' as any)
         .insert({
           user_id: userId,
           device_id: deviceId,
@@ -318,7 +318,7 @@ export class DeviceManagementService {
       const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
 
       const { data: recentAttempts } = await supabase
-        .from('login_attempts')
+        .from('login_attempts' as any)
         .select('id')
         .eq('email', email)
         .eq('success', false)
@@ -352,13 +352,13 @@ export class DeviceManagementService {
   static async getSuspiciousActivities(userId: string): Promise<SuspiciousActivity[]> {
     try {
       const { data, error } = await supabase
-        .from('suspicious_activities')
+        .from('suspicious_activities' as any)
         .select('*')
         .eq('user_id', userId)
         .order('detected_at', { ascending: false });
 
       if (error) throw error;
-      return (data || []) as SuspiciousActivity[];
+      return (data || []) as any as SuspiciousActivity[];
     } catch (error) {
       console.error('Failed to get suspicious activities:', error);
       return [];

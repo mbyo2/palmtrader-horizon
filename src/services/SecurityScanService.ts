@@ -87,10 +87,10 @@ export class SecurityScanService {
     
     try {
       // Check RLS policies
-      const { data: tables } = await supabase.rpc('get_table_rls_status');
+      const { data: tables } = await supabase.rpc('get_table_rls_status' as any);
       
       if (tables) {
-        for (const table of tables) {
+        for (const table of tables as any[]) {
           if (!table.rls_enabled) {
             checks.push({
               id: `rls-missing-${table.table_name}`,
@@ -108,8 +108,8 @@ export class SecurityScanService {
       }
       
       // Check for weak password policies
-      const { data: authConfig } = await supabase.rpc('get_auth_config');
-      if (authConfig && !authConfig.password_min_length || authConfig.password_min_length < 8) {
+      const { data: authConfig } = await supabase.rpc('get_auth_config' as any);
+      if (authConfig && !(authConfig as any).password_min_length || (authConfig as any).password_min_length < 8) {
         checks.push({
           id: 'weak-password-policy',
           scanType: 'vulnerability',
@@ -290,7 +290,7 @@ export class SecurityScanService {
   private static async storeScanResults(results: SecurityScanResult[]): Promise<void> {
     try {
       const { error } = await supabase
-        .from('security_scan_results')
+        .from('security_scan_results' as any)
         .insert(results.map(result => ({
           scan_id: result.id,
           scan_type: result.scanType,
@@ -316,7 +316,7 @@ export class SecurityScanService {
   static async getSecurityMetrics(): Promise<SecurityMetrics> {
     try {
       const { data: scans } = await supabase
-        .from('security_scan_results')
+        .from('security_scan_results' as any)
         .select('*');
       
       if (!scans) {
@@ -330,11 +330,11 @@ export class SecurityScanService {
         };
       }
       
-      const openVulns = scans.filter(s => s.status === 'open').length;
-      const criticalIssues = scans.filter(s => s.severity === 'critical' && s.status === 'open').length;
+      const openVulns = (scans as any[]).filter(s => s.status === 'open').length;
+      const criticalIssues = (scans as any[]).filter(s => s.severity === 'critical' && s.status === 'open').length;
       
       // Calculate compliance score (percentage of resolved issues)
-      const resolvedIssues = scans.filter(s => s.status === 'resolved').length;
+      const resolvedIssues = (scans as any[]).filter(s => s.status === 'resolved').length;
       const complianceScore = scans.length > 0 ? (resolvedIssues / scans.length) * 100 : 100;
       
       return {

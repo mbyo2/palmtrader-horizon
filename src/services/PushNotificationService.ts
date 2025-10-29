@@ -48,7 +48,7 @@ class PushNotificationService {
       
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: this.urlBase64ToUint8Array(this.vapidPublicKey)
+        applicationServerKey: this.urlBase64ToUint8Array(this.vapidPublicKey) as any
       });
 
       console.log('Push subscription created:', subscription);
