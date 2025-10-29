@@ -14,7 +14,6 @@ export default defineConfig(({ mode }) => ({
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
       'X-Content-Type-Options': 'nosniff',
-      'X-Frame-Options': 'DENY',
       'X-XSS-Protection': '1; mode=block',
       'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
       'Referrer-Policy': 'strict-origin-when-cross-origin'
