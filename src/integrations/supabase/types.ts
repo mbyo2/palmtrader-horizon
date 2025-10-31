@@ -1327,7 +1327,7 @@ export type Database = {
           endpoint: string
           expires_at: string
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           request_count: number
           user_id: string | null
           window_start: string
@@ -1337,7 +1337,7 @@ export type Database = {
           endpoint: string
           expires_at: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           request_count?: number
           user_id?: string | null
           window_start?: string
@@ -1347,7 +1347,7 @@ export type Database = {
           endpoint?: string
           expires_at?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           request_count?: number
           user_id?: string | null
           window_start?: string
@@ -1400,7 +1400,7 @@ export type Database = {
           file_path: string
           file_size: number | null
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           success: boolean
           user_agent: string | null
           user_id: string | null
@@ -1414,7 +1414,7 @@ export type Database = {
           file_path: string
           file_size?: number | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           success?: boolean
           user_agent?: string | null
           user_id?: string | null
@@ -1428,7 +1428,7 @@ export type Database = {
           file_path?: string
           file_size?: number | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           success?: boolean
           user_agent?: string | null
           user_id?: string | null
@@ -1904,16 +1904,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      cleanup_old_logs: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      get_current_user_role: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      cleanup_old_logs: { Args: never; Returns: undefined }
+      get_current_user_role: { Args: never; Returns: string }
       get_popular_stocks: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           comment_count: number
           symbol: string
