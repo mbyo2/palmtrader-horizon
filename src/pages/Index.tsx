@@ -50,18 +50,18 @@ const StatsSection = () => {
   });
 
   return (
-    <div className="grid grid-cols-3 gap-8 pt-12 max-w-2xl mx-auto">
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-8 pt-8 sm:pt-12 max-w-2xl mx-auto px-4">
       <div className="text-center">
-        <div className="text-2xl font-bold text-primary">{stats?.aum || "K50M+"}</div>
-        <div className="text-sm text-muted-foreground">Assets Under Management</div>
+        <div className="text-xl sm:text-2xl font-bold text-primary">{stats?.aum || "K50M+"}</div>
+        <div className="text-xs sm:text-sm text-muted-foreground">Assets Under Management</div>
       </div>
       <div className="text-center">
-        <div className="text-2xl font-bold text-primary">{(stats?.userCount || 10000).toLocaleString()}+</div>
-        <div className="text-sm text-muted-foreground">Active Investors</div>
+        <div className="text-xl sm:text-2xl font-bold text-primary">{(stats?.userCount || 10000).toLocaleString()}+</div>
+        <div className="text-xs sm:text-sm text-muted-foreground">Active Investors</div>
       </div>
       <div className="text-center">
-        <div className="text-2xl font-bold text-primary">{stats?.marketAccess || "24/7"}</div>
-        <div className="text-sm text-muted-foreground">Market Access</div>
+        <div className="text-xl sm:text-2xl font-bold text-primary">{stats?.marketAccess || "24/7"}</div>
+        <div className="text-xs sm:text-sm text-muted-foreground">Market Access</div>
       </div>
     </div>
   );
@@ -91,20 +91,20 @@ const CommunityStatsCard = () => {
   });
 
   return (
-    <div className="bg-gradient-to-r from-primary/10 to-secondary/10 rounded-2xl p-6 border border-primary/20">
-      <div className="flex items-center space-x-4 mb-4">
-        <Users className="h-8 w-8 text-primary" />
+    <div className="bg-gradient-to-r from-primary/10 to-secondary/10 rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-primary/20">
+      <div className="flex items-center space-x-3 sm:space-x-4 mb-3 sm:mb-4">
+        <Users className="h-6 w-6 sm:h-8 sm:w-8 text-primary flex-shrink-0" />
         <div>
-          <h3 className="font-semibold">{(communityStats?.activeUsers || 10000).toLocaleString()}+ Active Investors</h3>
-          <p className="text-sm text-muted-foreground">
+          <h3 className="text-sm sm:text-base font-semibold">{(communityStats?.activeUsers || 10000).toLocaleString()}+ Active Investors</h3>
+          <p className="text-xs sm:text-sm text-muted-foreground">
             {communityStats?.totalComments ? `${communityStats.totalComments.toLocaleString()} discussions` : "Growing every day"}
           </p>
         </div>
       </div>
-      <p className="text-sm mb-4">
+      <p className="text-xs sm:text-sm mb-3 sm:mb-4">
         Connect with like-minded investors, share insights, and learn from the community.
       </p>
-      <Button variant="outline" size="sm">
+      <Button variant="outline" size="sm" className="w-full sm:w-auto">
         Join Community
       </Button>
     </div>
@@ -139,20 +139,20 @@ export default function Index() {
     <>
       {!isLoggedIn ? (
         <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
-          <div className="container py-12 space-y-20">
+          <div className="container px-4 sm:px-6 py-8 sm:py-12 space-y-12 sm:space-y-20">
             {/* Enhanced Hero Section */}
-            <section className="relative overflow-hidden py-24 rounded-3xl bg-gradient-to-r from-primary/10 via-secondary/10 to-primary/5 border border-border/50">
+            <section className="relative overflow-hidden py-12 sm:py-16 md:py-24 rounded-2xl sm:rounded-3xl bg-gradient-to-r from-primary/10 via-secondary/10 to-primary/5 border border-border/50 px-4 sm:px-6">
               <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
               <div className="relative max-w-6xl mx-auto text-center space-y-8">
                 <Badge variant="secondary" className="px-4 py-2 text-sm font-medium mb-4">
                   🚀 Trusted by 10,000+ Zambian Investors
                 </Badge>
-                <h1 className="text-5xl md:text-7xl font-bold gradient-text leading-tight">
+                <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold gradient-text leading-tight px-4">
                   Your Wealth Journey
                   <br />
                   <span className="text-primary">Starts Here</span>
                 </h1>
-                <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+                <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed px-4">
                   Join the smartest Zambians building generational wealth through intelligent investing. 
                   Zero fees. Real returns. Maximum growth.
                 </p>
@@ -181,14 +181,14 @@ export default function Index() {
             </section>
 
             {/* Enhanced Feature Cards */}
-            <section>
-              <div className="text-center mb-16">
-                <h2 className="text-4xl font-bold mb-4">Why Choose Palm Cacia</h2>
-                <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            <section className="px-4 sm:px-0">
+              <div className="text-center mb-8 sm:mb-12 md:mb-16">
+                <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4">Why Choose Palm Cacia</h2>
+                <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto px-4">
                   Everything you need to build wealth, all in one beautiful platform
                 </p>
               </div>
-              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 md:gap-8">
                 {[
                   {
                     title: "Zambian Focus",
@@ -220,12 +220,14 @@ export default function Index() {
                   }
                 ].map((feature, index) => (
                   <Card key={index} className={`group relative overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-2xl ${feature.border} bg-gradient-to-br ${feature.color}`}>
-                    <CardContent className="p-8 text-center space-y-6">
-                      <div className="mx-auto w-20 h-20 rounded-full bg-background/50 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                        {feature.icon}
+                    <CardContent className="p-4 sm:p-6 md:p-8 text-center space-y-3 sm:space-y-4 md:space-y-6">
+                      <div className="mx-auto w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full bg-background/50 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                        <div className="scale-75 sm:scale-90 md:scale-100">
+                          {feature.icon}
+                        </div>
                       </div>
-                      <h3 className="text-xl font-bold">{feature.title}</h3>
-                      <p className="text-muted-foreground leading-relaxed">{feature.description}</p>
+                      <h3 className="text-base sm:text-lg md:text-xl font-bold">{feature.title}</h3>
+                      <p className="text-xs sm:text-sm md:text-base text-muted-foreground leading-relaxed">{feature.description}</p>
                     </CardContent>
                   </Card>
                 ))}
@@ -233,11 +235,11 @@ export default function Index() {
             </section>
 
             {/* Live Market Preview */}
-            <section className="bg-card/50 backdrop-blur-sm rounded-3xl p-8 border border-border/50">
-              <div className="flex items-center justify-between mb-8">
+            <section className="bg-card/50 backdrop-blur-sm rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 border border-border/50">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
                 <div>
-                  <h2 className="text-3xl font-bold mb-2">Live Market Data</h2>
-                  <p className="text-muted-foreground">Real-time insights from global markets</p>
+                  <h2 className="text-2xl sm:text-3xl font-bold mb-1 sm:mb-2">Live Market Data</h2>
+                  <p className="text-sm sm:text-base text-muted-foreground">Real-time insights from global markets</p>
                 </div>
                 <Badge variant="secondary" className="px-3 py-1">
                   <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
@@ -248,25 +250,25 @@ export default function Index() {
             </section>
 
             {/* Social Proof & News */}
-            <section>
-              <div className="grid lg:grid-cols-2 gap-12">
+            <section className="px-4 sm:px-0">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-10 md:gap-12">
                 <div>
-                  <h2 className="text-3xl font-bold mb-6">Latest Market News</h2>
+                  <h2 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6">Latest Market News</h2>
                   <NewsFeed defaultCategory="general" limit={4} />
                 </div>
-                <div className="space-y-6">
-                  <h2 className="text-3xl font-bold">Join Our Community</h2>
+                <div className="space-y-4 sm:space-y-6">
+                  <h2 className="text-2xl sm:text-3xl font-bold">Join Our Community</h2>
                    <CommunityStatsCard />
                   
-                  <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 rounded-2xl p-6 border border-green-500/20">
-                    <div className="flex items-center space-x-4 mb-4">
-                      <Shield className="h-8 w-8 text-green-500" />
+                  <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-green-500/20">
+                    <div className="flex items-center space-x-3 sm:space-x-4 mb-3 sm:mb-4">
+                      <Shield className="h-6 w-6 sm:h-8 sm:w-8 text-green-500 flex-shrink-0" />
                       <div>
-                        <h3 className="font-semibold">Bank-Level Security</h3>
-                        <p className="text-sm text-muted-foreground">Your money is safe</p>
+                        <h3 className="text-sm sm:text-base font-semibold">Bank-Level Security</h3>
+                        <p className="text-xs sm:text-sm text-muted-foreground">Your money is safe</p>
                       </div>
                     </div>
-                    <p className="text-sm">
+                    <p className="text-xs sm:text-sm">
                       256-bit encryption, cold storage, and regulatory compliance ensure your investments are protected.
                     </p>
                   </div>
@@ -275,13 +277,13 @@ export default function Index() {
             </section>
 
             {/* Enhanced CTA */}
-            <section className="relative overflow-hidden">
-              <div className="bg-gradient-to-r from-primary via-secondary to-primary p-12 rounded-3xl text-center space-y-8 text-white">
-                <div className="absolute inset-0 bg-black/20 rounded-3xl"></div>
+            <section className="relative overflow-hidden px-4 sm:px-0">
+              <div className="bg-gradient-to-r from-primary via-secondary to-primary p-6 sm:p-8 md:p-12 rounded-2xl sm:rounded-3xl text-center space-y-4 sm:space-y-6 md:space-y-8 text-white">
+                <div className="absolute inset-0 bg-black/20 rounded-2xl sm:rounded-3xl"></div>
                 <div className="relative z-10">
-                  <Zap className="h-16 w-16 mx-auto mb-6" />
-                  <h2 className="text-4xl font-bold mb-4">Ready to Build Your Wealth?</h2>
-                  <p className="text-xl opacity-90 max-w-2xl mx-auto mb-8">
+                  <Zap className="h-10 w-10 sm:h-12 sm:w-12 md:h-16 md:w-16 mx-auto mb-4 sm:mb-6" />
+                  <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4">Ready to Build Your Wealth?</h2>
+                  <p className="text-sm sm:text-base md:text-xl opacity-90 max-w-2xl mx-auto mb-6 sm:mb-8 px-4">
                     Join thousands of successful Zambian investors who are already growing their portfolios with Palm Cacia
                   </p>
                   <div className="flex flex-col sm:flex-row gap-4 justify-center">
