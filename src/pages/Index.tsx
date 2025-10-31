@@ -10,7 +10,7 @@ import MarketNews from "@/components/Research/MarketNews";
 import PopularStocks from "@/components/Social/PopularStocks";
 import NewsFeed from "@/components/Research/NewsFeed";
 import { ArrowRight, TrendingUp, BarChart3, Clock, DollarSign, Star, Users, Shield, Zap } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 
@@ -307,31 +307,35 @@ export default function Index() {
         </div>
       ) : (
         <div className="min-h-screen bg-gradient-to-br from-background to-primary/5">
-          <div className="container py-8 space-y-8">
+          <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8 space-y-6 md:space-y-8">
             {/* Enhanced Dashboard Header */}
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
-              <div>
-                <h1 className="text-4xl font-bold gradient-text">Welcome Back!</h1>
-                <p className="text-muted-foreground text-lg">Here's what's happening with your investments today</p>
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6">
+              <div className="space-y-1">
+                <h1 className="text-3xl md:text-4xl font-bold gradient-text">Welcome Back!</h1>
+                <p className="text-muted-foreground text-base md:text-lg">Here's what's happening with your investments today</p>
               </div>
-              <div className="flex space-x-3">
-                <Button variant="outline" className="border-primary/20 hover:bg-primary/10">
-                  <Star className="h-4 w-4 mr-2" />
-                  Watchlist
+              <div className="flex flex-wrap gap-3">
+                <Button variant="outline" className="border-primary/20 hover:bg-primary/10" asChild>
+                  <Link to="/watchlist">
+                    <Star className="h-4 w-4 mr-2" />
+                    Watchlist
+                  </Link>
                 </Button>
-                <Button className="bg-gradient-to-r from-primary to-secondary text-white">
-                  <TrendingUp className="h-4 w-4 mr-2" />
-                  Start Trading
+                <Button className="bg-gradient-to-r from-primary to-secondary text-white" asChild>
+                  <Link to="/portfolio">
+                    <TrendingUp className="h-4 w-4 mr-2" />
+                    Start Trading
+                  </Link>
                 </Button>
               </div>
             </div>
             
             {/* Enhanced Dashboard Grid */}
-            <div className="grid gap-8 lg:grid-cols-6">
-              <div className="lg:col-span-4 space-y-8">
+            <div className="grid gap-6 md:gap-8 lg:grid-cols-3 xl:grid-cols-6">
+              <div className="lg:col-span-2 xl:col-span-4 space-y-6 md:space-y-8">
                 <Card className="bg-gradient-to-r from-card to-card/50 border-border/50 shadow-lg">
                   <CardHeader>
-                    <CardTitle className="flex items-center space-x-2">
+                    <CardTitle className="flex items-center space-x-2 text-lg md:text-xl">
                       <BarChart3 className="h-5 w-5 text-primary" />
                       <span>Portfolio Performance</span>
                     </CardTitle>
@@ -345,7 +349,7 @@ export default function Index() {
                 
                 <Card className="bg-gradient-to-r from-card to-card/50 border-border/50 shadow-lg">
                   <CardHeader>
-                    <CardTitle>Market Opportunities</CardTitle>
+                    <CardTitle className="text-lg md:text-xl">Market Opportunities</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <StockList />
@@ -353,10 +357,10 @@ export default function Index() {
                 </Card>
               </div>
               
-              <div className="lg:col-span-2 space-y-8">
+              <div className="lg:col-span-1 xl:col-span-2 space-y-6 md:space-y-8">
                 <Card className="bg-gradient-to-br from-primary/10 to-secondary/10 border-primary/20">
                   <CardHeader>
-                    <CardTitle className="text-primary">Trending Stocks</CardTitle>
+                    <CardTitle className="text-primary text-lg md:text-xl">Trending Stocks</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <PopularStocks />
@@ -365,7 +369,7 @@ export default function Index() {
                 
                 <Card className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border-blue-500/20">
                   <CardHeader>
-                    <CardTitle className="text-blue-600 dark:text-blue-400">Latest News</CardTitle>
+                    <CardTitle className="text-blue-600 dark:text-blue-400 text-lg md:text-xl">Latest News</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <NewsFeed defaultCategory="general" limit={5} />
