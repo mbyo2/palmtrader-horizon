@@ -45,25 +45,39 @@ export const useNotifications = () => {
   useEffect(() => {
     if (!user) return;
 
-    const channel = supabase
-      .channel('notifications')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${user.id}`
-        },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ["notifications", user.id] });
-        }
-      )
-      .subscribe();
+    try {
+      const channel = supabase
+        .channel('notifications')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'notifications',
+            filter: `user_id=eq.${user.id}`
+          },
+          () => {
+            queryClient.invalidateQueries({ queryKey: ["notifications", user.id] });
+          }
+        )
+        .subscribe((status, err) => {
+          if (err) {
+            console.warn('Notifications real-time subscription failed:', err);
+            // Non-blocking error - user can still use the app
+          }
+        });
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+      return () => {
+        try {
+          supabase.removeChannel(channel);
+        } catch (error) {
+          console.warn('Error removing notifications channel:', error);
+        }
+      };
+    } catch (error) {
+      console.warn('Failed to set up notifications subscription:', error);
+      // Non-blocking error - app should continue working
+    }
   }, [user, queryClient]);
 
   const markAsRead = async (notificationId: string) => {

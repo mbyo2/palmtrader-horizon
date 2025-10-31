@@ -15,7 +15,16 @@ import { useNotifications } from '@/hooks/useNotifications';
 import { formatDistanceToNow } from 'date-fns';
 
 const NotificationCenter = () => {
-  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+  const { notifications, unreadCount, markAsRead, markAllAsRead, error } = useNotifications();
+
+  // If there's an error loading notifications, show the bell icon but with no badge
+  if (error) {
+    return (
+      <Button variant="ghost" size="icon" title="Notifications unavailable">
+        <Bell className="h-5 w-5 opacity-50" />
+      </Button>
+    );
+  }
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
