@@ -58,36 +58,38 @@ const EnhancedStockCard = memo(({ stock }: EnhancedStockCardProps) => {
   
   return (
     <Card 
-      className="card-gradient p-4 hover:shadow-lg transition-shadow duration-200 m-1 cursor-pointer will-change-transform"
+      className="card-gradient p-3 sm:p-4 hover:shadow-lg transition-shadow duration-200 m-1 cursor-pointer will-change-transform"
       onClick={handleCardClick}
       role="button"
       tabIndex={0}
     >
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center gap-2">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center space-x-2">
-            <h3 className="font-semibold text-foreground truncate">{stock.symbol}</h3>
+          <div className="flex items-center space-x-1 sm:space-x-2">
+            <h3 className="font-semibold text-sm sm:text-base text-foreground truncate">{stock.symbol}</h3>
             <WatchlistButton symbol={stock.symbol} />
             {isConnected && isRealTime && (
               <div 
-                className="h-2 w-2 bg-green-500 rounded-full animate-pulse" 
+                className="h-1.5 w-1.5 sm:h-2 sm:w-2 bg-green-500 rounded-full animate-pulse" 
                 title="Live data"
                 aria-label="Live market data"
               />
             )}
           </div>
-          <p className="text-sm text-foreground/70 truncate">{stock.name}</p>
-          <PriceSourceIndicator 
-            source={source as 'finnhub' | 'alpha_vantage' | 'cache' | 'mock'}
-            timestamp={priceData?.timestamp}
-            isRealTime={isRealTime}
-          />
+          <p className="text-xs sm:text-sm text-foreground/70 truncate">{stock.name}</p>
+          <div className="hidden sm:block">
+            <PriceSourceIndicator 
+              source={source as 'finnhub' | 'alpha_vantage' | 'cache' | 'mock'}
+              timestamp={priceData?.timestamp}
+              isRealTime={isRealTime}
+            />
+          </div>
         </div>
-        <div className="text-right ml-4">
-          <p className={`font-bold text-foreground transition-colors duration-300 ${priceColorClass}`}>
+        <div className="text-right ml-2 sm:ml-4">
+          <p className={`font-bold text-sm sm:text-base text-foreground transition-colors duration-300 ${priceColorClass}`}>
             ${memoizedPriceData.currentPrice}
           </p>
-          <span className={`text-sm ${changeColorClass}`}>
+          <span className={`text-xs sm:text-sm ${changeColorClass}`}>
             {memoizedPriceData.changeText}
           </span>
         </div>

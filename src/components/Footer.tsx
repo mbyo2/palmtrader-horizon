@@ -8,13 +8,13 @@ const Footer = () => {
 
   return (
     <footer className="w-full border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex flex-col items-center justify-between gap-4 py-6 md:h-24 md:flex-row md:py-0">
-        <div className="flex flex-col items-center gap-4 px-4 md:flex-row md:gap-2 md:px-0">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Copyright className="h-4 w-4" />
+      <div className="container flex flex-col items-center justify-between gap-4 py-6 md:h-24 md:flex-row md:py-0 px-4">
+        <div className="flex flex-col items-center gap-2 md:gap-4 md:flex-row md:px-0">
+          <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+            <Copyright className="h-3 w-3 sm:h-4 sm:w-4" />
             <span>{currentYear} PalmCacia</span>
           </div>
-          <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
+          <p className="text-center text-xs sm:text-sm leading-loose text-muted-foreground md:text-left">
             Built with care by{" "}
             <a
               href="https://mabvutobanda.online"
@@ -26,31 +26,31 @@ const Footer = () => {
             </a>
           </p>
         </div>
-        <div className="flex flex-col md:flex-row items-center gap-4">
-          <nav className="flex gap-4 text-sm text-muted-foreground">
-            <Link to="/markets" className="hover:text-primary transition-colors">
+        <div className="flex flex-col md:flex-row items-center gap-3 md:gap-4">
+          <nav className="flex flex-wrap justify-center gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
+            <Link to="/markets" className="hover:text-primary transition-colors whitespace-nowrap">
               Markets
             </Link>
-            <Link to="/portfolio" className="hover:text-primary transition-colors">
+            <Link to="/portfolio" className="hover:text-primary transition-colors whitespace-nowrap">
               Portfolio
             </Link>
-            <Link to="/watchlist" className="hover:text-primary transition-colors">
+            <Link to="/watchlist" className="hover:text-primary transition-colors whitespace-nowrap">
               Watchlist
             </Link>
-            <Link to="/about" className="hover:text-primary transition-colors">
+            <Link to="/about" className="hover:text-primary transition-colors whitespace-nowrap">
               About
             </Link>
-            <Link to="/contact" className="hover:text-primary transition-colors">
+            <Link to="/contact" className="hover:text-primary transition-colors whitespace-nowrap">
               Contact
             </Link>
-            <Link to="/terms" className="hover:text-primary transition-colors">
+            <Link to="/terms" className="hover:text-primary transition-colors whitespace-nowrap">
               Terms
             </Link>
-            <Link to="/cookies" className="hover:text-primary transition-colors">
+            <Link to="/cookies" className="hover:text-primary transition-colors whitespace-nowrap">
               Cookies
             </Link>
           </nav>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             {/* GitHub */}
             <Tooltip>
               <TooltipTrigger asChild>
@@ -59,8 +59,8 @@ const Footer = () => {
                   target="_blank"
                   rel="noreferrer"
                 >
-                  <Button variant="ghost" size="icon">
-                    <Github className="h-4 w-4" />
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <Github className="h-3 w-3 sm:h-4 sm:w-4" />
                     <span className="sr-only">GitHub</span>
                   </Button>
                 </a>
@@ -76,8 +76,8 @@ const Footer = () => {
                   target="_blank"
                   rel="noreferrer"
                 >
-                  <Button variant="ghost" size="icon">
-                    <Twitter className="h-4 w-4" />
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <Twitter className="h-3 w-3 sm:h-4 sm:w-4" />
                     <span className="sr-only">Twitter</span>
                   </Button>
                 </a>
@@ -93,8 +93,8 @@ const Footer = () => {
                   target="_blank"
                   rel="noreferrer"
                 >
-                  <Button variant="ghost" size="icon">
-                    <Globe className="h-4 w-4" />
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <Globe className="h-3 w-3 sm:h-4 sm:w-4" />
                     <span className="sr-only">Website</span>
                   </Button>
                 </a>

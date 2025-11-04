@@ -43,14 +43,14 @@ const NavigationLinks = ({ onItemClick }: NavigationLinksProps) => {
           onClick={onItemClick}
           className={({ isActive }) =>
             cn(
-              "group flex items-center space-x-2 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 hover:bg-accent hover:text-accent-foreground",
+              "group flex items-center space-x-3 rounded-lg px-4 py-3 lg:px-3 lg:py-2 text-sm font-medium transition-all duration-200 hover:bg-accent hover:text-accent-foreground",
               isActive
                 ? "bg-accent text-accent-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
             )
           }
         >
-          <item.icon className="h-4 w-4" />
+          <item.icon className="h-5 w-5 lg:h-4 lg:w-4" />
           <span>{item.label}</span>
         </NavLink>
       ))}

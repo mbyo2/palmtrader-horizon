@@ -25,14 +25,14 @@ const EnhancedMarketCard = memo(({ market }: EnhancedMarketCardProps) => {
 
   return (
     <Card className="card-gradient p-3 sm:p-4">
-      <div className="flex items-center justify-between mb-1">
-        <h3 className="text-sm sm:text-base font-semibold text-foreground/80">{market.name}</h3>
+      <div className="flex items-center justify-between mb-1 sm:mb-2">
+        <h3 className="text-xs sm:text-sm md:text-base font-semibold text-foreground/80 truncate">{market.name}</h3>
         {isConnected && isRealTime && (
-          <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse" title="Live data" />
+          <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 bg-green-500 rounded-full animate-pulse flex-shrink-0 ml-2" title="Live data" />
         )}
       </div>
       
-      <p className={`text-lg sm:text-2xl font-bold text-foreground transition-colors duration-300 ${
+      <p className={`text-base sm:text-lg md:text-2xl font-bold text-foreground transition-colors duration-300 ${
         market.previousValue && parseFloat(currentValue.replace(/[$,]/g, '')) > parseFloat(market.previousValue.replace(/[$,]/g, ''))
           ? 'text-green-500'
           : market.previousValue && parseFloat(currentValue.replace(/[$,]/g, '')) < parseFloat(market.previousValue.replace(/[$,]/g, ''))
@@ -42,15 +42,17 @@ const EnhancedMarketCard = memo(({ market }: EnhancedMarketCardProps) => {
         {currentValue}
       </p>
       
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <span className={`text-xs sm:text-sm ${changeText.startsWith("+") ? "text-green-500" : "text-red-500"}`}>
           {changeText}
         </span>
-        <PriceSourceIndicator 
-          source={source as 'finnhub' | 'alpha_vantage' | 'cache' | 'mock'}
-          timestamp={priceData?.timestamp}
-          isRealTime={isRealTime}
-        />
+        <div className="hidden sm:block">
+          <PriceSourceIndicator 
+            source={source as 'finnhub' | 'alpha_vantage' | 'cache' | 'mock'}
+            timestamp={priceData?.timestamp}
+            isRealTime={isRealTime}
+          />
+        </div>
       </div>
     </Card>
   );
