@@ -7,6 +7,10 @@ import { AuthProvider } from '@/hooks/useAuth';
 import { ThemeProvider } from "next-themes";
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import PullToRefresh from './components/Mobile/PullToRefresh';
+import SwipeNavigation from './components/Mobile/SwipeNavigation';
+import { usePullToRefresh } from './hooks/usePullToRefresh';
+import { useIsMobile } from './hooks/use-mobile';
 import Home from '@/pages/Home';
 import Markets from '@/pages/Markets';
 import Portfolio from '@/pages/Portfolio';
@@ -50,6 +54,66 @@ const queryClient = new QueryClient({
   },
 });
 
+function AppContent() {
+  const { handleRefresh } = usePullToRefresh();
+  const isMobile = useIsMobile();
+
+  const content = (
+    <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
+      <Navbar />
+      <main className="flex-1" id="main">
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/auth" element={<Auth />} />
+          <Route path="/onboarding" element={<Onboarding />} />
+          <Route path="/markets" element={<Markets />} />
+          <Route path="/portfolio" element={<Portfolio />} />
+          <Route path="/watchlist" element={<Watchlist />} />
+          <Route path="/crypto" element={<Crypto />} />
+          <Route path="/ipo" element={<IPO />} />
+          <Route path="/ipo/:id" element={<IPODetails />} />
+          <Route path="/african-markets" element={<AfricanMarkets />} />
+          <Route path="/banking" element={<Banking />} />
+          <Route path="/admin" element={<Admin />} />
+          <Route path="/kyc" element={<KYC />} />
+          <Route path="/verification" element={<Verification />} />
+          <Route path="/compliance" element={<Compliance />} />
+          <Route path="/options-trading" element={<OptionsTrading />} />
+          <Route path="/verify" element={<Verification />} />
+          <Route path="/support" element={<Help />} />
+          <Route path="/upgrade" element={<Settings />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/cookies" element={<Cookies />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/transfers" element={<Transfers />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/account-settings" element={<AccountSettings />} />
+          <Route path="/pwa-settings" element={<PWASettings />} />
+          <Route path="/help" element={<Help />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </main>
+      <Footer />
+      <Toaster />
+      <OrderProcessorInitializer />
+    </div>
+  );
+
+  if (isMobile) {
+    return (
+      <SwipeNavigation>
+        <PullToRefresh onRefresh={handleRefresh}>
+          {content}
+        </PullToRefresh>
+      </SwipeNavigation>
+    );
+  }
+
+  return content;
+}
+
 function App() {
   // Initialize services on app mount
   React.useEffect(() => {
@@ -69,48 +133,7 @@ function App() {
             <AccessibilityProvider>
               <NotificationsProvider>
                 <ErrorBoundary>
-                  <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
-                    <Navbar />
-                    <main className="flex-1" id="main">
-                      <Routes>
-                        <Route path="/" element={<Home />} />
-                        <Route path="/auth" element={<Auth />} />
-                        <Route path="/onboarding" element={<Onboarding />} />
-                        <Route path="/markets" element={<Markets />} />
-                        <Route path="/portfolio" element={<Portfolio />} />
-                        <Route path="/watchlist" element={<Watchlist />} />
-                        <Route path="/crypto" element={<Crypto />} />
-                        <Route path="/ipo" element={<IPO />} />
-                        <Route path="/ipo/:id" element={<IPODetails />} />
-                        <Route path="/african-markets" element={<AfricanMarkets />} />
-                        <Route path="/banking" element={<Banking />} />
-                        <Route path="/admin" element={<Admin />} />
-                        <Route path="/kyc" element={<KYC />} />
-                        <Route path="/verification" element={<Verification />} />
-                        <Route path="/compliance" element={<Compliance />} />
-                        <Route path="/options-trading" element={<OptionsTrading />} />
-                        {/* Route aliases to connect related pages */}
-                        <Route path="/verify" element={<Verification />} />
-                        <Route path="/support" element={<Help />} />
-                        <Route path="/upgrade" element={<Settings />} />
-                        {/* Legal and info pages */}
-                        <Route path="/about" element={<About />} />
-                        <Route path="/contact" element={<Contact />} />
-                        <Route path="/terms" element={<Terms />} />
-                        <Route path="/cookies" element={<Cookies />} />
-                        <Route path="/profile" element={<Profile />} />
-                        <Route path="/transfers" element={<Transfers />} />
-                        <Route path="/settings" element={<Settings />} />
-                        <Route path="/account-settings" element={<AccountSettings />} />
-                        <Route path="/pwa-settings" element={<PWASettings />} />
-                        <Route path="/help" element={<Help />} />
-                        <Route path="*" element={<NotFound />} />
-                      </Routes>
-                    </main>
-                    <Footer />
-                    <Toaster />
-                    <OrderProcessorInitializer />
-                  </div>
+                  <AppContent />
                 </ErrorBoundary>
               </NotificationsProvider>
             </AccessibilityProvider>
