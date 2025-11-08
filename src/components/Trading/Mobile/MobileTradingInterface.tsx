@@ -5,6 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { TrendingUp, TrendingDown, Activity, Clock } from "lucide-react";
 import { MobileOrderForm, type OrderData } from "./MobileOrderForm";
 import { MobileOrderConfirmation } from "./MobileOrderConfirmation";
+import { MobileStockChart } from "./MobileStockChart";
+import { useRealtimeStockData } from "@/hooks/useRealtimeStockData";
 import { useHaptic } from "@/hooks/useHaptic";
 import { toast } from "sonner";
 
@@ -21,17 +23,32 @@ interface MobileTradingInterfaceProps {
 export const MobileTradingInterface = ({
   symbol,
   companyName,
-  currentPrice,
-  priceChange,
-  priceChangePercent,
+  currentPrice: initialPrice,
+  priceChange: initialChange,
+  priceChangePercent: initialChangePercent,
   availableBalance = 10000,
   onOrderSubmit,
 }: MobileTradingInterfaceProps) => {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [pendingOrder, setPendingOrder] = useState<OrderData | null>(null);
+  const [selectedTimeframe, setSelectedTimeframe] = useState("1D");
   const { trigger } = useHaptic();
 
-  const isPositive = priceChange >= 0;
+  // Use real-time data hook
+  const {
+    currentPrice,
+    priceChange,
+    priceChangePercent,
+    chartData,
+    isLoading,
+  } = useRealtimeStockData(symbol, selectedTimeframe);
+
+  // Fallback to initial values if data is loading
+  const displayPrice = isLoading ? initialPrice : currentPrice;
+  const displayChange = isLoading ? initialChange : priceChange;
+  const displayChangePercent = isLoading ? initialChangePercent : priceChangePercent;
+
+  const isPositive = displayChange >= 0;
 
   const handleOrderSubmit = (orderData: OrderData) => {
     trigger("medium");
@@ -69,7 +86,7 @@ export const MobileTradingInterface = ({
           
           <div className="flex items-end justify-between">
             <div>
-              <div className="text-3xl font-bold">${currentPrice.toFixed(2)}</div>
+              <div className="text-3xl font-bold">${displayPrice.toFixed(2)}</div>
               <div className="flex items-center gap-2 mt-1">
                 <Badge
                   variant={isPositive ? "default" : "destructive"}
@@ -81,8 +98,8 @@ export const MobileTradingInterface = ({
                     <TrendingDown className="h-3 w-3" />
                   )}
                   {isPositive ? "+" : ""}
-                  {priceChange.toFixed(2)} ({isPositive ? "+" : ""}
-                  {priceChangePercent.toFixed(2)}%)
+                  {displayChange.toFixed(2)} ({isPositive ? "+" : ""}
+                  {displayChangePercent.toFixed(2)}%)
                 </Badge>
               </div>
             </div>
@@ -114,7 +131,7 @@ export const MobileTradingInterface = ({
             <CardContent>
               <MobileOrderForm
                 symbol={symbol}
-                currentPrice={currentPrice}
+                currentPrice={displayPrice}
                 availableBalance={availableBalance}
                 onSubmit={handleOrderSubmit}
               />
@@ -123,13 +140,11 @@ export const MobileTradingInterface = ({
         </TabsContent>
 
         <TabsContent value="chart" className="mt-0 p-4">
-          <Card>
-            <CardContent className="p-6">
-              <div className="h-64 flex items-center justify-center text-muted-foreground">
-                Chart view coming soon
-              </div>
-            </CardContent>
-          </Card>
+          <MobileStockChart
+            symbol={symbol}
+            data={chartData}
+            onTimeframeChange={setSelectedTimeframe}
+          />
         </TabsContent>
 
         <TabsContent value="orders" className="mt-0 p-4">
@@ -152,7 +167,7 @@ export const MobileTradingInterface = ({
         }}
         orderData={pendingOrder}
         symbol={symbol}
-        currentPrice={currentPrice}
+        currentPrice={displayPrice}
         onConfirm={handleOrderConfirm}
       />
     </div>
