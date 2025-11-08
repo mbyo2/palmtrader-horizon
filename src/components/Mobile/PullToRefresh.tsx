@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { RefreshCw } from "lucide-react";
+import { useHaptic } from "@/hooks/useHaptic";
 
 interface PullToRefreshProps {
   onRefresh: () => Promise<void>;
@@ -10,7 +11,9 @@ const PullToRefresh = ({ onRefresh, children }: PullToRefreshProps) => {
   const [pullDistance, setPullDistance] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [startY, setStartY] = useState(0);
+  const [hasTriggeredHaptic, setHasTriggeredHaptic] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const { trigger } = useHaptic();
 
   const threshold = 80;
   const maxPull = 120;
@@ -28,7 +31,14 @@ const PullToRefresh = ({ onRefresh, children }: PullToRefreshProps) => {
     const distance = currentY - startY;
 
     if (distance > 0) {
-      setPullDistance(Math.min(distance * 0.5, maxPull));
+      const newDistance = Math.min(distance * 0.5, maxPull);
+      setPullDistance(newDistance);
+      
+      // Trigger haptic feedback when threshold is reached
+      if (newDistance >= threshold && !hasTriggeredHaptic) {
+        trigger("medium");
+        setHasTriggeredHaptic(true);
+      }
     }
   };
 
@@ -36,15 +46,18 @@ const PullToRefresh = ({ onRefresh, children }: PullToRefreshProps) => {
     if (pullDistance >= threshold && !isRefreshing) {
       setIsRefreshing(true);
       setPullDistance(threshold);
+      trigger("success");
       
       try {
         await onRefresh();
       } finally {
         setIsRefreshing(false);
         setPullDistance(0);
+        setHasTriggeredHaptic(false);
       }
     } else {
       setPullDistance(0);
+      setHasTriggeredHaptic(false);
     }
     setStartY(0);
   };
