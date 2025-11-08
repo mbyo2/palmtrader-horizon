@@ -43,6 +43,7 @@ import Terms from '@/pages/Terms';
 import Cookies from '@/pages/Cookies';
 import Compliance from '@/pages/Compliance';
 import OptionsTrading from '@/pages/OptionsTrading';
+import MobileTrade from '@/pages/MobileTrade';
 import { setupGlobalErrorHandlers } from '@/utils/errorHandling';
 
 const queryClient = new QueryClient({
@@ -79,6 +80,7 @@ function AppContent() {
           <Route path="/verification" element={<Verification />} />
           <Route path="/compliance" element={<Compliance />} />
           <Route path="/options-trading" element={<OptionsTrading />} />
+          <Route path="/trade/:symbol" element={<MobileTrade />} />
           <Route path="/verify" element={<Verification />} />
           <Route path="/support" element={<Help />} />
           <Route path="/upgrade" element={<Settings />} />
