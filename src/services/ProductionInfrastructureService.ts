@@ -86,11 +86,19 @@ export class ProductionInfrastructureService {
     const isProduction = window.location.hostname !== 'localhost' && 
                         !window.location.hostname.includes('lovable.app');
     
+    // Get environment variables from Vite
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error('Missing required environment variables: VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY');
+    }
+    
     if (isProduction) {
       return {
         name: 'production',
-        supabaseUrl: 'https://hvrcchjbqumlknaboczh.supabase.co',
-        supabaseKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2cmNjaGpicXVtbGtuYWJvY3poIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzYyNjUxMDgsImV4cCI6MjA1MTg0MTEwOH0.F4Tyt3Ei2VYQiXoMdlRtLRF8gxMLeBfTVFOL32q3iYQ',
+        supabaseUrl,
+        supabaseKey,
         apiBaseUrl: 'https://api.smarttrade.app',
         cdnUrl: 'https://cdn.smarttrade.app',
         features: {
@@ -111,9 +119,9 @@ export class ProductionInfrastructureService {
     } else {
       return {
         name: 'development',
-        supabaseUrl: 'https://hvrcchjbqumlknaboczh.supabase.co',
-        supabaseKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2cmNjaGpicXVtbGtuYWJvY3poIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzYyNjUxMDgsImV4cCI6MjA1MTg0MTEwOH0.F4Tyt3Ei2VYQiXoMdlRtLRF8gxMLeBfTVFOL32q3iYQ',
-        apiBaseUrl: 'http://localhost:3000',
+        supabaseUrl,
+        supabaseKey,
+        apiBaseUrl: `${supabaseUrl}/functions/v1`, // Use Supabase functions URL for dev
         features: {
           trading: true,
           realTimeData: true,
