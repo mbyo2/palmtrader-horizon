@@ -1,10 +1,15 @@
 
-import { memo, useMemo, useCallback } from "react";
+import { memo, useMemo, useCallback, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import WatchlistButton from "../WatchlistButton";
 import PriceSourceIndicator from "../PriceDisplay/PriceSourceIndicator";
 import { useEnhancedMarketPrice } from "@/hooks/useEnhancedMarketPrice";
+import { QuickTradeSheet } from "@/components/Trading/Mobile/QuickTradeSheet";
+import { Zap } from "lucide-react";
+import { useHaptic } from "@/hooks/useHaptic";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export interface Stock {
   symbol: string;
@@ -19,6 +24,9 @@ interface EnhancedStockCardProps {
 }
 
 const EnhancedStockCard = memo(({ stock }: EnhancedStockCardProps) => {
+  const [showQuickTrade, setShowQuickTrade] = useState(false);
+  const { trigger } = useHaptic();
+  const isMobile = useIsMobile();
   const { priceData, isLoading, isConnected, source, isRealTime } = useEnhancedMarketPrice(stock.symbol);
 
   // Memoize expensive calculations
@@ -52,49 +60,75 @@ const EnhancedStockCard = memo(({ stock }: EnhancedStockCardProps) => {
     // Handle card click with minimal re-renders
   }, []);
 
+  const handleQuickTradeClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    trigger("medium");
+    setShowQuickTrade(true);
+  }, [trigger]);
+
   if (isLoading) {
     return <Skeleton className="h-24 mx-1" />;
   }
   
   return (
-    <Card 
-      className="card-gradient p-3 sm:p-4 hover:shadow-lg transition-shadow duration-200 m-1 cursor-pointer will-change-transform"
-      onClick={handleCardClick}
-      role="button"
-      tabIndex={0}
-    >
-      <div className="flex justify-between items-center gap-2">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center space-x-1 sm:space-x-2">
-            <h3 className="font-semibold text-sm sm:text-base text-foreground truncate">{stock.symbol}</h3>
-            <WatchlistButton symbol={stock.symbol} />
-            {isConnected && isRealTime && (
-              <div 
-                className="h-1.5 w-1.5 sm:h-2 sm:w-2 bg-green-500 rounded-full animate-pulse" 
-                title="Live data"
-                aria-label="Live market data"
+    <>
+      <Card 
+        className="card-gradient p-3 sm:p-4 hover:shadow-lg transition-shadow duration-200 m-1 cursor-pointer will-change-transform"
+        onClick={handleCardClick}
+        role="button"
+        tabIndex={0}
+      >
+        <div className="flex justify-between items-center gap-2">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center space-x-1 sm:space-x-2">
+              <h3 className="font-semibold text-sm sm:text-base text-foreground truncate">{stock.symbol}</h3>
+              <WatchlistButton symbol={stock.symbol} />
+              {isConnected && isRealTime && (
+                <div 
+                  className="h-1.5 w-1.5 sm:h-2 sm:w-2 bg-green-500 rounded-full animate-pulse" 
+                  title="Live data"
+                  aria-label="Live market data"
+                />
+              )}
+            </div>
+            <p className="text-xs sm:text-sm text-foreground/70 truncate">{stock.name}</p>
+            <div className="hidden sm:block">
+              <PriceSourceIndicator 
+                source={source as 'finnhub' | 'alpha_vantage' | 'cache' | 'mock'}
+                timestamp={priceData?.timestamp}
+                isRealTime={isRealTime}
               />
-            )}
+            </div>
           </div>
-          <p className="text-xs sm:text-sm text-foreground/70 truncate">{stock.name}</p>
-          <div className="hidden sm:block">
-            <PriceSourceIndicator 
-              source={source as 'finnhub' | 'alpha_vantage' | 'cache' | 'mock'}
-              timestamp={priceData?.timestamp}
-              isRealTime={isRealTime}
-            />
+          <div className="text-right ml-2 sm:ml-4">
+            <p className={`font-bold text-sm sm:text-base text-foreground transition-colors duration-300 ${priceColorClass}`}>
+              ${memoizedPriceData.currentPrice}
+            </p>
+            <span className={`text-xs sm:text-sm ${changeColorClass}`}>
+              {memoizedPriceData.changeText}
+            </span>
           </div>
+          {isMobile && (
+            <Button
+              size="sm"
+              onClick={handleQuickTradeClick}
+              className="h-8 w-8 p-0 shrink-0 sm:h-9 sm:w-9"
+              variant="outline"
+            >
+              <Zap className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            </Button>
+          )}
         </div>
-        <div className="text-right ml-2 sm:ml-4">
-          <p className={`font-bold text-sm sm:text-base text-foreground transition-colors duration-300 ${priceColorClass}`}>
-            ${memoizedPriceData.currentPrice}
-          </p>
-          <span className={`text-xs sm:text-sm ${changeColorClass}`}>
-            {memoizedPriceData.changeText}
-          </span>
-        </div>
-      </div>
-    </Card>
+      </Card>
+
+      <QuickTradeSheet
+        isOpen={showQuickTrade}
+        onClose={() => setShowQuickTrade(false)}
+        symbol={stock.symbol}
+        companyName={stock.name}
+        currentPrice={parseFloat(memoizedPriceData.currentPrice)}
+      />
+    </>
   );
 }, (prevProps, nextProps) => {
   // Custom comparison for better performance
