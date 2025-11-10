@@ -43,16 +43,17 @@ export function useRealTimeMarketData(
     if (!isMounted.current) return;
     
     setPriceData(prevData => {
-      const prevPrice = prevData[symbol]?.price;
-      const calculatedChange = prevPrice ? (price - prevPrice) / prevPrice * 100 : 0;
+      // Use provided change values, no fallback calculation
+      const finalChange = change ?? 0;
+      const finalChangePercent = changePercent ?? 0;
       
       const newData = {
         ...prevData,
         [symbol]: { 
           symbol, 
           price, 
-          change: change ?? calculatedChange,
-          changePercent: changePercent ?? calculatedChange,
+          change: finalChange,
+          changePercent: finalChangePercent,
           timestamp 
         }
       };
@@ -65,8 +66,8 @@ export function useRealTimeMarketData(
         onUpdate({
           symbol,
           price,
-          change: change ?? calculatedChange,
-          changePercent: changePercent ?? calculatedChange,
+          change: finalChange,
+          changePercent: finalChangePercent,
           timestamp
         });
       }

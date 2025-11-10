@@ -100,16 +100,47 @@ export async function fetchHistoricalData(symbol: string, days: number): Promise
   }
 }
 
-export async function fetchLatestPrice(symbol: string): Promise<{ symbol: string; price: number }> {
+export async function fetchLatestPrice(symbol: string): Promise<{ symbol: string; price: number; change?: number; changePercent?: number }> {
   console.log(`Fetching latest price for ${symbol}`);
   
-  // Mock data for demonstration
-  return generateMockLatestPrice(symbol);
+  try {
+    const { data, error } = await supabase.functions.invoke('finnhub-websocket', {
+      body: { action: 'get_quote', symbol }
+    });
+
+    if (error) throw error;
+    if (!data) throw new Error('No data returned');
+
+    return {
+      symbol: data.symbol,
+      price: data.price,
+      change: data.change || 0,
+      changePercent: data.changePercent || 0
+    };
+  } catch (error) {
+    console.warn(`Error fetching price for ${symbol}, using mock data:`, error);
+    return generateMockLatestPrice(symbol);
+  }
 }
 
-export async function fetchMultipleLatestPrices(symbols: string[]): Promise<{ symbol: string; price: number }[]> {
+export async function fetchMultipleLatestPrices(symbols: string[]): Promise<{ symbol: string; price: number; change?: number; changePercent?: number }[]> {
   console.log(`Fetching latest prices for multiple symbols: ${symbols.join(', ')}`);
   
-  // Mock data for demonstration
-  return symbols.map(symbol => generateMockLatestPrice(symbol));
+  try {
+    const results = await Promise.allSettled(
+      symbols.map(symbol => fetchLatestPrice(symbol))
+    );
+
+    return results.map((result, index) => {
+      if (result.status === 'fulfilled') {
+        return result.value;
+      } else {
+        console.warn(`Failed to fetch price for ${symbols[index]}, using mock data`);
+        return generateMockLatestPrice(symbols[index]);
+      }
+    });
+  } catch (error) {
+    console.warn('Error fetching multiple prices, using mock data:', error);
+    return symbols.map(symbol => generateMockLatestPrice(symbol));
+  }
 }

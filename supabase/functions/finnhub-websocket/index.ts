@@ -39,8 +39,21 @@ serve(async (req) => {
       
       const data = await response.json();
       
+      // Transform Finnhub format to our format
+      const transformedData = {
+        symbol,
+        price: data.c, // current price
+        change: data.d, // change
+        changePercent: data.dp, // change percent
+        high: data.h,
+        low: data.l,
+        open: data.o,
+        previousClose: data.pc,
+        timestamp: data.t * 1000 // Convert to milliseconds
+      };
+      
       return new Response(
-        JSON.stringify(data),
+        JSON.stringify(transformedData),
         { 
           status: 200,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
