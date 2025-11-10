@@ -184,11 +184,18 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
                 });
             }
           }
-        )
-        .subscribe();
+        );
+
+      channel.subscribe((status, err) => {
+        if (err) console.warn('Price alerts channel subscription error:', err);
+      });
 
       return () => {
-        supabase.removeChannel(channel);
+        try {
+          supabase.removeChannel(channel);
+        } catch (error) {
+          console.warn('Error removing price alerts channel:', error);
+        }
       };
     };
 
@@ -224,11 +231,18 @@ export const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
               data: trade,
             });
           }
-        )
-        .subscribe();
+        );
+
+      channel.subscribe((status, err) => {
+        if (err) console.warn('Trades channel subscription error:', err);
+      });
 
       return () => {
-        supabase.removeChannel(channel);
+        try {
+          supabase.removeChannel(channel);
+        } catch (error) {
+          console.warn('Error removing trades channel:', error);
+        }
       };
     };
 

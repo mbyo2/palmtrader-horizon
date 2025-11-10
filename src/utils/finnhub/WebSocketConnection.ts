@@ -25,15 +25,20 @@ export class WebSocketConnection {
     try {
       // Get API key from edge function if not provided
       if (this.apiKey === "demo") {
-        const response = await fetch('/api/finnhub-websocket', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'get_api_key' })
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          this.apiKey = data.apiKey;
+        try {
+          const response = await fetch('/api/finnhub-websocket', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'get_api_key' })
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            this.apiKey = data.apiKey;
+          }
+        } catch (fetchError) {
+          console.warn('Could not fetch API key, using demo mode:', fetchError);
+          // Continue with demo key
         }
       }
 
@@ -46,18 +51,36 @@ export class WebSocketConnection {
         console.log('Finnhub WebSocket connected');
         this.isConnecting = false;
         this.reconnectAttempts = 0;
-        this.openHandlers.forEach(handler => handler());
+        this.openHandlers.forEach(handler => {
+          try {
+            handler();
+          } catch (err) {
+            console.warn('Error in open handler:', err);
+          }
+        });
       };
 
       this.ws.onmessage = (event) => {
-        this.messageHandlers.forEach(handler => handler(event));
+        this.messageHandlers.forEach(handler => {
+          try {
+            handler(event);
+          } catch (err) {
+            console.warn('Error in message handler:', err);
+          }
+        });
       };
 
       this.ws.onclose = (event) => {
         console.log('Finnhub WebSocket closed:', event.code, event.reason);
         this.isConnecting = false;
         this.ws = null;
-        this.closeHandlers.forEach(handler => handler(event));
+        this.closeHandlers.forEach(handler => {
+          try {
+            handler(event);
+          } catch (err) {
+            console.warn('Error in close handler:', err);
+          }
+        });
         
         if (event.code !== 1000 && this.reconnectAttempts < this.maxReconnectAttempts) {
           this.scheduleReconnect();
@@ -65,15 +88,21 @@ export class WebSocketConnection {
       };
 
       this.ws.onerror = (event) => {
-        console.error('Finnhub WebSocket error:', event);
+        console.warn('Finnhub WebSocket error:', event);
         this.isConnecting = false;
-        this.errorHandlers.forEach(handler => handler(event));
+        this.errorHandlers.forEach(handler => {
+          try {
+            handler(event);
+          } catch (err) {
+            console.warn('Error in error handler:', err);
+          }
+        });
       };
 
     } catch (error) {
-      console.error('Failed to connect to Finnhub WebSocket:', error);
+      console.warn('Failed to connect to Finnhub WebSocket:', error);
       this.isConnecting = false;
-      throw error;
+      // Don't throw - allow app to continue without real-time data
     }
   }
 

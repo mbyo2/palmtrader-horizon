@@ -34,11 +34,21 @@ const PriceAlertList = () => {
         () => {
           fetchAlerts();
         }
-      )
-      .subscribe();
+      );
+
+    // Subscribe with error handling
+    channel.subscribe((status, err) => {
+      if (err) {
+        console.warn('Price alerts subscription error:', err);
+      }
+    });
 
     return () => {
-      supabase.removeChannel(channel);
+      try {
+        supabase.removeChannel(channel);
+      } catch (error) {
+        console.warn('Error removing price alerts channel:', error);
+      }
     };
   }, []);
 

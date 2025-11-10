@@ -259,8 +259,12 @@ export class DataSyncService {
             detail: payload 
           }));
         }
-      )
-      .subscribe();
+      );
+
+    marketDataChannel.subscribe((status, err) => {
+      if (err) console.warn('Market data subscription error:', err);
+      if (status === 'SUBSCRIBED') console.log('Market data subscription active');
+    });
 
     // Subscribe to order status changes
     const orderChannel = supabase
@@ -278,8 +282,12 @@ export class DataSyncService {
             detail: payload 
           }));
         }
-      )
-      .subscribe();
+      );
+
+    orderChannel.subscribe((status, err) => {
+      if (err) console.warn('Order subscription error:', err);
+      if (status === 'SUBSCRIBED') console.log('Order subscription active');
+    });
 
     // Subscribe to portfolio changes
     const portfolioChannel = supabase
@@ -297,8 +305,12 @@ export class DataSyncService {
             detail: payload 
           }));
         }
-      )
-      .subscribe();
+      );
+
+    portfolioChannel.subscribe((status, err) => {
+      if (err) console.warn('Portfolio subscription error:', err);
+      if (status === 'SUBSCRIBED') console.log('Portfolio subscription active');
+    });
 
     console.log('Real-time subscriptions established');
   }

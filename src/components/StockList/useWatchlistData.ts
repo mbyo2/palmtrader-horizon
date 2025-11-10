@@ -66,11 +66,18 @@ const useWatchlistData = () => {
         () => {
           fetchWatchlistStocks();
         }
-      )
-      .subscribe();
+      );
+
+    subscription.subscribe((status, err) => {
+      if (err) console.warn('Watchlist subscription error:', err);
+    });
 
     return () => {
-      subscription.unsubscribe();
+      try {
+        subscription.unsubscribe();
+      } catch (error) {
+        console.warn('Error unsubscribing from watchlist:', error);
+      }
     };
   }, [user]);
 

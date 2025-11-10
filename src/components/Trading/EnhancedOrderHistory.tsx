@@ -82,11 +82,18 @@ const EnhancedOrderHistory = () => {
             );
           }
         }
-      )
-      .subscribe();
+      );
+
+    channel.subscribe((status, err) => {
+      if (err) console.warn('Order updates subscription error:', err);
+    });
 
     return () => {
-      supabase.removeChannel(channel);
+      try {
+        supabase.removeChannel(channel);
+      } catch (error) {
+        console.warn('Error removing order updates channel:', error);
+      }
     };
   }, [user, refetch]);
 

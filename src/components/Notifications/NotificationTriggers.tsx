@@ -45,8 +45,11 @@ const NotificationTriggers = () => {
               console.error('Failed to send price alert notification:', error);
             }
           }
-        )
-        .subscribe();
+        );
+
+      priceAlertsChannel.subscribe((status, err) => {
+        if (err) console.warn('Price alerts channel error:', err);
+      });
 
       // Listen for trade confirmations
       const tradesChannel = supabase
@@ -86,8 +89,11 @@ const NotificationTriggers = () => {
               console.error('Failed to send trade confirmation notification:', error);
             }
           }
-        )
-        .subscribe();
+        );
+
+      tradesChannel.subscribe((status, err) => {
+        if (err) console.warn('Trades channel error:', err);
+      });
 
       // Listen for portfolio updates
       const portfolioChannel = supabase
@@ -125,13 +131,20 @@ const NotificationTriggers = () => {
               console.error('Failed to send portfolio update notification:', error);
             }
           }
-        )
-        .subscribe();
+        );
+
+      portfolioChannel.subscribe((status, err) => {
+        if (err) console.warn('Portfolio channel error:', err);
+      });
 
       return () => {
-        supabase.removeChannel(priceAlertsChannel);
-        supabase.removeChannel(tradesChannel);
-        supabase.removeChannel(portfolioChannel);
+        try {
+          supabase.removeChannel(priceAlertsChannel);
+          supabase.removeChannel(tradesChannel);
+          supabase.removeChannel(portfolioChannel);
+        } catch (error) {
+          console.warn('Error removing notification channels:', error);
+        }
       };
     };
 

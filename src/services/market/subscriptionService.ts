@@ -7,7 +7,7 @@ export const SubscriptionService = {
     if (!symbol) return { unsubscribe: () => {} };
     
     const formattedSymbol = symbol.toUpperCase();
-    return supabase
+    const channel = supabase
       .channel('market_data_updates')
       .on(
         'postgres_changes',
@@ -18,7 +18,12 @@ export const SubscriptionService = {
           filter: `symbol=eq.${formattedSymbol}`,
         },
         (payload) => callback(payload.new as MarketData)
-      )
-      .subscribe();
+      );
+
+    channel.subscribe((status, err) => {
+      if (err) console.warn(`Market data subscription error for ${formattedSymbol}:`, err);
+    });
+
+    return channel;
   }
 };
