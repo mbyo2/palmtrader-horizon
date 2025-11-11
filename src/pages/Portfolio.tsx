@@ -6,6 +6,7 @@ import EnhancedTradingInterface from "@/components/Trading/EnhancedTradingInterf
 import EnhancedOrderHistory from "@/components/Trading/EnhancedOrderHistory";
 import RecurringInvestments from "@/components/Trading/RecurringInvestments";
 import WalletManager from "@/components/Trading/WalletManager";
+import { TradingErrorBoundary } from "@/components/ErrorBoundary/TradingErrorBoundary";
 
 const Portfolio = () => {
   const { isLoading } = useProtectedRoute();
@@ -36,11 +37,15 @@ const Portfolio = () => {
         </TabsContent>
         
         <TabsContent value="trading" className="space-y-4 sm:space-y-6 mt-4">
-          <EnhancedTradingInterface />
+          <TradingErrorBoundary>
+            <EnhancedTradingInterface />
+          </TradingErrorBoundary>
         </TabsContent>
         
         <TabsContent value="history" className="space-y-4 sm:space-y-6 mt-4">
-          <EnhancedOrderHistory />
+          <TradingErrorBoundary>
+            <EnhancedOrderHistory />
+          </TradingErrorBoundary>
         </TabsContent>
         
         <TabsContent value="recurring" className="space-y-4 sm:space-y-6 mt-4">

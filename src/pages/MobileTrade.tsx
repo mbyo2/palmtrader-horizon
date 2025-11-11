@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useEffect } from "react";
+import { TradingErrorBoundary } from "@/components/ErrorBoundary/TradingErrorBoundary";
 
 const MobileTrade = () => {
   const { symbol } = useParams<{ symbol: string }>();
@@ -35,25 +36,27 @@ const MobileTrade = () => {
   };
 
   return (
-    <div className="relative">
-      {/* Back Button */}
-      <Button
-        variant="ghost"
-        size="icon"
-        className="absolute top-2 left-2 z-20 h-10 w-10"
-        onClick={() => navigate(-1)}
-      >
-        <ArrowLeft className="h-5 w-5" />
-      </Button>
+    <TradingErrorBoundary>
+      <div className="relative">
+        {/* Back Button */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute top-2 left-2 z-20 h-10 w-10"
+          onClick={() => navigate(-1)}
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
 
-      <MobileTradingInterface
-        symbol={stockData.symbol}
-        companyName={stockData.companyName}
-        currentPrice={stockData.currentPrice}
-        priceChange={stockData.priceChange}
-        priceChangePercent={stockData.priceChangePercent}
-      />
-    </div>
+        <MobileTradingInterface
+          symbol={stockData.symbol}
+          companyName={stockData.companyName}
+          currentPrice={stockData.currentPrice}
+          priceChange={stockData.priceChange}
+          priceChangePercent={stockData.priceChangePercent}
+        />
+      </div>
+    </TradingErrorBoundary>
   );
 };
 

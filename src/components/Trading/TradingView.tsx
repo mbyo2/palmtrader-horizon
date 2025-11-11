@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import OrderForm from "./OrderForm";
 import PositionsList from "./PositionsList";
 import { useTrading } from "@/hooks/useTrading";
+import { TradingErrorBoundary } from "@/components/ErrorBoundary/TradingErrorBoundary";
 
 const TradingView = () => {
   const [positions, setPositions] = useState([
@@ -22,25 +23,27 @@ const TradingView = () => {
   } = useTrading("AAPL");
 
   return (
-    <div className="space-y-6">
-      <Card className="p-6 card-gradient">
-        <h2 className="text-xl font-semibold mb-4">Place Order</h2>
-        <OrderForm
-          symbol={symbol}
-          stockPrice={stockPrice}
-          orderAction={orderAction}
-          userPosition={userPosition}
-          isSubmitting={isSubmitting}
-          onOrderActionChange={setOrderAction}
-          onSubmitOrder={handleSubmitOrder}
-        />
-      </Card>
+    <TradingErrorBoundary>
+      <div className="space-y-6">
+        <Card className="p-6 card-gradient">
+          <h2 className="text-xl font-semibold mb-4">Place Order</h2>
+          <OrderForm
+            symbol={symbol}
+            stockPrice={stockPrice}
+            orderAction={orderAction}
+            userPosition={userPosition}
+            isSubmitting={isSubmitting}
+            onOrderActionChange={setOrderAction}
+            onSubmitOrder={handleSubmitOrder}
+          />
+        </Card>
 
-      <Card className="p-6 card-gradient">
-        <h2 className="text-xl font-semibold mb-4">Current Positions</h2>
-        <PositionsList positions={positions} />
-      </Card>
-    </div>
+        <Card className="p-6 card-gradient">
+          <h2 className="text-xl font-semibold mb-4">Current Positions</h2>
+          <PositionsList positions={positions} />
+        </Card>
+      </div>
+    </TradingErrorBoundary>
   );
 };
 

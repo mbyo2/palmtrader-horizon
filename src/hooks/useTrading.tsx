@@ -30,19 +30,30 @@ export const useTrading = (initialSymbol = "AAPL") => {
   const userPosition = getPosition(symbol);
 
   const handleSubmitOrder = async () => {
-    if (!user || !stockPrice) {
-      toast.error("Unable to submit order. Please try again.");
+    if (!user) {
+      toast.error("Please log in to place orders", { duration: 4000 });
+      return;
+    }
+
+    if (!stockPrice) {
+      toast.error("Unable to fetch current price. Please try again.", { duration: 4000 });
       return;
     }
     
     // Access the form data from the window object (set by the OrderForm component)
     const formData = (window as any).formData;
     if (!formData) {
-      toast.error("Order information is missing. Please try again.");
+      toast.error("Order information is missing. Please fill out the form.", { duration: 4000 });
       return;
     }
     
     const { orderType, shares, limitPrice, stopPrice, isFractional } = formData;
+    
+    // Validate shares
+    if (!shares || shares <= 0) {
+      toast.error("Please enter a valid number of shares", { duration: 4000 });
+      return;
+    }
     
     try {
       const price = orderType === "market" ? 
@@ -67,12 +78,15 @@ export const useTrading = (initialSymbol = "AAPL") => {
         delete (window as any).formData;
         
         if (orderType !== "market") {
-          toast.info("Your order will be executed when conditions are met. Check Order History for updates.");
+          toast.info("Your order will be executed when conditions are met. Check Order History for updates.", {
+            duration: 5000
+          });
         }
       }
     } catch (error) {
       console.error("Error submitting order:", error);
-      toast.error("Failed to submit order. Please try again.");
+      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+      toast.error(`Failed to submit order: ${errorMessage}`, { duration: 5000 });
     }
   };
   
