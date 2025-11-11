@@ -172,7 +172,7 @@ const Onboarding = () => {
                     id="phone"
                     value={data.phone_number}
                     onChange={(e) => setData(prev => ({ ...prev, phone_number: e.target.value }))}
-                    placeholder="+260 XXX XXXXXX"
+                    placeholder="+260 211 123456"
                   />
                 </div>
                 <div className="space-y-2">

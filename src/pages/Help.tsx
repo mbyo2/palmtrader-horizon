@@ -117,7 +117,7 @@ const Help = () => {
               <CardContent className="pt-6 text-center">
                 <Phone className="h-8 w-8 text-primary mx-auto mb-2" />
                 <h3 className="font-semibold">Phone Support</h3>
-                <p className="text-sm text-muted-foreground">+260 XXX XXX XXX</p>
+                <p className="text-sm text-muted-foreground">+260 211 123 456</p>
               </CardContent>
             </Card>
             <Card>
