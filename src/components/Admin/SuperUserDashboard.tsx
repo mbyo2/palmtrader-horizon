@@ -21,6 +21,7 @@ import UserManagement from "./UserManagement";
 import SystemMonitoring from "./SystemMonitoring";
 import BusinessApproval from "./BusinessApproval";
 import ContentModeration from "./ContentModeration";
+import { AnalyticsDashboard } from "./Analytics/AnalyticsDashboard";
 
 export const SuperUserDashboard = () => {
   const [loading, setLoading] = useState(false);
@@ -102,8 +103,9 @@ export const SuperUserDashboard = () => {
         ))}
       </div>
 
-      <Tabs defaultValue="users" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-6">
+      <Tabs defaultValue="analytics" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-7">
+          <TabsTrigger value="analytics">Analytics</TabsTrigger>
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="system">System</TabsTrigger>
           <TabsTrigger value="business">Business</TabsTrigger>
@@ -111,6 +113,10 @@ export const SuperUserDashboard = () => {
           <TabsTrigger value="reports">Reports</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
+        
+        <TabsContent value="analytics">
+          <AnalyticsDashboard />
+        </TabsContent>
 
         <TabsContent value="users">
           <UserManagement />
