@@ -354,6 +354,63 @@ export type Database = {
         }
         Relationships: []
       }
+      compliance_reports: {
+        Row: {
+          created_at: string
+          critical_items: number | null
+          file_path: string | null
+          flagged_items: number | null
+          generated_by: string
+          id: string
+          report_data: Json
+          report_period_end: string
+          report_period_start: string
+          report_type: string
+          status: string
+          submitted_at: string | null
+          submitted_to: string | null
+          summary: string | null
+          total_items: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          critical_items?: number | null
+          file_path?: string | null
+          flagged_items?: number | null
+          generated_by: string
+          id?: string
+          report_data?: Json
+          report_period_end: string
+          report_period_start: string
+          report_type: string
+          status?: string
+          submitted_at?: string | null
+          submitted_to?: string | null
+          summary?: string | null
+          total_items?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          critical_items?: number | null
+          file_path?: string | null
+          flagged_items?: number | null
+          generated_by?: string
+          id?: string
+          report_data?: Json
+          report_period_end?: string
+          report_period_start?: string
+          report_type?: string
+          status?: string
+          submitted_at?: string | null
+          submitted_to?: string | null
+          summary?: string | null
+          total_items?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       fund_transfers: {
         Row: {
           amount: number
@@ -1432,6 +1489,69 @@ export type Database = {
           success?: boolean
           user_agent?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      suspicious_activities: {
+        Row: {
+          activity_type: string
+          assigned_to: string | null
+          created_at: string
+          description: string
+          details: Json
+          id: string
+          investigated_by: string | null
+          investigation_notes: string | null
+          related_transaction_id: string | null
+          report_reference: string | null
+          reported_to_authorities: boolean | null
+          resolution: string | null
+          resolved_at: string | null
+          risk_score: number | null
+          severity: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          activity_type: string
+          assigned_to?: string | null
+          created_at?: string
+          description: string
+          details?: Json
+          id?: string
+          investigated_by?: string | null
+          investigation_notes?: string | null
+          related_transaction_id?: string | null
+          report_reference?: string | null
+          reported_to_authorities?: boolean | null
+          resolution?: string | null
+          resolved_at?: string | null
+          risk_score?: number | null
+          severity?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          activity_type?: string
+          assigned_to?: string | null
+          created_at?: string
+          description?: string
+          details?: Json
+          id?: string
+          investigated_by?: string | null
+          investigation_notes?: string | null
+          related_transaction_id?: string | null
+          report_reference?: string | null
+          reported_to_authorities?: boolean | null
+          resolution?: string | null
+          resolved_at?: string | null
+          risk_score?: number | null
+          severity?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }

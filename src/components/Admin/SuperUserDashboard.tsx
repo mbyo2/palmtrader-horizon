@@ -22,6 +22,8 @@ import SystemMonitoring from "./SystemMonitoring";
 import BusinessApproval from "./BusinessApproval";
 import ContentModeration from "./ContentModeration";
 import { AnalyticsDashboard } from "./Analytics/AnalyticsDashboard";
+import ComplianceReporting from "./Compliance/ComplianceReporting";
+import SuspiciousActivityMonitor from "./Compliance/SuspiciousActivityMonitor";
 
 export const SuperUserDashboard = () => {
   const [loading, setLoading] = useState(false);
@@ -104,18 +106,27 @@ export const SuperUserDashboard = () => {
       </div>
 
       <Tabs defaultValue="analytics" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="grid w-full grid-cols-8">
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <TabsTrigger value="compliance">Compliance</TabsTrigger>
+          <TabsTrigger value="suspicious">Suspicious</TabsTrigger>
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="system">System</TabsTrigger>
           <TabsTrigger value="business">Business</TabsTrigger>
           <TabsTrigger value="content">Content</TabsTrigger>
-          <TabsTrigger value="reports">Reports</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
         
         <TabsContent value="analytics">
           <AnalyticsDashboard />
+        </TabsContent>
+
+        <TabsContent value="compliance">
+          <ComplianceReporting />
+        </TabsContent>
+
+        <TabsContent value="suspicious">
+          <SuspiciousActivityMonitor />
         </TabsContent>
 
         <TabsContent value="users">
@@ -132,40 +143,6 @@ export const SuperUserDashboard = () => {
 
         <TabsContent value="content">
           <ContentModeration />
-        </TabsContent>
-
-        <TabsContent value="reports">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                System Reports
-              </CardTitle>
-              <CardDescription>
-                Generate and download system reports
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Button variant="outline" className="h-20 flex-col">
-                  <FileText className="h-6 w-6 mb-2" />
-                  User Activity Report
-                </Button>
-                <Button variant="outline" className="h-20 flex-col">
-                  <TrendingUp className="h-6 w-6 mb-2" />
-                  Trading Volume Report
-                </Button>
-                <Button variant="outline" className="h-20 flex-col">
-                  <DollarSign className="h-6 w-6 mb-2" />
-                  Financial Report
-                </Button>
-                <Button variant="outline" className="h-20 flex-col">
-                  <Shield className="h-6 w-6 mb-2" />
-                  Compliance Report
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
 
         <TabsContent value="settings">
