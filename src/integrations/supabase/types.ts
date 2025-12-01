@@ -65,6 +65,60 @@ export type Database = {
         }
         Relationships: []
       }
+      account_type_configs: {
+        Row: {
+          account_type: Database["public"]["Enums"]["trading_account_type"]
+          commission_per_lot: number | null
+          created_at: string
+          description: string | null
+          display_name: string
+          execution_type: string
+          features: Json | null
+          id: string
+          is_available: boolean
+          is_swap_free: boolean
+          max_leverage: number
+          min_deposit: number
+          min_spread: number
+          requirements: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_type: Database["public"]["Enums"]["trading_account_type"]
+          commission_per_lot?: number | null
+          created_at?: string
+          description?: string | null
+          display_name: string
+          execution_type: string
+          features?: Json | null
+          id?: string
+          is_available?: boolean
+          is_swap_free?: boolean
+          max_leverage?: number
+          min_deposit: number
+          min_spread: number
+          requirements?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_type?: Database["public"]["Enums"]["trading_account_type"]
+          commission_per_lot?: number | null
+          created_at?: string
+          description?: string | null
+          display_name?: string
+          execution_type?: string
+          features?: Json | null
+          id?: string
+          is_available?: boolean
+          is_swap_free?: boolean
+          max_leverage?: number
+          min_deposit?: number
+          min_spread?: number
+          requirements?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       analyst_ratings: {
         Row: {
           analyst_firm: string
@@ -1753,6 +1807,87 @@ export type Database = {
         }
         Relationships: []
       }
+      trading_accounts: {
+        Row: {
+          account_name: string | null
+          account_number: string
+          account_type: Database["public"]["Enums"]["trading_account_type"]
+          available_balance: number
+          balance: number
+          commission_per_lot: number | null
+          created_at: string
+          currency: string
+          id: string
+          is_active: boolean
+          is_verified: boolean
+          leverage: number
+          margin_call_level: number | null
+          max_leverage: number
+          min_deposit: number
+          min_spread: number | null
+          reserved_balance: number
+          sec_zambia_compliant: boolean
+          spread_type: string | null
+          stop_out_level: number | null
+          trading_disabled: boolean
+          trading_disabled_reason: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_name?: string | null
+          account_number: string
+          account_type?: Database["public"]["Enums"]["trading_account_type"]
+          available_balance?: number
+          balance?: number
+          commission_per_lot?: number | null
+          created_at?: string
+          currency?: string
+          id?: string
+          is_active?: boolean
+          is_verified?: boolean
+          leverage?: number
+          margin_call_level?: number | null
+          max_leverage?: number
+          min_deposit?: number
+          min_spread?: number | null
+          reserved_balance?: number
+          sec_zambia_compliant?: boolean
+          spread_type?: string | null
+          stop_out_level?: number | null
+          trading_disabled?: boolean
+          trading_disabled_reason?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_name?: string | null
+          account_number?: string
+          account_type?: Database["public"]["Enums"]["trading_account_type"]
+          available_balance?: number
+          balance?: number
+          commission_per_lot?: number | null
+          created_at?: string
+          currency?: string
+          id?: string
+          is_active?: boolean
+          is_verified?: boolean
+          leverage?: number
+          margin_call_level?: number | null
+          max_leverage?: number
+          min_deposit?: number
+          min_spread?: number | null
+          reserved_balance?: number
+          sec_zambia_compliant?: boolean
+          spread_type?: string | null
+          stop_out_level?: number | null
+          trading_disabled?: boolean
+          trading_disabled_reason?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       transactions: {
         Row: {
           amount: number
@@ -2025,6 +2160,7 @@ export type Database = {
     }
     Functions: {
       cleanup_old_logs: { Args: never; Returns: undefined }
+      generate_account_number: { Args: never; Returns: string }
       get_current_user_role: { Args: never; Returns: string }
       get_popular_stocks: {
         Args: never
@@ -2066,6 +2202,13 @@ export type Database = {
         | "valuation_report"
         | "financial_statements"
       kyc_status: "not_started" | "pending" | "approved" | "rejected"
+      trading_account_type:
+        | "demo"
+        | "cent"
+        | "standard_stp"
+        | "raw_ecn"
+        | "pro_ecn"
+        | "islamic"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2207,6 +2350,14 @@ export const Constants = {
         "financial_statements",
       ],
       kyc_status: ["not_started", "pending", "approved", "rejected"],
+      trading_account_type: [
+        "demo",
+        "cent",
+        "standard_stp",
+        "raw_ecn",
+        "pro_ecn",
+        "islamic",
+      ],
     },
   },
 } as const
