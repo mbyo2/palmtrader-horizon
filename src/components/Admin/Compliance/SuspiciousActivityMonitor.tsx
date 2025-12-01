@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AutomatedComplianceService, SuspiciousActivity } from "@/services/AutomatedComplianceService";
-import { AlertTriangle, CheckCircle, Clock, Shield, TrendingUp, Users } from "lucide-react";
+import { AlertTriangle, CheckCircle, Clock, Mail, Shield, TrendingUp, Users } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
@@ -18,6 +18,8 @@ export default function SuspiciousActivityMonitor() {
   const [investigationNotes, setInvestigationNotes] = useState("");
   const [resolution, setResolution] = useState("");
   const [newStatus, setNewStatus] = useState("");
+  const [complianceEmail, setComplianceEmail] = useState("");
+  const [isSendingAlert, setIsSendingAlert] = useState(false);
 
   useEffect(() => {
     loadActivities();
@@ -54,6 +56,31 @@ export default function SuspiciousActivityMonitor() {
       toast.error("Failed to update activity");
     }
     setIsLoading(false);
+  };
+
+  const handleSendAlert = async (activity: SuspiciousActivity) => {
+    if (!complianceEmail) {
+      toast.error("Please enter a compliance officer email");
+      return;
+    }
+
+    setIsSendingAlert(true);
+    const success = await AutomatedComplianceService.sendComplianceAlert(
+      'suspicious_activity',
+      activity.severity as 'low' | 'medium' | 'high' | 'critical',
+      activity.user_id,
+      activity.description,
+      { ...activity.details, activityType: activity.activity_type },
+      activity.risk_score,
+      complianceEmail
+    );
+
+    if (success) {
+      toast.success("Alert email sent to compliance officer");
+    } else {
+      toast.error("Failed to send alert email");
+    }
+    setIsSendingAlert(false);
   };
 
   const getSeverityColor = (severity: string) => {
@@ -268,6 +295,26 @@ export default function SuspiciousActivityMonitor() {
                               <pre className="text-xs overflow-auto">
                                 {JSON.stringify(activity.details, null, 2)}
                               </pre>
+                            </div>
+
+                            <div className="space-y-2">
+                              <label className="text-sm font-medium">Send Alert to Compliance Officer</label>
+                              <div className="flex gap-2">
+                                <Input
+                                  type="email"
+                                  placeholder="compliance@company.com"
+                                  value={complianceEmail}
+                                  onChange={(e) => setComplianceEmail(e.target.value)}
+                                />
+                                <Button 
+                                  variant="outline"
+                                  onClick={() => selectedActivity && handleSendAlert(selectedActivity)}
+                                  disabled={isSendingAlert || !complianceEmail}
+                                >
+                                  <Mail className="h-4 w-4 mr-2" />
+                                  {isSendingAlert ? "Sending..." : "Send Alert"}
+                                </Button>
+                              </div>
                             </div>
 
                             <Button 
