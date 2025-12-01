@@ -1,6 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 
+const COMPLIANCE_OFFICER_EMAIL = "compliance@example.com"; // Configure this
+
 export interface ComplianceReport {
   id: string;
   report_type: 'aml' | 'kyc_audit' | 'suspicious_activity' | 'transaction_monitoring' | 'regulatory_filing';
@@ -205,13 +207,51 @@ export class AutomatedComplianceService {
     }
   }
 
+  // Send compliance alert email
+  static async sendComplianceAlert(
+    alertType: 'suspicious_activity' | 'aml_alert' | 'kyc_failure',
+    severity: 'low' | 'medium' | 'high' | 'critical',
+    userId: string,
+    description: string,
+    details: any,
+    riskScore?: number,
+    complianceOfficerEmail?: string
+  ): Promise<boolean> {
+    try {
+      const { data, error } = await supabase.functions.invoke('compliance-alert', {
+        body: {
+          alertType,
+          severity,
+          userId,
+          description,
+          details,
+          riskScore,
+          complianceOfficerEmail: complianceOfficerEmail || COMPLIANCE_OFFICER_EMAIL,
+        },
+      });
+
+      if (error) {
+        console.error("Error sending compliance alert email:", error);
+        return false;
+      }
+
+      console.log("Compliance alert sent:", data);
+      return true;
+    } catch (error) {
+      console.error("Error invoking compliance-alert function:", error);
+      return false;
+    }
+  }
+
   // Flag suspicious transaction
   static async flagSuspiciousTransaction(
     userId: string,
     activityType: string,
     description: string,
     details: any,
-    transactionId?: string
+    transactionId?: string,
+    notifyComplianceOfficer: boolean = true,
+    complianceOfficerEmail?: string
   ): Promise<boolean> {
     try {
       // Calculate risk score based on activity type
@@ -243,6 +283,20 @@ export class AutomatedComplianceService {
         });
 
       if (error) throw error;
+
+      // Send email notification for high-risk and critical activities
+      if (notifyComplianceOfficer && (severity === 'high' || severity === 'critical')) {
+        await this.sendComplianceAlert(
+          'suspicious_activity',
+          severity,
+          userId,
+          description,
+          { ...details, activityType, transactionId },
+          riskScore,
+          complianceOfficerEmail
+        );
+      }
+
       return true;
     } catch (error) {
       console.error("Error flagging suspicious activity:", error);
