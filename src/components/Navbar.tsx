@@ -15,6 +15,7 @@ import NavigationLinks from "@/components/Navigation/NavigationLinks";
 import MobileNav from "@/components/Navigation/MobileNav";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import NotificationCenter from "@/components/Notifications/NotificationCenter";
+import { ConnectionStatusIndicator } from "@/components/Trading/ConnectionStatusIndicator";
 import { Menu, Star, Settings, LogOut, User, Wallet } from "lucide-react";
 
 const Navbar = () => {
@@ -44,6 +45,7 @@ const Navbar = () => {
             {user ? (
               <>
                 <div className="hidden sm:flex items-center gap-2">
+                  <ConnectionStatusIndicator />
                   <ThemeToggle />
                   <NotificationCenter />
                   

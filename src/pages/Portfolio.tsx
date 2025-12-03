@@ -2,10 +2,13 @@
 import { useProtectedRoute } from "@/hooks/useProtectedRoute";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PortfolioManager from "@/components/Portfolio/PortfolioManager";
+import { RealTimePortfolioSummary } from "@/components/Portfolio/RealTimePortfolioSummary";
+import { RealTimePositionsList } from "@/components/Portfolio/RealTimePositionsList";
 import EnhancedTradingInterface from "@/components/Trading/EnhancedTradingInterface";
 import EnhancedOrderHistory from "@/components/Trading/EnhancedOrderHistory";
 import RecurringInvestments from "@/components/Trading/RecurringInvestments";
 import WalletManager from "@/components/Trading/WalletManager";
+import { ConnectionStatusIndicator } from "@/components/Trading/ConnectionStatusIndicator";
 import { TradingErrorBoundary } from "@/components/ErrorBoundary/TradingErrorBoundary";
 
 const Portfolio = () => {
@@ -17,7 +20,10 @@ const Portfolio = () => {
 
   return (
     <div className="container py-4 sm:py-6 space-y-4 sm:space-y-6 px-3 sm:px-4">
-      <h1 className="text-2xl sm:text-3xl font-bold">Portfolio & Trading</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl sm:text-3xl font-bold">Portfolio & Trading</h1>
+        <ConnectionStatusIndicator />
+      </div>
       
       <Tabs defaultValue="portfolio" className="space-y-4 sm:space-y-6">
         <TabsList className="grid w-full grid-cols-3 lg:grid-cols-5 h-auto gap-1">
@@ -29,7 +35,8 @@ const Portfolio = () => {
         </TabsList>
         
         <TabsContent value="portfolio" className="space-y-4 sm:space-y-6 mt-4">
-          <PortfolioManager />
+          <RealTimePortfolioSummary />
+          <RealTimePositionsList />
         </TabsContent>
         
         <TabsContent value="wallet" className="space-y-4 sm:space-y-6 mt-4">

@@ -1,10 +1,11 @@
 
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { MarketDataService } from "@/services/MarketDataService";
 import { useOrderExecution } from "@/hooks/useOrderExecution";
 import { usePortfolio } from "@/hooks/usePortfolio";
+import { useRealTimePrice } from "@/hooks/useRealTimePrice";
 import { toast } from "sonner";
 
 export const useTrading = (initialSymbol = "AAPL") => {
@@ -13,13 +14,25 @@ export const useTrading = (initialSymbol = "AAPL") => {
   const [orderAction, setOrderAction] = useState<"buy" | "sell">("buy");
   
   const { executeOrder, isExecuting } = useOrderExecution();
-  const { getPosition } = usePortfolio();
+  const { getPosition, refetchPortfolio } = usePortfolio();
+  const queryClient = useQueryClient();
   
-  const { data: stockPrice, isLoading: isPriceLoading } = useQuery({
+  // Use real-time price from WebSocket
+  const { price: realTimePrice, change, changePercent, isLoading: isRealTimePriceLoading } = useRealTimePrice(symbol);
+  
+  // Fallback to API if WebSocket hasn't connected yet
+  const { data: apiStockPrice, isLoading: isApiPriceLoading } = useQuery({
     queryKey: ["stockPrice", symbol],
     queryFn: async () => await MarketDataService.fetchLatestPrice(symbol),
-    refetchInterval: 10000,
+    refetchInterval: 30000,
+    enabled: realTimePrice === null, // Only fetch if no real-time price
   });
+
+  // Combine real-time and API prices
+  const stockPrice = realTimePrice !== null 
+    ? { price: realTimePrice, change, changePercent, symbol } 
+    : apiStockPrice;
+  const isPriceLoading = isRealTimePriceLoading && isApiPriceLoading;
   
   const { data: historicalData, isLoading: isHistoricalLoading } = useQuery({
     queryKey: ["historicalData", symbol],
@@ -76,6 +89,10 @@ export const useTrading = (initialSymbol = "AAPL") => {
       if (result.success) {
         // Clear the form data
         delete (window as any).formData;
+        
+        // Refresh portfolio and wallet data
+        await refetchPortfolio();
+        queryClient.invalidateQueries({ queryKey: ["walletBalances"] });
         
         if (orderType !== "market") {
           toast.info("Your order will be executed when conditions are met. Check Order History for updates.", {

@@ -198,6 +198,16 @@ export class OrderExecutionEngine {
       }
     }
 
+    const totalAmount = executedShares * executedPrice;
+
+    // For buy orders, deduct from wallet first
+    if (order.type === "buy") {
+      const walletUpdated = await this.updateWalletBalance(order.userId, -totalAmount);
+      if (!walletUpdated) {
+        return { success: false, error: "Failed to update wallet balance" };
+      }
+    }
+
     // Create the trade record with fractional support
     const { data, error } = await supabase.from("trades").insert({
       user_id: order.userId,
@@ -205,13 +215,24 @@ export class OrderExecutionEngine {
       type: order.type,
       shares: executedShares,
       price: executedPrice,
-      total_amount: executedShares * executedPrice,
+      total_amount: totalAmount,
       status: "completed",
       order_type: order.orderType,
       is_fractional: order.isFractional || false,
     }).select("id").single();
 
-    if (error) throw error;
+    if (error) {
+      // Rollback wallet if trade fails
+      if (order.type === "buy") {
+        await this.updateWalletBalance(order.userId, totalAmount);
+      }
+      throw error;
+    }
+
+    // For sell orders, add to wallet
+    if (order.type === "sell") {
+      await this.updateWalletBalance(order.userId, totalAmount);
+    }
 
     // Update portfolio with fractional support
     await this.updatePortfolio(order.userId, order.symbol, order.type, executedShares, executedPrice);
@@ -222,6 +243,49 @@ export class OrderExecutionEngine {
       executedPrice: executedPrice,
       executedShares: executedShares
     };
+  }
+
+  private static async updateWalletBalance(userId: string, amount: number): Promise<boolean> {
+    try {
+      const { data: wallet, error: fetchError } = await supabase
+        .from("wallets")
+        .select("available_balance")
+        .eq("user_id", userId)
+        .eq("currency", "USD")
+        .single();
+
+      if (fetchError) {
+        // Create wallet if it doesn't exist
+        if (fetchError.code === 'PGRST116') {
+          const initialBalance = amount > 0 ? amount : 10000 + amount;
+          await supabase.from("wallets").insert({
+            user_id: userId,
+            currency: "USD",
+            available_balance: initialBalance,
+            reserved_balance: 0
+          });
+          return true;
+        }
+        return false;
+      }
+
+      const newBalance = wallet.available_balance + amount;
+      if (newBalance < 0) return false;
+
+      const { error: updateError } = await supabase
+        .from("wallets")
+        .update({ 
+          available_balance: newBalance,
+          updated_at: new Date().toISOString()
+        })
+        .eq("user_id", userId)
+        .eq("currency", "USD");
+
+      return !updateError;
+    } catch (error) {
+      console.error("Error updating wallet:", error);
+      return false;
+    }
   }
 
   private static async createTrailingStopOrder(order: OrderRequest): Promise<OrderResult> {
@@ -322,7 +386,40 @@ export class OrderExecutionEngine {
   }
 
   private static async checkUserBalance(userId: string, requiredAmount: number): Promise<boolean> {
-    return true; // Demo purposes
+    try {
+      // Check wallet balance
+      const { data: wallet, error } = await supabase
+        .from("wallets")
+        .select("available_balance")
+        .eq("user_id", userId)
+        .eq("currency", "USD")
+        .single();
+
+      if (error) {
+        // If no wallet exists, create one with demo balance for new users
+        if (error.code === 'PGRST116') {
+          const { error: insertError } = await supabase
+            .from("wallets")
+            .insert({
+              user_id: userId,
+              currency: "USD",
+              available_balance: 10000, // Demo starting balance
+              reserved_balance: 0
+            });
+          
+          if (!insertError) {
+            return requiredAmount <= 10000;
+          }
+        }
+        console.error("Error checking balance:", error);
+        return false;
+      }
+
+      return wallet.available_balance >= requiredAmount;
+    } catch (error) {
+      console.error("Balance check error:", error);
+      return false;
+    }
   }
 
   private static async checkUserShares(userId: string, symbol: string, requiredShares: number): Promise<boolean> {
