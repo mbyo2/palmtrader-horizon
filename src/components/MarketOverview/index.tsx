@@ -1,6 +1,6 @@
 
 import { useState, useEffect, memo } from "react";
-import { useRealTimeMarketData } from "@/hooks/useRealTimeMarketData";
+import { useMultipleRealTimePrices } from "@/hooks/useRealTimePrice";
 import { MarketDataService } from "@/services/MarketDataService";
 import EnhancedMarketCard, { Market } from "./EnhancedMarketCard";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -69,74 +69,60 @@ const useMarketSymbols = () => {
 };
 
 const MarketOverview = () => {
-  const [markets, setMarkets] = useState<Market[]>([]);
+  const [initialData, setInitialData] = useState<Map<string, { name: string; price: number; change: number }>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
   
   const MARKET_SYMBOLS = useMarketSymbols();
   const symbols = MARKET_SYMBOLS.map(m => m.symbol);
   
-  // Fetch initial data for all symbols
+  // Subscribe to real-time prices using the unified service
+  const { prices, isLoading: pricesLoading } = useMultipleRealTimePrices(symbols);
+  
+  // Fetch initial data as fallback
   useEffect(() => {
     const fetchInitialData = async () => {
       setIsLoading(true);
-      try {
-        const initialMarkets: Market[] = [];
-        
-        for (const { symbol, name } of MARKET_SYMBOLS) {
-          try {
-            const data = await MarketDataService.fetchLatestPrice(symbol);
-            initialMarkets.push({
-              name,
-              symbol,
-              value: formatCurrency(data.price),
-              change: `${data.changePercent ? (data.changePercent >= 0 ? '+' : '') + data.changePercent.toFixed(2) : '+0.00'}%`
-            });
-          } catch (error) {
-            console.error(`Failed to fetch data for ${symbol}:`, error);
-            // Add placeholder with no price data
-            initialMarkets.push({
-              name,
-              symbol,
-              value: formatCurrency(0),
-              change: "+0.00%"
-            });
-          }
+      const data = new Map<string, { name: string; price: number; change: number }>();
+      
+      for (const { symbol, name } of MARKET_SYMBOLS) {
+        try {
+          const priceData = await MarketDataService.fetchLatestPrice(symbol);
+          data.set(symbol, {
+            name,
+            price: priceData.price,
+            change: priceData.changePercent || 0
+          });
+        } catch (error) {
+          console.error(`Failed to fetch data for ${symbol}:`, error);
         }
-        
-        setMarkets(initialMarkets);
-      } catch (error) {
-        console.error("Error fetching initial market data:", error);
-      } finally {
-        setIsLoading(false);
       }
+      
+      setInitialData(data);
+      setIsLoading(false);
     };
 
-    fetchInitialData();
-  }, []);
-  
-  // Use real-time data hook for updates
-  const { } = useRealTimeMarketData(symbols, (data) => {
-    // Update the specific market when new data arrives
-    setMarkets(prev => 
-      prev.map(market => {
-        if (market.symbol === data.symbol) {
-          const previousValue = market.value;
-          const newValue = formatCurrency(data.price);
-          const changePercent = data.changePercent ?? 0;
-          
-          return {
-            ...market,
-            previousValue,
-            value: newValue,
-            change: `${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%`
-          };
-        }
-        return market;
-      })
-    );
+    if (MARKET_SYMBOLS.length > 0) {
+      fetchInitialData();
+    }
+  }, [MARKET_SYMBOLS]);
+
+  // Combine real-time prices with initial data
+  const markets: Market[] = MARKET_SYMBOLS.map(({ symbol, name }) => {
+    const realTimeData = prices.get(symbol);
+    const initialPriceData = initialData.get(symbol);
+    
+    const price = realTimeData?.price ?? initialPriceData?.price ?? 0;
+    const changePercent = realTimeData?.changePercent ?? initialPriceData?.change ?? 0;
+    
+    return {
+      name,
+      symbol,
+      value: formatCurrency(price),
+      change: `${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%`
+    };
   });
 
-  if (isLoading) {
+  if (isLoading && !prices.size) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         {Array.from({ length: 6 }).map((_, i) => (

@@ -14,7 +14,7 @@ export interface MarketData {
 }
 
 export class MarketDataService {
-  static async fetchLatestPrice(symbol: string): Promise<MarketData | null> {
+  static async fetchLatestPrice(symbol: string): Promise<MarketData> {
     try {
       // First try to get real-time data from Finnhub
       const { supabase } = await import("@/integrations/supabase/client");
@@ -23,23 +23,25 @@ export class MarketDataService {
         body: { action: 'get_quote', symbol }
       });
 
-      if (!error && data && typeof data.c === 'number') {
+      // Handle the response format from the edge function
+      if (!error && data && (data.price || data.c)) {
+        const price = data.price ?? data.c;
         const marketData: MarketData = {
-          symbol,
-          price: data.c, // Current price
-          change: data.d || 0, // Change
-          changePercent: data.dp || 0, // Change percent
-          volume: data.v || 0, // Volume
-          timestamp: Date.now(),
-          open: data.o || data.c, // Open
-          high: data.h || data.c, // High
-          low: data.l || data.c, // Low
-          close: data.c, // Close (same as current)
+          symbol: data.symbol || symbol,
+          price: price,
+          change: data.change ?? data.d ?? 0,
+          changePercent: data.changePercent ?? data.dp ?? 0,
+          volume: data.volume ?? data.v ?? 0,
+          timestamp: data.timestamp ?? Date.now(),
+          open: data.open ?? data.o ?? price,
+          high: data.high ?? data.h ?? price,
+          low: data.low ?? data.l ?? price,
+          close: price,
           type: 'realtime'
         };
 
-        // Cache in database
-        await supabase.from('market_data').upsert({
+        // Cache in database (fire and forget)
+        supabase.from('market_data').upsert({
           symbol: marketData.symbol,
           price: marketData.price,
           open: marketData.open,
@@ -78,10 +80,23 @@ export class MarketDataService {
         };
       }
 
-      return null;
+      // Return a default if nothing else works
+      return {
+        symbol,
+        price: 0,
+        change: 0,
+        changePercent: 0,
+        type: 'unavailable'
+      };
     } catch (error) {
       console.error(`Error fetching price for ${symbol}:`, error);
-      return null;
+      return {
+        symbol,
+        price: 0,
+        change: 0,
+        changePercent: 0,
+        type: 'error'
+      };
     }
   }
 
