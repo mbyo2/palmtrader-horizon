@@ -222,10 +222,11 @@ export class KYCVerificationService {
           positionLimit: 2000
         };
       default:
+        // Demo mode - allow trading with limited amounts for new users
         return {
-          dailyLimit: 0,
-          monthlyLimit: 0,
-          positionLimit: 0
+          dailyLimit: 1000,
+          monthlyLimit: 5000,
+          positionLimit: 500
         };
     }
   }

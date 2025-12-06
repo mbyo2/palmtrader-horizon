@@ -60,7 +60,7 @@ const TradingInterface = () => {
                   symbol={symbol}
                   stockPrice={stockPrice}
                   orderAction={orderAction}
-                  userPosition={userPosition}
+                  userPosition={userPosition ? { shares: userPosition.shares } : null}
                   isSubmitting={isSubmitting}
                   onOrderActionChange={setOrderAction}
                   onSubmitOrder={handleSubmitOrder}

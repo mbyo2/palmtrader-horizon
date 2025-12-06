@@ -1,9 +1,9 @@
-
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
+import { UserInitService } from '@/services/UserInitService';
 
 interface AccountDetails {
   role: 'basic' | 'premium' | 'admin';
@@ -78,12 +78,19 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     // Set up auth state listener FIRST
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
         setTimeout(() => {
           fetchAccountDetails(session.user.id);
+          // Initialize wallet for user on sign in
+          if (event === 'SIGNED_IN') {
+            UserInitService.initializeNewUser(
+              session.user.id, 
+              session.user.user_metadata as { first_name?: string; last_name?: string }
+            );
+          }
         }, 0);
       } else {
         setAccountDetails(null);
