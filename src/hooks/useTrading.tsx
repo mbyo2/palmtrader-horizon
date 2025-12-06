@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { MarketDataService } from "@/services/MarketDataService";
@@ -7,6 +6,7 @@ import { useOrderExecution } from "@/hooks/useOrderExecution";
 import { usePortfolio } from "@/hooks/usePortfolio";
 import { useRealTimePrice } from "@/hooks/useRealTimePrice";
 import { toast } from "sonner";
+import type { OrderFormData } from "@/components/Trading/OrderForm";
 
 export const useTrading = (initialSymbol = "AAPL") => {
   const { user } = useAuth();
@@ -25,7 +25,7 @@ export const useTrading = (initialSymbol = "AAPL") => {
     queryKey: ["stockPrice", symbol],
     queryFn: async () => await MarketDataService.fetchLatestPrice(symbol),
     refetchInterval: 30000,
-    enabled: realTimePrice === null, // Only fetch if no real-time price
+    enabled: realTimePrice === null,
   });
 
   // Combine real-time and API prices
@@ -42,7 +42,7 @@ export const useTrading = (initialSymbol = "AAPL") => {
   // Get user position for the current symbol
   const userPosition = getPosition(symbol);
 
-  const handleSubmitOrder = async () => {
+  const handleSubmitOrder = async (formData: OrderFormData) => {
     if (!user) {
       toast.error("Please log in to place orders", { duration: 4000 });
       return;
@@ -52,9 +52,7 @@ export const useTrading = (initialSymbol = "AAPL") => {
       toast.error("Unable to fetch current price. Please try again.", { duration: 4000 });
       return;
     }
-    
-    // Access the form data from the window object (set by the OrderForm component)
-    const formData = (window as any).formData;
+
     if (!formData) {
       toast.error("Order information is missing. Please fill out the form.", { duration: 4000 });
       return;
@@ -81,15 +79,12 @@ export const useTrading = (initialSymbol = "AAPL") => {
         shares: Number(shares),
         price: price,
         orderType: orderType,
-        limitPrice: limitPrice,
-        stopPrice: stopPrice,
+        limitPrice: limitPrice || undefined,
+        stopPrice: stopPrice || undefined,
         isFractional: isFractional,
       });
       
       if (result.success) {
-        // Clear the form data
-        delete (window as any).formData;
-        
         // Refresh portfolio and wallet data
         await refetchPortfolio();
         queryClient.invalidateQueries({ queryKey: ["walletBalances"] });

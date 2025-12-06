@@ -69,14 +69,8 @@ export const useEnhancedTrading = () => {
       };
     }
 
-    if (!kycStatus || kycStatus.level === 'none') {
-      return {
-        success: false,
-        status: 'rejected',
-        error: 'KYC verification required before trading',
-        timestamp: Date.now()
-      };
-    }
+    // Allow demo trading for new users - don't block on KYC
+    // Just apply lower limits for unverified users
 
     // Check trading limits
     const orderValue = orderRequest.quantity * (orderRequest.limitPrice || 0);
@@ -155,11 +149,13 @@ export const useEnhancedTrading = () => {
   };
 
   const canTrade = (): boolean => {
-    return kycStatus !== null && kycStatus.level !== 'none';
+    // Allow demo trading for new users (with limited amounts)
+    return true;
   };
 
   const getTradingLimits = () => {
-    return kycStatus?.tradingLimits || { dailyLimit: 0, monthlyLimit: 0, positionLimit: 0 };
+    // Provide default demo limits if KYC is not set
+    return kycStatus?.tradingLimits || { dailyLimit: 1000, monthlyLimit: 5000, positionLimit: 500 };
   };
 
   const refreshKYCStatus = async () => {
