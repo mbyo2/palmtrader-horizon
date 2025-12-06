@@ -61,7 +61,7 @@ function getDemoPrice(symbol: string) {
   };
 }
 
-async function fetchWithRateLimit(url: string, apiKey: string) {
+async function fetchWithRateLimit(url: string): Promise<{ data: any; rateLimited: boolean }> {
   const now = Date.now();
   const timeSinceLastCall = now - lastApiCall;
   
@@ -71,19 +71,27 @@ async function fetchWithRateLimit(url: string, apiKey: string) {
   
   lastApiCall = Date.now();
   
-  const response = await fetch(url, {
-    headers: { 'Accept': 'application/json' }
-  });
-  
-  if (response.status === 429) {
-    throw new Error('RATE_LIMITED');
+  try {
+    const response = await fetch(url, {
+      headers: { 'Accept': 'application/json' }
+    });
+    
+    if (response.status === 429) {
+      console.log('Finnhub rate limit hit, using demo data');
+      return { data: null, rateLimited: true };
+    }
+    
+    if (!response.ok) {
+      console.log(`Finnhub API returned ${response.status}, using demo data`);
+      return { data: null, rateLimited: true };
+    }
+    
+    const data = await response.json();
+    return { data, rateLimited: false };
+  } catch (error) {
+    console.log('Finnhub fetch error, using demo data:', error.message);
+    return { data: null, rateLimited: true };
   }
-  
-  if (!response.ok) {
-    throw new Error(`API error: ${response.status}`);
-  }
-  
-  return response.json();
 }
 
 serve(async (req) => {
@@ -125,43 +133,39 @@ serve(async (req) => {
         );
       }
 
-      try {
-        console.log(`Fetching fresh quote for ${symbol}`);
-        const data = await fetchWithRateLimit(
-          `https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(symbol)}&token=${apiKey}`,
-          apiKey
-        );
-        
-        const result = {
-          symbol,
-          price: data.c || 0,
-          change: data.d,
-          changePercent: data.dp,
-          high: data.h || 0,
-          low: data.l || 0,
-          open: data.o || 0,
-          previousClose: data.pc || 0,
-          timestamp: data.t ? data.t * 1000 : Date.now(),
-          isDemo: false,
-        };
-        
-        setCachedPrice(symbol, result);
-        
+      console.log(`Fetching fresh quote for ${symbol}`);
+      const { data, rateLimited } = await fetchWithRateLimit(
+        `https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(symbol)}&token=${apiKey}`
+      );
+      
+      if (rateLimited || !data || data.c === 0) {
+        console.log(`Using demo price for ${symbol}`);
+        const demoData = getDemoPrice(symbol);
         return new Response(
-          JSON.stringify(result),
+          JSON.stringify(demoData),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
-      } catch (error) {
-        if (error.message === 'RATE_LIMITED') {
-          console.log(`Rate limited, returning demo price for ${symbol}`);
-          const demoData = getDemoPrice(symbol);
-          return new Response(
-            JSON.stringify(demoData),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-        throw error;
       }
+      
+      const result = {
+        symbol,
+        price: data.c || 0,
+        change: data.d,
+        changePercent: data.dp,
+        high: data.h || 0,
+        low: data.l || 0,
+        open: data.o || 0,
+        previousClose: data.pc || 0,
+        timestamp: data.t ? data.t * 1000 : Date.now(),
+        isDemo: false,
+      };
+      
+      setCachedPrice(symbol, result);
+      
+      return new Response(
+        JSON.stringify(result),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     // Get candlestick data for charts
@@ -172,68 +176,59 @@ serve(async (req) => {
       
       console.log(`Fetching candles for ${symbol} (${res})`);
       
-      try {
-        const data = await fetchWithRateLimit(
-          `https://finnhub.io/api/v1/stock/candle?symbol=${encodeURIComponent(symbol)}&resolution=${res}&from=${fromTs}&to=${toTs}&token=${apiKey}`,
-          apiKey
-        );
-        
-        // Transform to OHLC array format
-        if (data.s === 'ok' && data.c) {
-          const candles = data.c.map((close: number, i: number) => ({
-            time: data.t[i] * 1000,
-            open: data.o[i],
-            high: data.h[i],
-            low: data.l[i],
-            close: close,
-            volume: data.v[i]
-          }));
-          
-          return new Response(
-            JSON.stringify({ candles, status: 'ok' }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-        
+      const { data, rateLimited } = await fetchWithRateLimit(
+        `https://finnhub.io/api/v1/stock/candle?symbol=${encodeURIComponent(symbol)}&resolution=${res}&from=${fromTs}&to=${toTs}&token=${apiKey}`
+      );
+      
+      if (rateLimited || !data) {
         return new Response(
-          JSON.stringify({ candles: [], status: data.s || 'no_data' }),
+          JSON.stringify({ candles: [], status: 'rate_limited' }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
-      } catch (error) {
-        if (error.message === 'RATE_LIMITED') {
-          // Return empty candles on rate limit
-          return new Response(
-            JSON.stringify({ candles: [], status: 'rate_limited' }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-        throw error;
       }
+      
+      // Transform to OHLC array format
+      if (data.s === 'ok' && data.c) {
+        const candles = data.c.map((close: number, i: number) => ({
+          time: data.t[i] * 1000,
+          open: data.o[i],
+          high: data.h[i],
+          low: data.l[i],
+          close: close,
+          volume: data.v[i]
+        }));
+        
+        return new Response(
+          JSON.stringify({ candles, status: 'ok' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      return new Response(
+        JSON.stringify({ candles: [], status: data.s || 'no_data' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     // Get market news
     if (action === 'get_news') {
       console.log('Fetching market news');
       
-      try {
-        const data = await fetchWithRateLimit(
-          `https://finnhub.io/api/v1/news?category=general&token=${apiKey}`,
-          apiKey
-        );
-        
+      const { data, rateLimited } = await fetchWithRateLimit(
+        `https://finnhub.io/api/v1/news?category=general&token=${apiKey}`
+      );
+      
+      if (rateLimited || !data) {
         return new Response(
-          JSON.stringify(data),
+          JSON.stringify([]),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
-      } catch (error) {
-        if (error.message === 'RATE_LIMITED') {
-          return new Response(
-            JSON.stringify([]),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-        throw error;
       }
+      
+      return new Response(
+        JSON.stringify(data),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     return new Response(
