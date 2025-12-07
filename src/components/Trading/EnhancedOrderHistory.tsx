@@ -61,38 +61,48 @@ const EnhancedOrderHistory = () => {
   useEffect(() => {
     if (!user) return;
 
-    const channel = supabase
-      .channel('order-updates')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'trades',
-          filter: `user_id=eq.${user.id}`
-        },
-        (payload) => {
-          console.log('Order update received:', payload);
-          refetch();
-          
-          if (payload.eventType === 'UPDATE' && payload.new) {
-            const trade = payload.new as TradeRecord;
-            toast.success(
-              `Order ${trade.type} ${trade.shares} shares of ${trade.symbol} - Status: ${trade.status}`
-            );
-          }
-        }
-      );
+    let channel: ReturnType<typeof supabase.channel> | null = null;
 
-    channel.subscribe((status, err) => {
-      if (err) console.warn('Order updates subscription error:', err);
-    });
+    try {
+      channel = supabase
+        .channel('order-updates')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'trades',
+            filter: `user_id=eq.${user.id}`
+          },
+          (payload) => {
+            console.log('Order update received:', payload);
+            refetch();
+            
+            if (payload.eventType === 'UPDATE' && payload.new) {
+              const trade = payload.new as TradeRecord;
+              toast.success(
+                `Order ${trade.type} ${trade.shares} shares of ${trade.symbol} - Status: ${trade.status}`
+              );
+            }
+          }
+        )
+        .subscribe((status, err) => {
+          if (err) {
+            console.warn('Order updates subscription error:', err);
+          }
+          if (status === 'CHANNEL_ERROR') {
+            console.warn('Order updates channel error, will retry on next mount');
+          }
+        });
+    } catch (error) {
+      console.warn('Failed to setup order updates subscription:', error);
+    }
 
     return () => {
-      try {
-        supabase.removeChannel(channel);
-      } catch (error) {
-        console.warn('Error removing order updates channel:', error);
+      if (channel) {
+        supabase.removeChannel(channel).catch(() => {
+          // Ignore cleanup errors
+        });
       }
     };
   }, [user, refetch]);
