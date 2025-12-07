@@ -1,4 +1,5 @@
 
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import StockSelector from "./StockSelector";
 import StockInfo from "./StockInfo";
@@ -7,9 +8,12 @@ import StockChart from "./StockChart";
 import { WalletBalanceDisplay } from "./WalletBalanceDisplay";
 import { ConnectionStatusIndicator } from "./ConnectionStatusIndicator";
 import { useTrading } from "@/hooks/useTrading";
+import { useAuth } from "@/hooks/useAuth";
 import { TradingErrorBoundary } from "@/components/ErrorBoundary/TradingErrorBoundary";
+import { supabase } from "@/integrations/supabase/client";
 
 const TradingInterface = () => {
+  const { user } = useAuth();
   const {
     symbol,
     setSymbol,
@@ -24,8 +28,33 @@ const TradingInterface = () => {
     handleSubmitOrder
   } = useTrading();
 
-  // Add a dummy cash balance for demonstration
-  const cashBalance = 10000;
+  // Fetch real recent transactions for the current symbol
+  const { data: recentTransactions = [] } = useQuery({
+    queryKey: ["recentTrades", user?.id, symbol],
+    queryFn: async () => {
+      if (!user) return [];
+      
+      const { data: trades, error } = await supabase
+        .from('trades')
+        .select('id, type, total_amount, created_at, status, symbol')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(10);
+      
+      if (error) throw error;
+      
+      return (trades || []).map(trade => ({
+        id: trade.id,
+        type: trade.type as "buy" | "sell",
+        amount: trade.total_amount,
+        timestamp: trade.created_at,
+        status: trade.status,
+        symbol: trade.symbol
+      }));
+    },
+    enabled: !!user,
+    refetchInterval: 30000, // Refresh every 30 seconds
+  });
 
   return (
     <TradingErrorBoundary>
@@ -74,6 +103,7 @@ const TradingInterface = () => {
               symbol={symbol}
               historicalData={historicalData || []}
               isHistoricalLoading={isHistoricalLoading}
+              recentTransactions={recentTransactions}
             />
           </div>
         </div>

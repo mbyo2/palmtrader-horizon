@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useWallet } from "@/hooks/useWallet";
 import { ArrowUpCircle, ArrowDownCircle, CreditCard, Smartphone, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -33,11 +34,17 @@ interface MobileMoneyAccount {
 
 const FundTransferInterface = () => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const { balances, refreshBalances, deposit, withdraw } = useWallet();
   const [transferType, setTransferType] = useState<"deposit" | "withdraw">("deposit");
   const [amount, setAmount] = useState("");
   const [selectedBankAccount, setSelectedBankAccount] = useState("");
   const [selectedMobileAccount, setSelectedMobileAccount] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Get actual USD balance from wallet
+  const usdBalance = balances.find(b => b.currency === 'USD');
+  const cashBalance = usdBalance?.available ?? 0;
 
   const { data: bankAccounts = [] } = useQuery({
     queryKey: ["bankAccounts", user?.id],
@@ -69,16 +76,6 @@ const FundTransferInterface = () => {
     enabled: !!user,
   });
 
-  const { data: cashBalance = 0 } = useQuery({
-    queryKey: ["cashBalance", user?.id],
-    queryFn: async () => {
-      if (!user) return 0;
-      // Mock cash balance - in real app this would come from a wallet table
-      return 5000;
-    },
-    enabled: !!user,
-  });
-
   const handleBankTransfer = async () => {
     if (!user || !selectedBankAccount || !amount) {
       toast.error("Please fill in all required fields");
@@ -99,23 +96,41 @@ const FundTransferInterface = () => {
     setIsProcessing(true);
 
     try {
+      // Process the actual wallet update
+      if (transferType === "deposit") {
+        const result = await deposit(transferAmount);
+        if (!result.success) {
+          throw new Error(result.error || "Deposit failed");
+        }
+      } else {
+        const result = await withdraw(transferAmount);
+        if (!result.success) {
+          throw new Error(result.error || "Withdrawal failed");
+        }
+      }
+
+      // Create transfer record
       const { error } = await supabase.from('fund_transfers').insert({
         user_id: user.id,
         bank_account_id: selectedBankAccount,
         amount: transferAmount,
         direction: transferType,
-        status: 'pending'
+        status: transferType === 'deposit' ? 'completed' : 'pending'
       });
 
       if (error) throw error;
 
+      // Refresh balances
+      await refreshBalances();
+      queryClient.invalidateQueries({ queryKey: ["walletBalances"] });
+
       toast.success(
-        `${transferType === 'deposit' ? 'Deposit' : 'Withdrawal'} request submitted successfully`
+        `${transferType === 'deposit' ? 'Deposit' : 'Withdrawal request'} completed successfully`
       );
       setAmount("");
       setSelectedBankAccount("");
     } catch (error) {
-      toast.error("Transfer failed. Please try again.");
+      toast.error(error instanceof Error ? error.message : "Transfer failed. Please try again.");
       console.error("Transfer error:", error);
     } finally {
       setIsProcessing(false);
@@ -142,23 +157,41 @@ const FundTransferInterface = () => {
     setIsProcessing(true);
 
     try {
+      // Process the actual wallet update
+      if (transferType === "deposit") {
+        const result = await deposit(transferAmount);
+        if (!result.success) {
+          throw new Error(result.error || "Deposit failed");
+        }
+      } else {
+        const result = await withdraw(transferAmount);
+        if (!result.success) {
+          throw new Error(result.error || "Withdrawal failed");
+        }
+      }
+
+      // Create mobile money transaction record
       const { error } = await supabase.from('mobile_money_transactions').insert({
         user_id: user.id,
         account_id: selectedMobileAccount,
         amount: transferAmount,
         type: transferType,
-        status: 'pending'
+        status: transferType === 'deposit' ? 'completed' : 'pending'
       });
 
       if (error) throw error;
 
+      // Refresh balances
+      await refreshBalances();
+      queryClient.invalidateQueries({ queryKey: ["walletBalances"] });
+
       toast.success(
-        `Mobile money ${transferType} request submitted successfully`
+        `Mobile money ${transferType === 'deposit' ? 'deposit' : 'withdrawal request'} completed successfully`
       );
       setAmount("");
       setSelectedMobileAccount("");
     } catch (error) {
-      toast.error("Transfer failed. Please try again.");
+      toast.error(error instanceof Error ? error.message : "Transfer failed. Please try again.");
       console.error("Mobile money error:", error);
     } finally {
       setIsProcessing(false);
