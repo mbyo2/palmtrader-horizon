@@ -71,25 +71,42 @@ export const useRealTimePortfolio = () => {
 
     if (!user) return;
 
-    // Subscribe to portfolio changes
-    const channel = supabase
-      .channel('portfolio-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'portfolio',
-          filter: `user_id=eq.${user.id}`
-        },
-        () => {
-          fetchPositions();
-        }
-      )
-      .subscribe();
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+
+    // Subscribe to portfolio changes with error handling
+    try {
+      channel = supabase
+        .channel('portfolio-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'portfolio',
+            filter: `user_id=eq.${user.id}`
+          },
+          () => {
+            fetchPositions();
+          }
+        )
+        .subscribe((status, err) => {
+          if (err) {
+            console.warn('Portfolio realtime subscription error:', err);
+          }
+          if (status === 'CHANNEL_ERROR') {
+            console.warn('Portfolio channel error, will retry on next mount');
+          }
+        });
+    } catch (error) {
+      console.warn('Failed to setup portfolio realtime subscription:', error);
+    }
 
     return () => {
-      supabase.removeChannel(channel);
+      if (channel) {
+        supabase.removeChannel(channel).catch(() => {
+          // Ignore cleanup errors
+        });
+      }
     };
   }, [user, fetchPositions]);
 
