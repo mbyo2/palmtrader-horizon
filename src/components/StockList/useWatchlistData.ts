@@ -52,31 +52,41 @@ const useWatchlistData = () => {
 
     fetchWatchlistStocks();
 
-    // Set up real-time subscription for watchlist changes
-    const subscription = supabase
-      .channel('watchlist_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'watchlists',
-          filter: `user_id=eq.${user.id}`
-        },
-        () => {
-          fetchWatchlistStocks();
-        }
-      );
-
-    subscription.subscribe((status, err) => {
-      if (err) console.warn('Watchlist subscription error:', err);
-    });
+    // Set up real-time subscription for watchlist changes with error handling
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    
+    try {
+      channel = supabase
+        .channel('watchlist_changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'watchlists',
+            filter: `user_id=eq.${user.id}`
+          },
+          () => {
+            fetchWatchlistStocks();
+          }
+        )
+        .subscribe((status, err) => {
+          if (err) {
+            console.warn('Watchlist subscription error:', err);
+          }
+          if (status === 'CHANNEL_ERROR') {
+            console.warn('Watchlist channel error, will retry on next mount');
+          }
+        });
+    } catch (error) {
+      console.warn('Failed to setup watchlist subscription:', error);
+    }
 
     return () => {
-      try {
-        subscription.unsubscribe();
-      } catch (error) {
-        console.warn('Error unsubscribing from watchlist:', error);
+      if (channel) {
+        supabase.removeChannel(channel).catch(() => {
+          // Ignore cleanup errors
+        });
       }
     };
   }, [user]);
