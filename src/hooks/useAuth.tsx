@@ -27,6 +27,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   isAdmin: () => boolean;
   requireAuth: (callback: () => void) => void;
+  refetchAccountDetails: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -37,6 +38,7 @@ const AuthContext = createContext<AuthContextType>({
   signOut: async () => {},
   isAdmin: () => false,
   requireAuth: () => {},
+  refetchAccountDetails: async () => {},
 });
 
 export const useAuth = () => {
@@ -147,6 +149,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     callback();
   };
 
+  const refetchAccountDetails = async () => {
+    if (user) {
+      await fetchAccountDetails(user.id);
+    }
+  };
+
   return (
     <AuthContext.Provider value={{ 
       user, 
@@ -155,7 +163,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       accountDetails,
       signOut, 
       isAdmin,
-      requireAuth
+      requireAuth,
+      refetchAccountDetails
     }}>
       {children}
     </AuthContext.Provider>
