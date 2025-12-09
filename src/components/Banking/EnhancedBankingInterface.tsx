@@ -9,13 +9,15 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { useWallet } from "@/hooks/useWallet";
 import { EnhancedBankingService } from "@/services/EnhancedBankingService";
 import { PaymentProcessingService } from "@/services/PaymentProcessingService";
 import { KYCService } from "@/services/KYCService";
-import { Upload, CreditCard, Building2, Shield, DollarSign, Clock } from "lucide-react";
+import { Upload, CreditCard, Building2, Shield, DollarSign, Clock, Loader2 } from "lucide-react";
 
 export default function EnhancedBankingInterface() {
   const { user } = useAuth();
+  const { balances, deposit, withdraw, refreshBalances } = useWallet();
   const [loading, setLoading] = useState(false);
   const [accountBalance, setAccountBalance] = useState<any>(null);
   const [paymentMethods, setPaymentMethods] = useState<any[]>([]);
@@ -23,6 +25,15 @@ export default function EnhancedBankingInterface() {
   const [kycStatus, setKycStatus] = useState<any>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [documentType, setDocumentType] = useState<string>("");
+  
+  // Transfer form state
+  const [transferAmount, setTransferAmount] = useState("");
+  const [transferDirection, setTransferDirection] = useState<"deposit" | "withdrawal">("deposit");
+  const [transferType, setTransferType] = useState<"ach" | "wire" | "instant">("ach");
+
+  // Get actual balance from wallet
+  const usdBalance = balances.find(b => b.currency === 'USD');
+  const availableBalance = usdBalance?.available ?? accountBalance?.available_balance ?? 0;
 
   useEffect(() => {
     if (user) {
@@ -75,6 +86,53 @@ export default function EnhancedBankingInterface() {
     } catch (error) {
       console.error("Upload error:", error);
       toast.error("Upload failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTransfer = async () => {
+    if (!user || !transferAmount) {
+      toast.error("Please enter an amount");
+      return;
+    }
+
+    const amount = parseFloat(transferAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast.error("Please enter a valid amount");
+      return;
+    }
+
+    if (transferDirection === "withdrawal" && amount > availableBalance) {
+      toast.error("Insufficient funds");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      if (transferDirection === "deposit") {
+        const result = await deposit(amount);
+        if (result.success) {
+          toast.success(`Successfully deposited $${amount.toFixed(2)}`);
+          setTransferAmount("");
+          await loadBankingData();
+        } else {
+          toast.error(result.error || "Deposit failed");
+        }
+      } else {
+        const result = await withdraw(amount);
+        if (result.success) {
+          toast.success(`Withdrawal request submitted for $${amount.toFixed(2)}`);
+          setTransferAmount("");
+          await loadBankingData();
+        } else {
+          toast.error(result.error || "Withdrawal failed");
+        }
+      }
+      await refreshBalances();
+    } catch (error) {
+      console.error("Transfer error:", error);
+      toast.error("Transfer failed");
     } finally {
       setLoading(false);
     }
@@ -134,7 +192,7 @@ export default function EnhancedBankingInterface() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              ${accountBalance?.available_balance?.toLocaleString() || "0.00"}
+              ${availableBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
             </div>
             <p className="text-xs text-muted-foreground">
               Pending: ${accountBalance?.pending_balance?.toLocaleString() || "0.00"}
@@ -191,11 +249,17 @@ export default function EnhancedBankingInterface() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="amount">Amount</Label>
-                  <Input id="amount" type="number" placeholder="0.00" />
+                  <Input 
+                    id="amount" 
+                    type="number" 
+                    placeholder="0.00" 
+                    value={transferAmount}
+                    onChange={(e) => setTransferAmount(e.target.value)}
+                  />
                 </div>
                 <div>
                   <Label htmlFor="direction">Direction</Label>
-                  <Select>
+                  <Select value={transferDirection} onValueChange={(value: "deposit" | "withdrawal") => setTransferDirection(value)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select direction" />
                     </SelectTrigger>
@@ -209,7 +273,7 @@ export default function EnhancedBankingInterface() {
 
               <div>
                 <Label htmlFor="transferType">Transfer Type</Label>
-                <Select>
+                <Select value={transferType} onValueChange={(value: "ach" | "wire" | "instant") => setTransferType(value)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select transfer type" />
                   </SelectTrigger>
@@ -226,14 +290,15 @@ export default function EnhancedBankingInterface() {
                 <AlertDescription>
                   Transfer limits vary based on your verification level. 
                   {kycStatus?.verification_level === "premium" 
-                    ? "Premium: $25,000 daily, $100,000 monthly"
-                    : "Current limits apply based on verification level"
+                    ? " Premium: $25,000 daily, $100,000 monthly"
+                    : " Current limits apply based on verification level"
                   }
                 </AlertDescription>
               </Alert>
 
-              <Button className="w-full" disabled={loading}>
-                {loading ? "Processing..." : "Initiate Transfer"}
+              <Button className="w-full" disabled={loading || !transferAmount} onClick={handleTransfer}>
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {loading ? "Processing..." : `${transferDirection === "deposit" ? "Deposit" : "Withdraw"} Funds`}
               </Button>
             </CardContent>
           </Card>
