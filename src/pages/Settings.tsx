@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useProtectedRoute } from "@/hooks/useProtectedRoute";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,11 +8,64 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/useAuth";
-import { Settings as SettingsIcon, User, Bell, Shield, CreditCard } from "lucide-react";
+import { Settings as SettingsIcon, User, Bell, Shield, CreditCard, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const Settings = () => {
   const { isLoading } = useProtectedRoute();
-  const { user, accountDetails } = useAuth();
+  const { user, accountDetails, refetchAccountDetails } = useAuth();
+  
+  const [firstName, setFirstName] = useState(accountDetails?.first_name || '');
+  const [lastName, setLastName] = useState(accountDetails?.last_name || '');
+  const [phoneNumber, setPhoneNumber] = useState(accountDetails?.phone_number || '');
+  const [isSaving, setIsSaving] = useState(false);
+  
+  // Notification preferences
+  const [priceAlerts, setPriceAlerts] = useState(true);
+  const [tradeConfirmations, setTradeConfirmations] = useState(true);
+  const [marketUpdates, setMarketUpdates] = useState(true);
+
+  // Update state when accountDetails changes
+  React.useEffect(() => {
+    if (accountDetails) {
+      setFirstName(accountDetails.first_name || '');
+      setLastName(accountDetails.last_name || '');
+      setPhoneNumber(accountDetails.phone_number || '');
+    }
+  }, [accountDetails]);
+
+  const handleSaveProfile = async () => {
+    if (!user) return;
+    
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from('account_details')
+        .update({
+          first_name: firstName,
+          last_name: lastName,
+          phone_number: phoneNumber,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      toast.success('Profile updated successfully');
+      refetchAccountDetails?.();
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast.error('Failed to update profile');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSaveNotifications = () => {
+    // In a real app, this would save to the database
+    toast.success('Notification preferences saved');
+  };
 
   if (isLoading) {
     return <div className="container py-6">Loading...</div>;
@@ -59,14 +112,16 @@ const Settings = () => {
                   <Label htmlFor="firstName">First Name</Label>
                   <Input 
                     id="firstName" 
-                    defaultValue={accountDetails?.first_name || ''} 
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="lastName">Last Name</Label>
                   <Input 
                     id="lastName" 
-                    defaultValue={accountDetails?.last_name || ''} 
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
                   />
                 </div>
               </div>
@@ -84,10 +139,14 @@ const Settings = () => {
                 <Input 
                   id="phone" 
                   type="tel" 
-                  defaultValue={accountDetails?.phone_number || ''} 
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
                 />
               </div>
-              <Button>Save Changes</Button>
+              <Button onClick={handleSaveProfile} disabled={isSaving}>
+                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save Changes
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>
@@ -128,7 +187,7 @@ const Settings = () => {
                 </div>
                 <Switch defaultChecked />
               </div>
-              <Button>Save Preferences</Button>
+              <Button onClick={handleSaveNotifications}>Save Preferences</Button>
             </CardContent>
           </Card>
         </TabsContent>

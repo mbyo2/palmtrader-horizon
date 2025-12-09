@@ -88,24 +88,55 @@ export class WalletService {
     offset: number = 0
   ): Promise<WalletTransaction[]> {
     try {
-      const { data: trades } = await supabase
-        .from("trades")
-        .select("*")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false })
-        .range(offset, offset + limit - 1);
+      // Fetch trades and transactions in parallel
+      const [tradesResult, transactionsResult] = await Promise.all([
+        supabase
+          .from("trades")
+          .select("*")
+          .eq("user_id", userId)
+          .order("created_at", { ascending: false })
+          .range(offset, offset + Math.floor(limit / 2) - 1),
+        supabase
+          .from("transactions")
+          .select("*")
+          .eq("user_id", userId)
+          .order("created_at", { ascending: false })
+          .range(offset, offset + Math.floor(limit / 2) - 1)
+      ]);
 
-      if (!trades) return [];
+      const trades = tradesResult.data || [];
+      const transactions = transactionsResult.data || [];
 
-      return trades.map(trade => ({
+      // Map trades to WalletTransaction format
+      const tradeTransactions: WalletTransaction[] = trades.map(trade => ({
         id: trade.id,
         type: 'trade' as const,
         amount: trade.type === 'buy' ? -trade.total_amount : trade.total_amount,
-        currency: trade.symbol.includes('USD') ? 'USD' : trade.symbol,
+        currency: 'USD',
         status: trade.status === 'completed' ? 'completed' : 'pending',
         description: `${trade.type.toUpperCase()} ${trade.shares} ${trade.symbol} @ $${trade.price}`,
         createdAt: trade.created_at
       }));
+
+      // Map transactions to WalletTransaction format
+      const walletTransactions: WalletTransaction[] = transactions.map(tx => ({
+        id: tx.id,
+        type: tx.transaction_type === 'deposit' ? 'deposit' : 
+              tx.transaction_type === 'withdrawal' ? 'withdrawal' : 'fee',
+        amount: tx.amount,
+        currency: tx.currency || 'USD',
+        status: tx.status === 'completed' ? 'completed' : 
+                tx.status === 'failed' ? 'failed' : 'pending',
+        description: tx.description || `${tx.transaction_type} ${Math.abs(tx.amount)} ${tx.currency}`,
+        createdAt: tx.created_at
+      }));
+
+      // Combine and sort by date
+      const allTransactions = [...tradeTransactions, ...walletTransactions]
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(0, limit);
+
+      return allTransactions;
     } catch (error) {
       devConsole.error("Error fetching transaction history:", error);
       return [];
