@@ -205,9 +205,8 @@ const PortfolioPerformance = () => {
       // Find closest trade value or use current value
       const closestValue = tradesByDate.get(date.toLocaleDateString()) || currentValue;
       
-      // Add some realistic variation for the chart
-      const variation = i === 0 ? 0 : (Math.random() - 0.5) * 0.02 * closestValue;
-      const value = Math.max(0, closestValue + variation);
+      // Use actual trade data without random variation
+      const value = Math.max(0, closestValue);
       const returns = initialValue > 0 ? ((value - initialValue) / initialValue) * 100 : 0;
 
       data.push({

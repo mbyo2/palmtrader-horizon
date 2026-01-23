@@ -82,26 +82,12 @@ export class BatchProcessor {
         }
       }
 
-      // Fallback: generate mock data
-      return this.generateMockData(symbol);
+      // Return null to indicate no data available instead of fake data
+      return null;
 
     } catch (error) {
       console.error(`Error fetching data for ${symbol}:`, error);
-      return this.generateMockData(symbol);
+      return null;
     }
-  }
-
-  private static generateMockData(symbol: string) {
-    // Generate consistent mock data based on symbol
-    const basePrice = 50 + (symbol.charCodeAt(0) % 200);
-    const variation = (Math.random() - 0.5) * 0.1; // ±5% variation
-    const price = basePrice * (1 + variation);
-    
-    return {
-      symbol,
-      price: Number(price.toFixed(2)),
-      change: variation * 100,
-      volume: Math.floor(Math.random() * 1000000) + 100000
-    };
   }
 }

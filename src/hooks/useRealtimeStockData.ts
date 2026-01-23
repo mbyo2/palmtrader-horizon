@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { finnhubSocket } from "@/utils/finnhubSocket";
 
 interface StockDataPoint {
   time: string;
@@ -34,83 +35,89 @@ export const useRealtimeStockData = (
     error: null,
   });
 
-  const queryClient = useQueryClient();
-
-  const generateMockData = useCallback((timeframe: string): StockDataPoint[] => {
-    const now = Date.now();
-    const points: StockDataPoint[] = [];
-    let dataPoints = 100;
-    let interval = 60000; // 1 minute
-
-    switch (timeframe) {
-      case "1D":
-        dataPoints = 390; // trading minutes in a day
-        interval = 60000; // 1 minute
-        break;
-      case "1W":
-        dataPoints = 5 * 390;
-        interval = 60000;
-        break;
-      case "1M":
-        dataPoints = 30;
-        interval = 86400000; // 1 day
-        break;
-      case "3M":
-        dataPoints = 90;
-        interval = 86400000;
-        break;
-      case "1Y":
-        dataPoints = 365;
-        interval = 86400000;
-        break;
-    }
-
-    let basePrice = 150 + Math.random() * 50;
-
-    for (let i = dataPoints; i >= 0; i--) {
-      const time = new Date(now - i * interval).toISOString();
-      const volatility = 0.02;
-      const change = (Math.random() - 0.5) * basePrice * volatility;
-      basePrice += change;
-
-      const open = basePrice;
-      const close = basePrice + (Math.random() - 0.5) * basePrice * 0.01;
-      const high = Math.max(open, close) + Math.random() * basePrice * 0.005;
-      const low = Math.min(open, close) - Math.random() * basePrice * 0.005;
-
-      points.push({
-        time,
-        value: close,
-        open,
-        high,
-        low,
-        close,
+  // Fetch real historical data from database/API
+  const fetchHistoricalData = useCallback(async (tf: string): Promise<StockDataPoint[]> => {
+    try {
+      const days = tf === "1D" ? 1 : tf === "1W" ? 7 : tf === "1M" ? 30 : tf === "3M" ? 90 : 365;
+      const fromDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+      
+      // Try to get from database first
+      const { data: dbData, error } = await supabase
+        .from('market_data')
+        .select('price, timestamp, open, high, low, close')
+        .eq('symbol', symbol)
+        .gte('timestamp', fromDate)
+        .order('timestamp', { ascending: true });
+      
+      if (!error && dbData && dbData.length > 0) {
+        return dbData.map(d => ({
+          time: new Date(d.timestamp).toISOString(),
+          value: d.close || d.price,
+          open: d.open,
+          high: d.high,
+          low: d.low,
+          close: d.close || d.price
+        }));
+      }
+      
+      // Fallback to edge function for candle data
+      const { data: candleData } = await supabase.functions.invoke('finnhub-websocket', {
+        body: { 
+          action: 'get_candles', 
+          symbol,
+          resolution: tf === "1D" ? "1" : tf === "1W" ? "15" : "D",
+          from: Math.floor((Date.now() - days * 24 * 60 * 60 * 1000) / 1000),
+          to: Math.floor(Date.now() / 1000)
+        }
       });
+      
+      if (candleData?.candles) {
+        return candleData.candles.map((c: any) => ({
+          time: new Date(c.time).toISOString(),
+          value: c.close,
+          open: c.open,
+          high: c.high,
+          low: c.low,
+          close: c.close
+        }));
+      }
+      
+      return [];
+    } catch (err) {
+      console.warn('Error fetching historical data:', err);
+      return [];
     }
-
-    return points;
-  }, []);
+  }, [symbol]);
 
   const fetchData = useCallback(async () => {
     try {
       setData(prev => ({ ...prev, isLoading: true, error: null }));
 
-      // Generate mock data
-      const chartData = generateMockData(timeframe);
-      const currentPrice = chartData[chartData.length - 1]?.value || 0;
-      const previousPrice = chartData[0]?.value || currentPrice;
-      const priceChange = currentPrice - previousPrice;
-      const priceChangePercent = (priceChange / previousPrice) * 100;
+      const chartData = await fetchHistoricalData(timeframe);
+      
+      if (chartData.length > 0) {
+        const currentPrice = chartData[chartData.length - 1]?.value || 0;
+        const previousPrice = chartData[0]?.value || currentPrice;
+        const priceChange = currentPrice - previousPrice;
+        const priceChangePercent = previousPrice > 0 ? (priceChange / previousPrice) * 100 : 0;
 
-      setData({
-        symbol,
-        currentPrice,
-        priceChange,
-        priceChangePercent,
-        chartData,
-        isLoading: false,
-        error: null,
-      });
+        setData({
+          symbol,
+          currentPrice,
+          priceChange,
+          priceChangePercent,
+          chartData,
+          isLoading: false,
+          error: null,
+        });
+      } else {
+        // No data available
+        setData(prev => ({
+          ...prev,
+          isLoading: false,
+          chartData: []
+        }));
+      }
     } catch (error) {
       setData(prev => ({
         ...prev,
@@ -118,45 +125,47 @@ export const useRealtimeStockData = (
         error: error as Error,
       }));
     }
-  }, [symbol, timeframe, generateMockData]);
+  }, [symbol, timeframe, fetchHistoricalData]);
 
   useEffect(() => {
     fetchData();
 
-    // Real-time updates every 5 seconds
-    const interval = setInterval(() => {
-      setData(prev => {
-        if (!prev.chartData.length) return prev;
+    // Subscribe to real-time WebSocket updates
+    finnhubSocket.subscribe(symbol);
+    
+    const unsubscribe = finnhubSocket.onMarketData((update) => {
+      if (update.symbol === symbol && update.price) {
+        setData(prev => {
+          const newPoint: StockDataPoint = {
+            time: new Date().toISOString(),
+            value: update.price,
+            close: update.price,
+          };
 
-        const lastPoint = prev.chartData[prev.chartData.length - 1];
-        const newPrice = lastPoint.value + (Math.random() - 0.5) * lastPoint.value * 0.001;
-        
-        const newPoint: StockDataPoint = {
-          time: new Date().toISOString(),
-          value: newPrice,
-          open: lastPoint.close || lastPoint.value,
-          high: Math.max(newPrice, lastPoint.close || lastPoint.value),
-          low: Math.min(newPrice, lastPoint.close || lastPoint.value),
-          close: newPrice,
-        };
+          const updatedChartData = prev.chartData.length > 0 
+            ? [...prev.chartData.slice(1), newPoint]
+            : [newPoint];
+            
+          const previousPrice = updatedChartData[0]?.value || update.price;
+          const priceChange = update.price - previousPrice;
+          const priceChangePercent = previousPrice > 0 ? (priceChange / previousPrice) * 100 : 0;
 
-        const updatedChartData = [...prev.chartData.slice(1), newPoint];
-        const previousPrice = updatedChartData[0]?.value || newPrice;
-        const priceChange = newPrice - previousPrice;
-        const priceChangePercent = (priceChange / previousPrice) * 100;
+          return {
+            ...prev,
+            currentPrice: update.price,
+            priceChange,
+            priceChangePercent,
+            chartData: updatedChartData,
+          };
+        });
+      }
+    });
 
-        return {
-          ...prev,
-          currentPrice: newPrice,
-          priceChange,
-          priceChangePercent,
-          chartData: updatedChartData,
-        };
-      });
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, [fetchData]);
+    return () => {
+      finnhubSocket.unsubscribe(symbol);
+      unsubscribe();
+    };
+  }, [fetchData, symbol]);
 
   return data;
 };
