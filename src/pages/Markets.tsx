@@ -1,7 +1,6 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
-import { AdvancedStockChart } from "@/components/Research/AdvancedStockChart";
 import AdvancedChart from "@/components/Research/AdvancedChart";
 import ResearchTools from "@/components/Research/ResearchTools";
 import { MarketDataService } from "@/services/MarketDataService";
@@ -11,6 +10,7 @@ import { toast } from "sonner";
 import { finnhubSocket } from "@/utils/finnhubSocket";
 import MarketOverview from "@/components/MarketOverview";
 import TradingInterface from "@/components/Trading/TradingInterface";
+import RealTimeChart from "@/components/Trading/RealTimeChart";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TechnicalIndicatorService } from "@/services/TechnicalIndicatorService";
 import TechnicalIndicators from "@/components/TechnicalIndicators";
@@ -99,17 +99,12 @@ const Markets = () => {
         </TabsList>
         
         <TabsContent value="chart" className="space-y-4 sm:space-y-6 mt-4">
-          {isLoading ? (
-            <Card className="p-4">
-              <Skeleton className="h-[300px] sm:h-[400px] w-full" />
-            </Card>
-          ) : marketData.length > 0 ? (
+          {/* Real-time streaming chart */}
+          <RealTimeChart symbol={symbol} height={450} />
+          
+          {/* Historical data chart with technical analysis */}
+          {marketData.length > 0 && (
             <AdvancedChart symbol={symbol} data={marketData} />
-          ) : (
-            <Card className="p-4 sm:p-6 text-center">
-              <p className="text-sm sm:text-base text-muted-foreground mb-2">No market data available for {symbol}</p>
-              <p className="text-xs sm:text-sm">Using demonstration data. Check your connection or try again later.</p>
-            </Card>
           )}
           
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
