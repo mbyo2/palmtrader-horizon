@@ -111,35 +111,17 @@ class UnifiedPriceService {
   }
 
   private getDemoPrice(symbol: string): PriceData {
-    // Demo prices for common stocks
-    const demoPrices: Record<string, number> = {
-      'AAPL': 178.50,
-      'MSFT': 378.25,
-      'GOOGL': 141.80,
-      'AMZN': 178.35,
-      'NVDA': 475.20,
-      'META': 505.75,
-      'TSLA': 248.50,
-      'BRK.B': 385.40,
-      'JPM': 182.30,
-      'V': 275.15
-    };
+    // Return null-like values to indicate no data available
+    // instead of fake prices that could mislead users
+    console.warn(`No real price data available for ${symbol}, returning placeholder`);
     
-    const basePrice = demoPrices[symbol] || 100 + Math.random() * 100;
-    const variation = (Math.random() - 0.5) * 0.02;
-    const price = basePrice * (1 + variation);
-    const change = basePrice * variation;
-    
-    const priceData: PriceData = {
+    return {
       symbol,
-      price: parseFloat(price.toFixed(2)),
-      change: parseFloat(change.toFixed(2)),
-      changePercent: parseFloat((variation * 100).toFixed(2)),
+      price: 0,
+      change: 0,
+      changePercent: 0,
       timestamp: Date.now()
     };
-    
-    this.priceCache.set(symbol, priceData);
-    return priceData;
   }
 
   private notifySubscribers(symbol: string, data: PriceData): void {

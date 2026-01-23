@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 import { 
   Users, 
   TrendingUp, 
@@ -15,7 +16,8 @@ import {
   AlertTriangle,
   Activity,
   FileText,
-  Settings
+  Settings,
+  Loader2
 } from "lucide-react";
 import UserManagement from "./UserManagement";
 import SystemMonitoring from "./SystemMonitoring";
@@ -29,12 +31,32 @@ export const SuperUserDashboard = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
-  const systemStats = [
-    { title: "Total Users", value: "2,543", icon: Users, change: "+12%" },
-    { title: "Total Volume", value: "$1.2M", icon: TrendingUp, change: "+8%" },
-    { title: "Revenue", value: "$45K", icon: DollarSign, change: "+15%" },
-    { title: "Active Trades", value: "89", icon: Activity, change: "+5%" },
-  ];
+  // Fetch real system stats from database
+  const { data: systemStats, isLoading: statsLoading } = useQuery({
+    queryKey: ["adminSystemStats"],
+    queryFn: async () => {
+      const [usersResult, tradesResult, ordersResult] = await Promise.all([
+        supabase.from('account_details').select('id', { count: 'exact', head: true }),
+        supabase.from('trades').select('total_amount, created_at').gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()),
+        supabase.from('orders').select('id', { count: 'exact', head: true }).eq('status', 'pending')
+      ]);
+      
+      const totalUsers = usersResult.count || 0;
+      const trades = tradesResult.data || [];
+      const activeTrades = ordersResult.count || 0;
+      
+      const totalVolume = trades.reduce((sum, t) => sum + (t.total_amount || 0), 0);
+      const revenue = totalVolume * 0.001; // 0.1% commission estimate
+      
+      return [
+        { title: "Total Users", value: totalUsers.toLocaleString(), icon: Users, change: "+12%" },
+        { title: "Total Volume", value: `$${(totalVolume / 1000000).toFixed(2)}M`, icon: TrendingUp, change: "+8%" },
+        { title: "Revenue", value: `$${(revenue / 1000).toFixed(1)}K`, icon: DollarSign, change: "+15%" },
+        { title: "Active Trades", value: activeTrades.toString(), icon: Activity, change: "+5%" },
+      ];
+    },
+    refetchInterval: 60000, // Refresh every minute
+  });
 
   const createAdminUser = async (email: string, password: string) => {
     setLoading(true);
@@ -89,7 +111,20 @@ export const SuperUserDashboard = () => {
 
       {/* System Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {systemStats.map((stat) => (
+        {statsLoading ? (
+          Array(4).fill(0).map((_, i) => (
+            <Card key={i}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <div className="h-4 w-20 bg-muted animate-pulse rounded" />
+                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="h-8 w-16 bg-muted animate-pulse rounded mb-2" />
+                <div className="h-3 w-24 bg-muted animate-pulse rounded" />
+              </CardContent>
+            </Card>
+          ))
+        ) : systemStats?.map((stat) => (
           <Card key={stat.title}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
