@@ -465,6 +465,78 @@ export type Database = {
         }
         Relationships: []
       }
+      convert_history: {
+        Row: {
+          created_at: string
+          fee: number | null
+          from_amount: number
+          from_currency: string
+          id: string
+          rate: number
+          status: string | null
+          to_amount: number
+          to_currency: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          fee?: number | null
+          from_amount: number
+          from_currency: string
+          id?: string
+          rate: number
+          status?: string | null
+          to_amount: number
+          to_currency: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          fee?: number | null
+          from_amount?: number
+          from_currency?: string
+          id?: string
+          rate?: number
+          status?: string | null
+          to_amount?: number
+          to_currency?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      crypto_wallets: {
+        Row: {
+          available_balance: number
+          created_at: string
+          currency: string
+          id: string
+          locked_balance: number
+          updated_at: string
+          user_id: string
+          wallet_type: Database["public"]["Enums"]["wallet_type"]
+        }
+        Insert: {
+          available_balance?: number
+          created_at?: string
+          currency: string
+          id?: string
+          locked_balance?: number
+          updated_at?: string
+          user_id: string
+          wallet_type?: Database["public"]["Enums"]["wallet_type"]
+        }
+        Update: {
+          available_balance?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          locked_balance?: number
+          updated_at?: string
+          user_id?: string
+          wallet_type?: Database["public"]["Enums"]["wallet_type"]
+        }
+        Relationships: []
+      }
       fund_transfers: {
         Row: {
           amount: number
@@ -508,6 +580,66 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      futures_positions: {
+        Row: {
+          closed_at: string | null
+          created_at: string
+          entry_price: number
+          id: string
+          leverage: number
+          liquidation_price: number | null
+          margin: number
+          quantity: number
+          realized_pnl: number | null
+          side: string
+          status: string | null
+          stop_loss: number | null
+          symbol: string
+          take_profit: number | null
+          unrealized_pnl: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          closed_at?: string | null
+          created_at?: string
+          entry_price: number
+          id?: string
+          leverage?: number
+          liquidation_price?: number | null
+          margin: number
+          quantity: number
+          realized_pnl?: number | null
+          side: string
+          status?: string | null
+          stop_loss?: number | null
+          symbol: string
+          take_profit?: number | null
+          unrealized_pnl?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          closed_at?: string | null
+          created_at?: string
+          entry_price?: number
+          id?: string
+          leverage?: number
+          liquidation_price?: number | null
+          margin?: number
+          quantity?: number
+          realized_pnl?: number | null
+          side?: string
+          status?: string | null
+          stop_loss?: number | null
+          symbol?: string
+          take_profit?: number | null
+          unrealized_pnl?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       ipo_allocations: {
         Row: {
@@ -752,6 +884,116 @@ export type Database = {
           verification_notes?: string | null
         }
         Relationships: []
+      }
+      launchpad_projects: {
+        Row: {
+          created_at: string
+          description: string | null
+          distribution_time: string | null
+          end_time: string
+          id: string
+          logo_url: string | null
+          max_purchase: number
+          min_purchase: number
+          name: string
+          payment_currency: string
+          price_per_token: number
+          start_time: string
+          status: Database["public"]["Enums"]["launchpad_status"]
+          symbol: string
+          tokens_sold: number | null
+          total_tokens: number
+          updated_at: string
+          website_url: string | null
+          whitepaper_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          distribution_time?: string | null
+          end_time: string
+          id?: string
+          logo_url?: string | null
+          max_purchase: number
+          min_purchase: number
+          name: string
+          payment_currency?: string
+          price_per_token: number
+          start_time: string
+          status?: Database["public"]["Enums"]["launchpad_status"]
+          symbol: string
+          tokens_sold?: number | null
+          total_tokens: number
+          updated_at?: string
+          website_url?: string | null
+          whitepaper_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          distribution_time?: string | null
+          end_time?: string
+          id?: string
+          logo_url?: string | null
+          max_purchase?: number
+          min_purchase?: number
+          name?: string
+          payment_currency?: string
+          price_per_token?: number
+          start_time?: string
+          status?: Database["public"]["Enums"]["launchpad_status"]
+          symbol?: string
+          tokens_sold?: number | null
+          total_tokens?: number
+          updated_at?: string
+          website_url?: string | null
+          whitepaper_url?: string | null
+        }
+        Relationships: []
+      }
+      launchpad_subscriptions: {
+        Row: {
+          committed_amount: number
+          created_at: string
+          id: string
+          payment_status: string | null
+          project_id: string
+          tokens_allocated: number | null
+          tokens_claimed: boolean | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          committed_amount: number
+          created_at?: string
+          id?: string
+          payment_status?: string | null
+          project_id: string
+          tokens_allocated?: number | null
+          tokens_claimed?: boolean | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          committed_amount?: number
+          created_at?: string
+          id?: string
+          payment_status?: string | null
+          project_id?: string
+          tokens_allocated?: number | null
+          tokens_claimed?: boolean | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "launchpad_subscriptions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "launchpad_projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       local_businesses: {
         Row: {
@@ -1184,6 +1426,184 @@ export type Database = {
         }
         Relationships: []
       }
+      p2p_advertisements: {
+        Row: {
+          auto_reply: string | null
+          available_amount: number
+          avg_release_time: number | null
+          completion_rate: number | null
+          created_at: string
+          crypto_currency: string
+          fiat_currency: string
+          id: string
+          is_active: boolean | null
+          max_amount: number
+          min_amount: number
+          payment_methods: string[]
+          price: number
+          terms: string | null
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auto_reply?: string | null
+          available_amount: number
+          avg_release_time?: number | null
+          completion_rate?: number | null
+          created_at?: string
+          crypto_currency: string
+          fiat_currency?: string
+          id?: string
+          is_active?: boolean | null
+          max_amount: number
+          min_amount: number
+          payment_methods: string[]
+          price: number
+          terms?: string | null
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auto_reply?: string | null
+          available_amount?: number
+          avg_release_time?: number | null
+          completion_rate?: number | null
+          created_at?: string
+          crypto_currency?: string
+          fiat_currency?: string
+          id?: string
+          is_active?: boolean | null
+          max_amount?: number
+          min_amount?: number
+          payment_methods?: string[]
+          price?: number
+          terms?: string | null
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      p2p_messages: {
+        Row: {
+          attachment_url: string | null
+          created_at: string
+          id: string
+          is_read: boolean | null
+          message: string
+          order_id: string
+          sender_id: string
+        }
+        Insert: {
+          attachment_url?: string | null
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          message: string
+          order_id: string
+          sender_id: string
+        }
+        Update: {
+          attachment_url?: string | null
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          order_id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "p2p_messages_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "p2p_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      p2p_orders: {
+        Row: {
+          advertisement_id: string
+          buyer_confirmed_payment: boolean | null
+          buyer_id: string
+          chat_enabled: boolean | null
+          completed_at: string | null
+          created_at: string
+          crypto_amount: number
+          crypto_currency: string
+          dispute_reason: string | null
+          escrow_released: boolean | null
+          expires_at: string | null
+          fiat_amount: number
+          fiat_currency: string
+          id: string
+          payment_method: string
+          payment_status: Database["public"]["Enums"]["p2p_payment_status"]
+          price: number
+          seller_confirmed_receipt: boolean | null
+          seller_id: string
+          status: Database["public"]["Enums"]["p2p_order_status"]
+          updated_at: string
+        }
+        Insert: {
+          advertisement_id: string
+          buyer_confirmed_payment?: boolean | null
+          buyer_id: string
+          chat_enabled?: boolean | null
+          completed_at?: string | null
+          created_at?: string
+          crypto_amount: number
+          crypto_currency: string
+          dispute_reason?: string | null
+          escrow_released?: boolean | null
+          expires_at?: string | null
+          fiat_amount: number
+          fiat_currency: string
+          id?: string
+          payment_method: string
+          payment_status?: Database["public"]["Enums"]["p2p_payment_status"]
+          price: number
+          seller_confirmed_receipt?: boolean | null
+          seller_id: string
+          status?: Database["public"]["Enums"]["p2p_order_status"]
+          updated_at?: string
+        }
+        Update: {
+          advertisement_id?: string
+          buyer_confirmed_payment?: boolean | null
+          buyer_id?: string
+          chat_enabled?: boolean | null
+          completed_at?: string | null
+          created_at?: string
+          crypto_amount?: number
+          crypto_currency?: string
+          dispute_reason?: string | null
+          escrow_released?: boolean | null
+          expires_at?: string | null
+          fiat_amount?: number
+          fiat_currency?: string
+          id?: string
+          payment_method?: string
+          payment_status?: Database["public"]["Enums"]["p2p_payment_status"]
+          price?: number
+          seller_confirmed_receipt?: boolean | null
+          seller_id?: string
+          status?: Database["public"]["Enums"]["p2p_order_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "p2p_orders_advertisement_id_fkey"
+            columns: ["advertisement_id"]
+            isOneToOne: false
+            referencedRelation: "p2p_advertisements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_logs: {
         Row: {
           action: string
@@ -1498,6 +1918,233 @@ export type Database = {
           symbol?: string
           updated_at?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      spot_orders: {
+        Row: {
+          average_fill_price: number | null
+          created_at: string
+          filled_quantity: number | null
+          id: string
+          order_type: string
+          pair_id: string
+          price: number | null
+          quantity: number
+          remaining_quantity: number | null
+          side: string
+          status: string
+          stop_price: number | null
+          time_in_force: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          average_fill_price?: number | null
+          created_at?: string
+          filled_quantity?: number | null
+          id?: string
+          order_type: string
+          pair_id: string
+          price?: number | null
+          quantity: number
+          remaining_quantity?: number | null
+          side: string
+          status?: string
+          stop_price?: number | null
+          time_in_force?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          average_fill_price?: number | null
+          created_at?: string
+          filled_quantity?: number | null
+          id?: string
+          order_type?: string
+          pair_id?: string
+          price?: number | null
+          quantity?: number
+          remaining_quantity?: number | null
+          side?: string
+          status?: string
+          stop_price?: number | null
+          time_in_force?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spot_orders_pair_id_fkey"
+            columns: ["pair_id"]
+            isOneToOne: false
+            referencedRelation: "trading_pairs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      spot_trades: {
+        Row: {
+          created_at: string
+          id: string
+          maker_fee: number
+          maker_order_id: string
+          maker_user_id: string
+          pair_id: string
+          price: number
+          quantity: number
+          taker_fee: number
+          taker_order_id: string
+          taker_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          maker_fee: number
+          maker_order_id: string
+          maker_user_id: string
+          pair_id: string
+          price: number
+          quantity: number
+          taker_fee: number
+          taker_order_id: string
+          taker_user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          maker_fee?: number
+          maker_order_id?: string
+          maker_user_id?: string
+          pair_id?: string
+          price?: number
+          quantity?: number
+          taker_fee?: number
+          taker_order_id?: string
+          taker_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spot_trades_maker_order_id_fkey"
+            columns: ["maker_order_id"]
+            isOneToOne: false
+            referencedRelation: "spot_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spot_trades_pair_id_fkey"
+            columns: ["pair_id"]
+            isOneToOne: false
+            referencedRelation: "trading_pairs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spot_trades_taker_order_id_fkey"
+            columns: ["taker_order_id"]
+            isOneToOne: false
+            referencedRelation: "spot_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staking_positions: {
+        Row: {
+          accrued_interest: number | null
+          amount: number
+          auto_restake: boolean | null
+          created_at: string
+          end_date: string | null
+          id: string
+          last_interest_date: string | null
+          product_id: string
+          start_date: string
+          status: Database["public"]["Enums"]["staking_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          accrued_interest?: number | null
+          amount: number
+          auto_restake?: boolean | null
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          last_interest_date?: string | null
+          product_id: string
+          start_date?: string
+          status?: Database["public"]["Enums"]["staking_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          accrued_interest?: number | null
+          amount?: number
+          auto_restake?: boolean | null
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          last_interest_date?: string | null
+          product_id?: string
+          start_date?: string
+          status?: Database["public"]["Enums"]["staking_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staking_positions_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "staking_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staking_products: {
+        Row: {
+          apy: number
+          created_at: string
+          currency: string
+          id: string
+          is_active: boolean | null
+          lock_period_days: number | null
+          max_amount: number | null
+          min_amount: number
+          name: string
+          remaining_pool: number | null
+          total_pool: number | null
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          apy: number
+          created_at?: string
+          currency: string
+          id?: string
+          is_active?: boolean | null
+          lock_period_days?: number | null
+          max_amount?: number | null
+          min_amount: number
+          name: string
+          remaining_pool?: number | null
+          total_pool?: number | null
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          apy?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          is_active?: boolean | null
+          lock_period_days?: number | null
+          max_amount?: number | null
+          min_amount?: number
+          name?: string
+          remaining_pool?: number | null
+          total_pool?: number | null
+          type?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1888,6 +2535,48 @@ export type Database = {
         }
         Relationships: []
       }
+      trading_pairs: {
+        Row: {
+          base_currency: string
+          created_at: string
+          id: string
+          is_active: boolean | null
+          maker_fee: number | null
+          max_order_size: number | null
+          min_order_size: number | null
+          price_precision: number | null
+          quantity_precision: number | null
+          quote_currency: string
+          taker_fee: number | null
+        }
+        Insert: {
+          base_currency: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          maker_fee?: number | null
+          max_order_size?: number | null
+          min_order_size?: number | null
+          price_precision?: number | null
+          quantity_precision?: number | null
+          quote_currency: string
+          taker_fee?: number | null
+        }
+        Update: {
+          base_currency?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          maker_fee?: number | null
+          max_order_size?: number | null
+          min_order_size?: number | null
+          price_precision?: number | null
+          quantity_precision?: number | null
+          quote_currency?: string
+          taker_fee?: number | null
+        }
+        Relationships: []
+      }
       transactions: {
         Row: {
           amount: number
@@ -2202,6 +2891,20 @@ export type Database = {
         | "valuation_report"
         | "financial_statements"
       kyc_status: "not_started" | "pending" | "approved" | "rejected"
+      launchpad_status: "upcoming" | "active" | "completed" | "cancelled"
+      p2p_order_status:
+        | "open"
+        | "in_progress"
+        | "completed"
+        | "cancelled"
+        | "disputed"
+      p2p_payment_status:
+        | "pending"
+        | "paid"
+        | "confirmed"
+        | "released"
+        | "refunded"
+      staking_status: "active" | "completed" | "withdrawn"
       trading_account_type:
         | "demo"
         | "cent"
@@ -2209,6 +2912,7 @@ export type Database = {
         | "raw_ecn"
         | "pro_ecn"
         | "islamic"
+      wallet_type: "spot" | "funding" | "earn"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2350,6 +3054,22 @@ export const Constants = {
         "financial_statements",
       ],
       kyc_status: ["not_started", "pending", "approved", "rejected"],
+      launchpad_status: ["upcoming", "active", "completed", "cancelled"],
+      p2p_order_status: [
+        "open",
+        "in_progress",
+        "completed",
+        "cancelled",
+        "disputed",
+      ],
+      p2p_payment_status: [
+        "pending",
+        "paid",
+        "confirmed",
+        "released",
+        "refunded",
+      ],
+      staking_status: ["active", "completed", "withdrawn"],
       trading_account_type: [
         "demo",
         "cent",
@@ -2358,6 +3078,7 @@ export const Constants = {
         "pro_ecn",
         "islamic",
       ],
+      wallet_type: ["spot", "funding", "earn"],
     },
   },
 } as const
