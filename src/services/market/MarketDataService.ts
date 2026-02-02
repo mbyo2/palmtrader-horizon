@@ -1,4 +1,6 @@
 
+import { MockMarketDataService } from '../MockMarketDataService';
+
 export interface MarketData {
   symbol: string;
   price: number;
@@ -11,12 +13,12 @@ export interface MarketData {
   low?: number;
   close?: number;
   type?: string;
+  isDemo?: boolean;
 }
 
 export class MarketDataService {
   static async fetchLatestPrice(symbol: string): Promise<MarketData> {
     try {
-      // First try to get real-time data from Finnhub
       const { supabase } = await import("@/integrations/supabase/client");
       
       const { data, error } = await supabase.functions.invoke('finnhub-websocket', {
@@ -37,20 +39,23 @@ export class MarketDataService {
           high: data.high ?? data.h ?? price,
           low: data.low ?? data.l ?? price,
           close: price,
-          type: 'realtime'
+          type: data.isDemo ? 'demo' : 'realtime',
+          isDemo: data.isDemo || false
         };
 
-        // Cache in database (fire and forget)
-        supabase.from('market_data').upsert({
-          symbol: marketData.symbol,
-          price: marketData.price,
-          open: marketData.open,
-          high: marketData.high,
-          low: marketData.low,
-          close: marketData.close,
-          timestamp: marketData.timestamp,
-          type: 'realtime'
-        });
+        // Cache in database (fire and forget) - only for real data
+        if (!data.isDemo) {
+          supabase.from('market_data').upsert({
+            symbol: marketData.symbol,
+            price: marketData.price,
+            open: marketData.open,
+            high: marketData.high,
+            low: marketData.low,
+            close: marketData.close,
+            timestamp: marketData.timestamp,
+            type: 'realtime'
+          });
+        }
 
         return marketData;
       }
@@ -76,26 +81,24 @@ export class MarketDataService {
           high: cachedData.high,
           low: cachedData.low,
           close: cachedData.close,
-          type: 'cached'
+          type: 'cached',
+          isDemo: false
         };
       }
 
-      // Return a default if nothing else works
+      // Final fallback to mock data
+      const mockData = MockMarketDataService.getPrice(symbol);
       return {
-        symbol,
-        price: 0,
-        change: 0,
-        changePercent: 0,
-        type: 'unavailable'
+        ...mockData,
+        type: 'demo'
       };
     } catch (error) {
       console.error(`Error fetching price for ${symbol}:`, error);
+      // Return mock data on error
+      const mockData = MockMarketDataService.getPrice(symbol);
       return {
-        symbol,
-        price: 0,
-        change: 0,
-        changePercent: 0,
-        type: 'error'
+        ...mockData,
+        type: 'demo'
       };
     }
   }
@@ -125,14 +128,15 @@ export class MarketDataService {
           const dateObj = new Date(date);
           historicalData.push({
             symbol,
-            price: parseFloat(values['4. close']),
+            price: parseFloat((values as any)['4. close']),
             timestamp: dateObj.getTime(),
-            open: parseFloat(values['1. open']),
-            high: parseFloat(values['2. high']),
-            low: parseFloat(values['3. low']),
-            close: parseFloat(values['4. close']),
-            volume: parseInt(values['5. volume']),
-            type: 'historical'
+            open: parseFloat((values as any)['1. open']),
+            high: parseFloat((values as any)['2. high']),
+            low: parseFloat((values as any)['3. low']),
+            close: parseFloat((values as any)['4. close']),
+            volume: parseInt((values as any)['5. volume']),
+            type: 'historical',
+            isDemo: false
           });
         }
 
@@ -151,6 +155,12 @@ export class MarketDataService {
         }
 
         return historicalData.reverse(); // Return in ascending order
+      }
+
+      // Check for rate limit message
+      if (data?.Information?.includes('rate limit') || data?.Note) {
+        console.log('Alpha Vantage rate limited, using mock data');
+        return MockMarketDataService.getHistoricalData(symbol, days);
       }
 
       // Fallback to cached data
@@ -172,18 +182,21 @@ export class MarketDataService {
           low: item.low,
           close: item.close,
           volume: 0,
-          type: 'historical'
+          type: 'cached',
+          isDemo: false
         }));
       }
 
-      return [];
+      // Final fallback to mock data
+      return MockMarketDataService.getHistoricalData(symbol, days);
     } catch (error) {
       console.error(`Error fetching historical data for ${symbol}:`, error);
-      return [];
+      // Return mock data on error
+      return MockMarketDataService.getHistoricalData(symbol, days);
     }
   }
 
-  static async fetchMultipleLatestPrices(symbols: string[]): Promise<Array<{ symbol: string; price: number; change?: number; volume?: number }>> {
+  static async fetchMultipleLatestPrices(symbols: string[]): Promise<Array<{ symbol: string; price: number; change?: number; volume?: number; isDemo?: boolean }>> {
     try {
       const results = await Promise.allSettled(
         symbols.map(symbol => this.fetchLatestPrice(symbol))
@@ -197,12 +210,23 @@ export class MarketDataService {
             symbol: data.symbol,
             price: data.price,
             change: data.change,
-            volume: data.volume
+            volume: data.volume,
+            isDemo: data.isDemo
           };
         });
     } catch (error) {
       console.error('Error fetching multiple prices:', error);
-      return [];
+      // Return mock data for all symbols
+      return symbols.map(symbol => {
+        const mock = MockMarketDataService.getPrice(symbol);
+        return {
+          symbol: mock.symbol,
+          price: mock.price,
+          change: mock.change,
+          volume: mock.volume,
+          isDemo: true
+        };
+      });
     }
   }
 }
