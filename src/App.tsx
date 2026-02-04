@@ -46,6 +46,7 @@ import OptionsTrading from '@/pages/OptionsTrading';
 import MobileTrade from '@/pages/MobileTrade';
 import TradingAccounts from '@/pages/TradingAccounts';
 import Exchange from '@/pages/Exchange';
+import Research from '@/pages/Research';
 import { setupGlobalErrorHandlers } from '@/utils/errorHandling';
 
 const queryClient = new QueryClient({
@@ -74,6 +75,7 @@ function AppContent() {
           <Route path="/watchlist" element={<Watchlist />} />
           <Route path="/crypto" element={<Crypto />} />
           <Route path="/exchange" element={<Exchange />} />
+          <Route path="/research" element={<Research />} />
           <Route path="/ipo" element={<IPO />} />
           <Route path="/ipo/:id" element={<IPODetails />} />
           <Route path="/african-markets" element={<AfricanMarkets />} />

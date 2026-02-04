@@ -1,5 +1,5 @@
 
-import { Home, TrendingUp, PieChart, CreditCard, Shield, Settings, Building, Star, Bitcoin, Rocket, Globe, User, Bell, HelpCircle, Wallet } from "lucide-react";
+import { Home, TrendingUp, PieChart, CreditCard, Shield, Settings, Building, Star, Bitcoin, Rocket, Globe, User, Bell, HelpCircle, Wallet, BarChart3 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
@@ -16,6 +16,7 @@ const NavigationLinks = ({ onItemClick }: NavigationLinksProps) => {
   const navigationItems = [
     { to: "/", label: "Home", icon: Home },
     { to: "/markets", label: "Markets", icon: TrendingUp },
+    { to: "/research", label: "Research", icon: BarChart3 },
     ...(user ? [
       { to: "/portfolio", label: "Portfolio", icon: PieChart },
       { to: "/transfers", label: "Transfers", icon: CreditCard },
