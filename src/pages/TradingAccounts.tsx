@@ -5,6 +5,7 @@ import Footer from "@/components/Footer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AccountTypeSelector from "@/components/Trading/AccountTypeSelector";
 import TradingAccountsList from "@/components/Trading/TradingAccountsList";
+import { TradingAccountProvider } from "@/hooks/useTradingAccount";
 import { TradingAccount } from "@/services/TradingAccountService";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
