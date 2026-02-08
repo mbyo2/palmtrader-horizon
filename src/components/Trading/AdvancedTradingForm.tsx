@@ -11,8 +11,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, AlertTriangle, TrendingUp, TrendingDown, Settings } from "lucide-react";
 import { useTradingAccount } from "@/hooks/useTradingAccount";
 import { useRealTimePrice } from "@/hooks/useRealTimePrice";
-import { MarketDataService } from "@/services/MarketDataService";
-import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
+import { OrderExecutionService } from "@/services/OrderExecutionService";
 import StockSelector from "./StockSelector";
 import { toast } from "sonner";
 
@@ -21,7 +21,8 @@ interface AdvancedOrderFormProps {
 }
 
 const AdvancedTradingForm = ({ onOrderSubmit }: AdvancedOrderFormProps) => {
-  const { activeAccount, isDemo, getAvailableBalance } = useTradingAccount();
+  const { user } = useAuth();
+  const { activeAccount, isDemo, getAvailableBalance, refreshAccounts } = useTradingAccount();
   const [symbol, setSymbol] = useState("AAPL");
   const [side, setSide] = useState<"buy" | "sell">("buy");
   const [orderType, setOrderType] = useState<"market" | "limit" | "stop" | "stop_limit">("market");
@@ -45,6 +46,11 @@ const AdvancedTradingForm = ({ onOrderSubmit }: AdvancedOrderFormProps) => {
   const canAfford = marginRequired <= availableBalance;
 
   const handleSubmit = async () => {
+    if (!user) {
+      toast.error("Please sign in to trade");
+      return;
+    }
+
     if (!activeAccount) {
       toast.error("No active trading account");
       return;
@@ -60,7 +66,7 @@ const AdvancedTradingForm = ({ onOrderSubmit }: AdvancedOrderFormProps) => {
       return;
     }
 
-    if (orderType === 'stop' && !stopPrice) {
+    if ((orderType === 'stop' || orderType === 'stop_limit') && !stopPrice) {
       toast.error("Please enter a stop price");
       return;
     }
@@ -72,27 +78,47 @@ const AdvancedTradingForm = ({ onOrderSubmit }: AdvancedOrderFormProps) => {
 
     setIsSubmitting(true);
     try {
-      const order = {
-        symbol,
-        side,
-        orderType,
-        quantity,
-        limitPrice: limitPrice ? parseFloat(limitPrice) : undefined,
-        stopPrice: stopPrice ? parseFloat(stopPrice) : undefined,
-        timeInForce,
-        takeProfit: takeProfit ? parseFloat(takeProfit) : undefined,
-        stopLoss: stopLoss ? parseFloat(stopLoss) : undefined,
-        accountId: activeAccount.id
-      };
-
       if (onOrderSubmit) {
+        const order = {
+          symbol,
+          side,
+          orderType,
+          quantity,
+          limitPrice: limitPrice ? parseFloat(limitPrice) : undefined,
+          stopPrice: stopPrice ? parseFloat(stopPrice) : undefined,
+          timeInForce,
+          takeProfit: takeProfit ? parseFloat(takeProfit) : undefined,
+          stopLoss: stopLoss ? parseFloat(stopLoss) : undefined,
+          accountId: activeAccount.id
+        };
         await onOrderSubmit(order);
-      } else {
-        // Simulate order for demo
+      } else if (isDemo) {
+        // Simulate order for demo mode
+        await new Promise(resolve => setTimeout(resolve, 500));
         toast.success(`${side === 'buy' ? 'Buy' : 'Sell'} order placed: ${quantity} ${symbol} @ ${orderType === 'market' ? 'Market' : `$${orderPrice}`}`);
+      } else {
+        // Real order execution
+        const result = await OrderExecutionService.executeOrder({
+          userId: user.id,
+          symbol,
+          side,
+          quantity,
+          orderType,
+          limitPrice: limitPrice ? parseFloat(limitPrice) : undefined,
+          stopPrice: stopPrice ? parseFloat(stopPrice) : undefined,
+          timeInForce
+        });
+
+        if (result.success) {
+          toast.success(result.message || `Order ${result.status}: ${side === 'buy' ? 'Buy' : 'Sell'} ${quantity} ${symbol}`);
+          await refreshAccounts();
+        } else {
+          toast.error(result.error || "Failed to place order");
+        }
       }
     } catch (error) {
       toast.error("Failed to place order");
+      console.error("Order error:", error);
     } finally {
       setIsSubmitting(false);
     }

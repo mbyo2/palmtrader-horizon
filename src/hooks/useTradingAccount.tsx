@@ -24,43 +24,80 @@ export const TradingAccountProvider: React.FC<{ children: React.ReactNode }> = (
   const [accounts, setAccounts] = useState<TradingAccount[]>([]);
   const [activeAccount, setActiveAccountState] = useState<TradingAccount | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [initialized, setInitialized] = useState(false);
 
   const refreshAccounts = useCallback(async () => {
-    if (!user) return;
+    if (!user) {
+      setAccounts([]);
+      setActiveAccountState(null);
+      setIsLoading(false);
+      return;
+    }
     
     try {
       const data = await TradingAccountService.getUserAccounts();
       setAccounts(data);
       
-      // If no active account, set the first one or create a demo account
-      if (!activeAccount && data.length > 0) {
-        // Prefer demo account for new users
-        const demoAccount = data.find(a => a.account_type === 'demo');
-        setActiveAccountState(demoAccount || data[0]);
-      } else if (!activeAccount && data.length === 0) {
-        // Auto-create demo account for new users
-        const newDemo = await TradingAccountService.createAccount('demo', 'USD', 'Demo Account');
-        if (newDemo) {
-          setAccounts([newDemo]);
-          setActiveAccountState(newDemo);
+      // If we have an active account, update it with fresh data
+      if (activeAccount) {
+        const updatedActiveAccount = data.find(a => a.id === activeAccount.id);
+        if (updatedActiveAccount) {
+          setActiveAccountState(updatedActiveAccount);
         }
       }
+      
+      // If no active account but we have accounts, set one
+      if (!activeAccount && data.length > 0) {
+        const demoAccount = data.find(a => a.account_type === 'demo');
+        setActiveAccountState(demoAccount || data[0]);
+      }
     } catch (error) {
-      console.error("Error loading accounts:", error);
+      console.error("Error refreshing accounts:", error);
     }
   }, [user, activeAccount]);
 
-  useEffect(() => {
-    const initAccounts = async () => {
-      setIsLoading(true);
-      await refreshAccounts();
-      setIsLoading(false);
-    };
+  const initializeAccounts = useCallback(async () => {
+    if (!user || initialized) return;
     
-    if (user) {
-      initAccounts();
+    setIsLoading(true);
+    try {
+      const data = await TradingAccountService.getUserAccounts();
+      setAccounts(data);
+      
+      if (data.length > 0) {
+        // Prefer demo account for initial selection
+        const demoAccount = data.find(a => a.account_type === 'demo');
+        setActiveAccountState(demoAccount || data[0]);
+      } else {
+        // Auto-create demo account for new users
+        try {
+          const newDemo = await TradingAccountService.createAccount('demo', 'USD', 'Demo Account');
+          if (newDemo) {
+            setAccounts([newDemo]);
+            setActiveAccountState(newDemo);
+          }
+        } catch (createError) {
+          console.warn("Could not auto-create demo account:", createError);
+        }
+      }
+      setInitialized(true);
+    } catch (error) {
+      console.error("Error initializing accounts:", error);
+    } finally {
+      setIsLoading(false);
     }
-  }, [user, refreshAccounts]);
+  }, [user, initialized]);
+
+  useEffect(() => {
+    if (user) {
+      initializeAccounts();
+    } else {
+      setAccounts([]);
+      setActiveAccountState(null);
+      setInitialized(false);
+      setIsLoading(false);
+    }
+  }, [user, initializeAccounts]);
 
   const setActiveAccount = (account: TradingAccount) => {
     setActiveAccountState(account);
@@ -73,11 +110,16 @@ export const TradingAccountProvider: React.FC<{ children: React.ReactNode }> = (
       setActiveAccount(demoAccount);
     } else {
       // Create demo account if doesn't exist
-      const newDemo = await TradingAccountService.createAccount('demo', 'USD', 'Demo Account');
-      if (newDemo) {
-        setAccounts(prev => [...prev, newDemo]);
-        setActiveAccountState(newDemo);
-        toast.success("Demo account created with $100,000 virtual funds");
+      try {
+        const newDemo = await TradingAccountService.createAccount('demo', 'USD', 'Demo Account');
+        if (newDemo) {
+          setAccounts(prev => [...prev, newDemo]);
+          setActiveAccountState(newDemo);
+          toast.success("Demo account created with $100,000 virtual funds");
+        }
+      } catch (error) {
+        console.error("Failed to create demo account:", error);
+        toast.error("Failed to create demo account");
       }
     }
   };

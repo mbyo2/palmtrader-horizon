@@ -89,16 +89,22 @@ const WatchlistButton = ({ symbol }: WatchlistButtonProps) => {
   };
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="p-2">
+        <Star className="h-6 w-6 text-muted-foreground animate-pulse" />
+      </div>
+    );
   }
 
   return (
     <button
       onClick={toggleWatchlist}
+      aria-label={isInWatchlist ? `Remove ${symbol} from watchlist` : `Add ${symbol} to watchlist`}
+      title={isInWatchlist ? `Remove ${symbol} from watchlist` : `Add ${symbol} to watchlist`}
       className={`p-2 rounded-full transition-colors ${
         isInWatchlist
           ? "text-yellow-500 hover:text-yellow-600"
-          : "text-gray-400 hover:text-gray-500"
+          : "text-muted-foreground hover:text-foreground"
       }`}
     >
       <Star className="h-6 w-6" fill={isInWatchlist ? "currentColor" : "none"} />
