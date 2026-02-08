@@ -19,13 +19,17 @@ interface AccountDetails {
   tax_id?: string;
 }
 
+type AppRole = 'admin' | 'moderator' | 'user' | 'premium';
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
   accountDetails: AccountDetails | null;
+  userRoles: AppRole[];
   signOut: () => Promise<void>;
   isAdmin: () => boolean;
+  hasRole: (role: AppRole) => boolean;
   requireAuth: (callback: () => void) => void;
   refetchAccountDetails: () => Promise<void>;
 }
@@ -35,8 +39,10 @@ const AuthContext = createContext<AuthContextType>({
   session: null,
   loading: true,
   accountDetails: null,
+  userRoles: [],
   signOut: async () => {},
   isAdmin: () => false,
+  hasRole: () => false,
   requireAuth: () => {},
   refetchAccountDetails: async () => {},
 });
@@ -57,6 +63,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [accountDetails, setAccountDetails] = useState<AccountDetails | null>(null);
+  const [userRoles, setUserRoles] = useState<AppRole[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -76,6 +83,32 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
+  const fetchUserRoles = async (userId: string) => {
+    try {
+      // Use the security definer function to get roles safely
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId);
+
+      if (error) {
+        console.error('Error fetching user roles:', error);
+        setUserRoles(['user']); // Default to user role on error
+        return;
+      }
+
+      if (data && data.length > 0) {
+        setUserRoles(data.map(r => r.role as AppRole));
+      } else {
+        // If no roles found, user should have default 'user' role
+        setUserRoles(['user']);
+      }
+    } catch (error) {
+      console.error('Error fetching user roles:', error);
+      setUserRoles(['user']);
+    }
+  };
+
   useEffect(() => {
     // Set up auth state listener FIRST
     const {
@@ -84,8 +117,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
+        // Defer data loading to prevent auth deadlock
         setTimeout(() => {
           fetchAccountDetails(session.user.id);
+          fetchUserRoles(session.user.id);
           // Initialize wallet for user on sign in
           if (event === 'SIGNED_IN') {
             UserInitService.initializeNewUser(
@@ -96,6 +131,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         }, 0);
       } else {
         setAccountDetails(null);
+        setUserRoles([]);
       }
       setLoading(false);
     });
@@ -106,6 +142,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setUser(session?.user ?? null);
       if (session?.user) {
         fetchAccountDetails(session.user.id);
+        fetchUserRoles(session.user.id);
       }
       setLoading(false);
     });
@@ -117,6 +154,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     try {
       await supabase.auth.signOut();
       setAccountDetails(null);
+      setUserRoles([]);
       navigate('/');
       toast({
         title: 'Signed out successfully',
@@ -132,8 +170,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
+  // Check admin status using the secure user_roles table
   const isAdmin = () => {
-    return accountDetails?.role === 'admin';
+    return userRoles.includes('admin');
+  };
+
+  // Check if user has a specific role
+  const hasRole = (role: AppRole) => {
+    return userRoles.includes(role);
   };
 
   const requireAuth = (callback: () => void) => {
@@ -151,7 +195,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const refetchAccountDetails = async () => {
     if (user) {
-      await fetchAccountDetails(user.id);
+      await Promise.all([
+        fetchAccountDetails(user.id),
+        fetchUserRoles(user.id)
+      ]);
     }
   };
 
@@ -161,8 +208,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       session, 
       loading, 
       accountDetails,
+      userRoles,
       signOut, 
       isAdmin,
+      hasRole,
       requireAuth,
       refetchAccountDetails
     }}>

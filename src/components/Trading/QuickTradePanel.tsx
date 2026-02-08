@@ -3,10 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTradingAccount } from "@/hooks/useTradingAccount";
 import { useRealTimePrice } from "@/hooks/useRealTimePrice";
-import { TrendingUp, TrendingDown, Zap, AlertTriangle } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { OrderExecutionService } from "@/services/OrderExecutionService";
+import { TrendingUp, TrendingDown, Zap, AlertTriangle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface QuickTradePanelProps {
@@ -17,7 +18,8 @@ interface QuickTradePanelProps {
 const QUICK_AMOUNTS = [100, 500, 1000, 2500, 5000];
 
 const QuickTradePanel = ({ symbol, onTrade }: QuickTradePanelProps) => {
-  const { activeAccount, isDemo, getAvailableBalance } = useTradingAccount();
+  const { user } = useAuth();
+  const { activeAccount, isDemo, getAvailableBalance, refreshAccounts } = useTradingAccount();
   const { price, change, changePercent, isLoading } = useRealTimePrice(symbol);
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [customAmount, setCustomAmount] = useState("");
@@ -29,6 +31,11 @@ const QuickTradePanel = ({ symbol, onTrade }: QuickTradePanelProps) => {
   const shares = price ? tradeAmount / price : 0;
 
   const handleQuickTrade = async (type: 'buy' | 'sell') => {
+    if (!user) {
+      toast.error("Please sign in to trade");
+      return;
+    }
+
     if (!tradeAmount || tradeAmount <= 0) {
       toast.error("Please select or enter an amount");
       return;
@@ -39,16 +46,41 @@ const QuickTradePanel = ({ symbol, onTrade }: QuickTradePanelProps) => {
       return;
     }
 
+    if (!price) {
+      toast.error("Unable to get current price");
+      return;
+    }
+
     setIsExecuting(true);
     try {
       if (onTrade) {
         await onTrade(type, tradeAmount);
-      } else {
-        // Simulate trade for now
+      } else if (isDemo) {
+        // Simulate trade for demo mode
+        await new Promise(resolve => setTimeout(resolve, 500));
         toast.success(`${type === 'buy' ? 'Bought' : 'Sold'} ${shares.toFixed(4)} shares of ${symbol} for $${tradeAmount.toLocaleString()}`);
+        await refreshAccounts();
+      } else {
+        // Real trade execution
+        const result = await OrderExecutionService.executeOrder({
+          userId: user.id,
+          symbol,
+          side: type,
+          quantity: Math.floor(shares),
+          orderType: 'market',
+          timeInForce: 'day'
+        });
+
+        if (result.success) {
+          toast.success(result.message || `Order ${result.status}: ${type === 'buy' ? 'Bought' : 'Sold'} ${symbol}`);
+          await refreshAccounts();
+        } else {
+          toast.error(result.error || "Trade execution failed");
+        }
       }
     } catch (error) {
       toast.error("Trade execution failed");
+      console.error("Trade error:", error);
     } finally {
       setIsExecuting(false);
       setSelectedAmount(null);
@@ -161,19 +193,27 @@ const QuickTradePanel = ({ symbol, onTrade }: QuickTradePanelProps) => {
           <Button
             size="lg"
             className="bg-green-500 hover:bg-green-600 text-white"
-            disabled={!tradeAmount || !canAfford || isExecuting}
+            disabled={!tradeAmount || !canAfford || isExecuting || !price}
             onClick={() => handleQuickTrade('buy')}
           >
-            <TrendingUp className="h-4 w-4 mr-2" />
+            {isExecuting ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <TrendingUp className="h-4 w-4 mr-2" />
+            )}
             Buy
           </Button>
           <Button
             size="lg"
             variant="destructive"
-            disabled={!tradeAmount || isExecuting}
+            disabled={!tradeAmount || isExecuting || !price}
             onClick={() => handleQuickTrade('sell')}
           >
-            <TrendingDown className="h-4 w-4 mr-2" />
+            {isExecuting ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <TrendingDown className="h-4 w-4 mr-2" />
+            )}
             Sell
           </Button>
         </div>

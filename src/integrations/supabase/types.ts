@@ -2753,6 +2753,30 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       wallet_balances: {
         Row: {
           available_balance: number
@@ -2867,6 +2891,18 @@ export type Database = {
         Args: { target_user_id: string }
         Returns: number
       }
+      get_user_roles: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"][]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
       update_wallet_balance: {
         Args: {
           p_amount: number
@@ -2880,6 +2916,7 @@ export type Database = {
     Enums: {
       account_role: "basic" | "premium" | "admin"
       account_status: "pending" | "active" | "restricted" | "suspended"
+      app_role: "admin" | "moderator" | "user" | "premium"
       business_verification_status: "pending" | "approved" | "rejected"
       document_type:
         | "prospectus"
@@ -3042,6 +3079,7 @@ export const Constants = {
     Enums: {
       account_role: ["basic", "premium", "admin"],
       account_status: ["pending", "active", "restricted", "suspended"],
+      app_role: ["admin", "moderator", "user", "premium"],
       business_verification_status: ["pending", "approved", "rejected"],
       document_type: [
         "prospectus",
