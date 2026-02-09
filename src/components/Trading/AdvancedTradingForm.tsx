@@ -12,7 +12,7 @@ import { Loader2, AlertTriangle, TrendingUp, TrendingDown, Settings } from "luci
 import { useTradingAccount } from "@/hooks/useTradingAccount";
 import { useRealTimePrice } from "@/hooks/useRealTimePrice";
 import { useAuth } from "@/hooks/useAuth";
-import { OrderExecutionService } from "@/services/OrderExecutionService";
+import { OrderExecutionEngine } from "@/services/OrderExecutionEngine";
 import StockSelector from "./StockSelector";
 import { toast } from "sonner";
 
@@ -92,25 +92,25 @@ const AdvancedTradingForm = ({ onOrderSubmit }: AdvancedOrderFormProps) => {
           accountId: activeAccount.id
         };
         await onOrderSubmit(order);
-      } else if (isDemo) {
-        // Simulate order for demo mode
-        await new Promise(resolve => setTimeout(resolve, 500));
-        toast.success(`${side === 'buy' ? 'Buy' : 'Sell'} order placed: ${quantity} ${symbol} @ ${orderType === 'market' ? 'Market' : `$${orderPrice}`}`);
       } else {
-        // Real order execution
-        const result = await OrderExecutionService.executeOrder({
+        const result = await OrderExecutionEngine.executeOrder({
           userId: user.id,
           symbol,
-          side,
-          quantity,
-          orderType,
+          type: side,
+          shares: quantity,
+          price: orderPrice,
+          orderType: orderType === 'stop_limit' ? 'stop_limit' : orderType,
           limitPrice: limitPrice ? parseFloat(limitPrice) : undefined,
           stopPrice: stopPrice ? parseFloat(stopPrice) : undefined,
-          timeInForce
+          timeInForce: timeInForce.toUpperCase() as any,
         });
 
         if (result.success) {
-          toast.success(result.message || `Order ${result.status}: ${side === 'buy' ? 'Buy' : 'Sell'} ${quantity} ${symbol}`);
+          toast.success(
+            result.executedPrice
+              ? `${side === 'buy' ? 'Bought' : 'Sold'} ${result.executedShares || quantity} ${symbol} at $${result.executedPrice.toFixed(2)}`
+              : `Order placed: ${side === 'buy' ? 'Buy' : 'Sell'} ${quantity} ${symbol}`
+          );
           await refreshAccounts();
         } else {
           toast.error(result.error || "Failed to place order");

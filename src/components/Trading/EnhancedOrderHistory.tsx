@@ -9,8 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Search, Filter, Download, RefreshCw } from "lucide-react";
+import { Search, Filter, Download, RefreshCw, XCircle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { OrderExecutionEngine } from "@/services/OrderExecutionEngine";
 
 interface TradeRecord {
   id: string;
@@ -29,6 +30,7 @@ const EnhancedOrderHistory = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
 
   const { data: trades = [], isLoading, refetch } = useQuery({
     queryKey: ["orderHistory", user?.id, statusFilter, typeFilter],
@@ -162,6 +164,24 @@ const EnhancedOrderHistory = () => {
     toast.success("Order history exported successfully");
   };
 
+  const handleCancelOrder = async (orderId: string) => {
+    if (!user) return;
+    setCancellingId(orderId);
+    try {
+      const result = await OrderExecutionEngine.cancelOrder(orderId, user.id);
+      if (result.success) {
+        toast.success("Order cancelled successfully");
+        refetch();
+      } else {
+        toast.error(result.error || "Failed to cancel order");
+      }
+    } catch (error) {
+      toast.error("Failed to cancel order");
+    } finally {
+      setCancellingId(null);
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -230,18 +250,19 @@ const EnhancedOrderHistory = () => {
                 <TableHead>Total</TableHead>
                 <TableHead>Order Type</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8">
+                  <TableCell colSpan={9} className="text-center py-8">
                     Loading orders...
                   </TableCell>
                 </TableRow>
               ) : filteredTrades.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                     No orders found
                   </TableCell>
                 </TableRow>
@@ -265,6 +286,23 @@ const EnhancedOrderHistory = () => {
                       <Badge variant={getStatusBadgeVariant(trade.status)}>
                         {trade.status.toUpperCase()}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {trade.status === 'pending' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleCancelOrder(trade.id)}
+                          disabled={cancellingId === trade.id}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          {cancellingId === trade.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <XCircle className="h-4 w-4" />
+                          )}
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))
