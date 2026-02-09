@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { TradingAccountService, TradingAccount, TradingAccountType } from "@/services/TradingAccountService";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 interface TradingAccountContextType {
@@ -56,6 +57,29 @@ export const TradingAccountProvider: React.FC<{ children: React.ReactNode }> = (
     }
   }, [user, activeAccount]);
 
+  const ensureWalletExists = useCallback(async (balance: number) => {
+    if (!user) return;
+    try {
+      const { data: wallet } = await supabase
+        .from('wallets')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('currency', 'USD')
+        .single();
+
+      if (!wallet) {
+        await supabase.from('wallets').insert({
+          user_id: user.id,
+          currency: 'USD',
+          available_balance: balance,
+          reserved_balance: 0
+        });
+      }
+    } catch {
+      // Wallet may already exist
+    }
+  }, [user]);
+
   const initializeAccounts = useCallback(async () => {
     if (!user || initialized) return;
     
@@ -65,16 +89,16 @@ export const TradingAccountProvider: React.FC<{ children: React.ReactNode }> = (
       setAccounts(data);
       
       if (data.length > 0) {
-        // Prefer demo account for initial selection
         const demoAccount = data.find(a => a.account_type === 'demo');
         setActiveAccountState(demoAccount || data[0]);
+        await ensureWalletExists(demoAccount?.balance || data[0].balance);
       } else {
-        // Auto-create demo account for new users
         try {
           const newDemo = await TradingAccountService.createAccount('demo', 'USD', 'Demo Account');
           if (newDemo) {
             setAccounts([newDemo]);
             setActiveAccountState(newDemo);
+            await ensureWalletExists(newDemo.balance);
           }
         } catch (createError) {
           console.warn("Could not auto-create demo account:", createError);
@@ -86,7 +110,7 @@ export const TradingAccountProvider: React.FC<{ children: React.ReactNode }> = (
     } finally {
       setIsLoading(false);
     }
-  }, [user, initialized]);
+  }, [user, initialized, ensureWalletExists]);
 
   useEffect(() => {
     if (user) {

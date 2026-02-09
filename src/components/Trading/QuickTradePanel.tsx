@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { useTradingAccount } from "@/hooks/useTradingAccount";
 import { useRealTimePrice } from "@/hooks/useRealTimePrice";
 import { useAuth } from "@/hooks/useAuth";
-import { OrderExecutionService } from "@/services/OrderExecutionService";
+import { OrderExecutionEngine } from "@/services/OrderExecutionEngine";
 import { TrendingUp, TrendingDown, Zap, AlertTriangle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -55,24 +55,22 @@ const QuickTradePanel = ({ symbol, onTrade }: QuickTradePanelProps) => {
     try {
       if (onTrade) {
         await onTrade(type, tradeAmount);
-      } else if (isDemo) {
-        // Simulate trade for demo mode
-        await new Promise(resolve => setTimeout(resolve, 500));
-        toast.success(`${type === 'buy' ? 'Bought' : 'Sold'} ${shares.toFixed(4)} shares of ${symbol} for $${tradeAmount.toLocaleString()}`);
-        await refreshAccounts();
       } else {
-        // Real trade execution
-        const result = await OrderExecutionService.executeOrder({
+        const quantityToTrade = Math.max(Math.floor(shares), 1);
+        const result = await OrderExecutionEngine.executeOrder({
           userId: user.id,
           symbol,
-          side: type,
-          quantity: Math.floor(shares),
+          type,
+          shares: quantityToTrade,
+          price,
           orderType: 'market',
-          timeInForce: 'day'
+          isFractional: shares < 1,
         });
 
         if (result.success) {
-          toast.success(result.message || `Order ${result.status}: ${type === 'buy' ? 'Bought' : 'Sold'} ${symbol}`);
+          toast.success(
+            `${type === 'buy' ? 'Bought' : 'Sold'} ${result.executedShares || quantityToTrade} shares of ${symbol} at $${(result.executedPrice || price).toFixed(2)}`
+          );
           await refreshAccounts();
         } else {
           toast.error(result.error || "Trade execution failed");
