@@ -14,6 +14,8 @@ import PositionSizer from "@/components/Trading/PositionSizer";
 import RiskMetricsPanel from "@/components/Trading/RiskMetricsPanel";
 import AccountTypeSelector from "@/components/Trading/AccountTypeSelector";
 import TradingAccountsList from "@/components/Trading/TradingAccountsList";
+import RealTimeChart from "@/components/Trading/RealTimeChart";
+import StockSelector from "@/components/Trading/StockSelector";
 import { TradingAccountProvider, useTradingAccount } from "@/hooks/useTradingAccount";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -22,7 +24,7 @@ import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 
 const PortfolioContent = () => {
   const { activeAccount, isLoading: isAccountLoading } = useTradingAccount();
-  const [selectedSymbol] = useState("AAPL");
+  const [selectedSymbol, setSelectedSymbol] = useState("AAPL");
   const [showAccountSelector, setShowAccountSelector] = useState(false);
   const [tradingView, setTradingView] = useState<'quick' | 'advanced'>('quick');
 
@@ -74,8 +76,14 @@ const PortfolioContent = () => {
         {/* Trading Tab */}
         <TabsContent value="trading" className="space-y-4 sm:space-y-6 mt-4">
           <TradingErrorBoundary>
+            {/* Stock Selector */}
+            <StockSelector symbol={selectedSymbol} onSymbolChange={setSelectedSymbol} />
+
+            {/* Real-time Chart */}
+            <RealTimeChart symbol={selectedSymbol} height={350} />
+
             {/* Trading View Toggle */}
-            <div className="flex items-center gap-2 mb-4">
+            <div className="flex items-center gap-2">
               <Button
                 variant={tradingView === 'quick' ? 'default' : 'outline'}
                 size="sm"

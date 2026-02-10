@@ -9,9 +9,7 @@ interface NavigationLinksProps {
 }
 
 const NavigationLinks = ({ onItemClick }: NavigationLinksProps) => {
-  const { user, accountDetails } = useAuth();
-
-  const isAdmin = accountDetails?.role === 'admin';
+  const { user, isAdmin } = useAuth();
 
   const navigationItems = [
     { to: "/", label: "Home", icon: Home },
@@ -30,7 +28,7 @@ const NavigationLinks = ({ onItemClick }: NavigationLinksProps) => {
       { to: "/profile", label: "Profile", icon: User },
       { to: "/settings", label: "Settings", icon: Settings },
     ] : []),
-    ...(isAdmin ? [
+    ...(isAdmin() ? [
       { to: "/admin", label: "Admin", icon: Settings },
     ] : []),
     { to: "/help", label: "Help", icon: HelpCircle },

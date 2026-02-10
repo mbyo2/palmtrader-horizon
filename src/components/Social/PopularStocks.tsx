@@ -81,7 +81,7 @@ const PopularStocks = () => {
   return (
     <div className="space-y-2">
       {stocks?.map((stock) => (
-        <Link to={`/stocks/${stock.symbol}`} key={stock.symbol}>
+        <Link to={`/trade/${stock.symbol}`} key={stock.symbol}>
           <Card className="p-4 hover:shadow-lg transition-shadow cursor-pointer">
             <div className="flex justify-between items-center">
               <div>
