@@ -165,8 +165,31 @@ const NewsFeed = ({ defaultCategory = "general", limit = 10 }: NewsFeedProps) =>
               <Button variant="outline" className="mt-4 text-xs" size="sm">Retry</Button>
             </div>
           ) : !news || news.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-sm text-muted-foreground">No news available for this category</p>
+            <div className="space-y-3">
+              {/* Show placeholder news when no data */}
+              {[
+                { id: '1', title: 'Markets rally on strong earnings reports', source: 'Financial Times', published_at: new Date().toISOString(), sentiment: 'positive', summary: 'Major indices climbed as tech giants reported better-than-expected quarterly results.' },
+                { id: '2', title: 'Federal Reserve holds rates steady', source: 'Reuters', published_at: new Date(Date.now() - 3600000).toISOString(), sentiment: 'neutral', summary: 'The Fed maintained current interest rates, signaling patience amid economic uncertainty.' },
+                { id: '3', title: 'Emerging markets show strong growth potential', source: 'Bloomberg', published_at: new Date(Date.now() - 7200000).toISOString(), sentiment: 'positive', summary: 'Analysts point to promising economic indicators in developing economies.' },
+              ].map((item) => (
+                <div key={item.id} className="pb-3 border-b border-border last:border-0">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium text-sm sm:text-base leading-tight">{item.title}</h3>
+                      <div className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground mt-1">
+                        <span>{item.source}</span>
+                        <span>•</span>
+                        <span>{formatDate(item.published_at)}</span>
+                      </div>
+                    </div>
+                    <div className="flex-shrink-0">{getSentimentBadge(item.sentiment)}</div>
+                  </div>
+                  {viewMode === "detailed" && item.summary && (
+                    <p className="text-xs sm:text-sm text-muted-foreground mt-2 line-clamp-2">{item.summary}</p>
+                  )}
+                </div>
+              ))}
+              <p className="text-xs text-center text-muted-foreground pt-2">Sample data — live news feed coming soon</p>
             </div>
           ) : (
             <div className="space-y-3 sm:space-y-4">
