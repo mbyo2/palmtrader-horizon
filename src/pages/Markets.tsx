@@ -39,30 +39,15 @@ const Markets = () => {
 
   // Subscribe to real-time updates for the current symbol
   useEffect(() => {
-    console.log(`Setting up real-time updates for ${symbol}`);
-    
-    // Subscribe to real-time updates
     finnhubSocket.subscribe(symbol);
     
-    // Set up the handler for real-time data
     const unsubscribe = finnhubSocket.onMarketData((data) => {
-      if (data.symbol === symbol && data.price) {
-        console.log(`Real-time update received for ${symbol}: ${data.price}`);
-        
-        // Update the lastUpdate timestamp to trigger a refetch
+      if (data.symbol === symbol && data.price && data.price > 0) {
         setLastUpdate(new Date());
-        
-        // Show a toast notification
-        toast.success(`${symbol} updated: $${data.price.toFixed(2)}`);
       }
     });
     
-    // Notify the user that real-time data is enabled
-    toast.info(`Now receiving market data for ${symbol}`);
-    
-    // Cleanup on unmount or when symbol changes
     return () => {
-      console.log(`Cleaning up real-time updates for ${symbol}`);
       finnhubSocket.unsubscribe(symbol);
       unsubscribe();
     };

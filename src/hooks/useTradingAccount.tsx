@@ -62,7 +62,7 @@ export const TradingAccountProvider: React.FC<{ children: React.ReactNode }> = (
     try {
       const { data: wallet } = await supabase
         .from('wallets')
-        .select('id')
+        .select('id, available_balance')
         .eq('user_id', user.id)
         .eq('currency', 'USD')
         .single();
@@ -74,6 +74,12 @@ export const TradingAccountProvider: React.FC<{ children: React.ReactNode }> = (
           available_balance: balance,
           reserved_balance: 0
         });
+      } else if (wallet.available_balance < balance) {
+        // Sync wallet balance up to match trading account
+        await supabase.from('wallets')
+          .update({ available_balance: balance, updated_at: new Date().toISOString() })
+          .eq('user_id', user.id)
+          .eq('currency', 'USD');
       }
     } catch {
       // Wallet may already exist
