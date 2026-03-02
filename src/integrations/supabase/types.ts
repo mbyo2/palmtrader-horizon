@@ -2404,6 +2404,7 @@ export type Database = {
           total_amount: number
           trailing_percent: number | null
           type: string
+          updated_at: string | null
           user_id: string
         }
         Insert: {
@@ -2427,6 +2428,7 @@ export type Database = {
           total_amount: number
           trailing_percent?: number | null
           type: string
+          updated_at?: string | null
           user_id: string
         }
         Update: {
@@ -2450,6 +2452,7 @@ export type Database = {
           total_amount?: number
           trailing_percent?: number | null
           type?: string
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: []
