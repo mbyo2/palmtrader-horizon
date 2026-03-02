@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { TradingService } from '@/services/TradingService';
+import { OrderExecutionEngine } from '@/services/OrderExecutionEngine';
 import { Loader2 } from 'lucide-react';
 import { useCryptoData } from '@/hooks/useCryptoData';
 
@@ -87,18 +87,18 @@ export default function CryptoTrading() {
     setIsSubmitting(true);
 
     try {
-      // Use the TradingService to execute the crypto order
-      const { success, error } = await TradingService.executeOrder({
+      // Use the OrderExecutionEngine for proper wallet/portfolio sync
+      const result = await OrderExecutionEngine.executeOrder({
         userId: user.id,
         symbol: selectedCrypto.ticker,
         type: orderType,
         shares: quantity,
         price: cryptoPrice,
-        orderType: "market", // Crypto orders are always market orders in this implementation
-        isFractional: true,  // Crypto is always fractional
+        orderType: "market",
+        isFractional: true,
       });
 
-      if (!success) throw new Error(error);
+      if (!result.success) throw new Error(result.error);
 
       toast.success(`${orderType === 'buy' ? 'Bought' : 'Sold'} ${quantity.toFixed(8)} ${selectedCrypto.ticker} for $${amount.toFixed(2)}`);
       

@@ -56,20 +56,20 @@ const QuickTradePanel = ({ symbol, onTrade }: QuickTradePanelProps) => {
       if (onTrade) {
         await onTrade(type, tradeAmount);
       } else {
-        const quantityToTrade = Math.max(Math.floor(shares), 1);
+        // Use fractional shares for dollar-based trading
         const result = await OrderExecutionEngine.executeOrder({
           userId: user.id,
           symbol,
           type,
-          shares: quantityToTrade,
+          shares: shares,
           price,
           orderType: 'market',
-          isFractional: shares < 1,
+          isFractional: true,
         });
 
         if (result.success) {
           toast.success(
-            `${type === 'buy' ? 'Bought' : 'Sold'} ${result.executedShares || quantityToTrade} shares of ${symbol} at $${(result.executedPrice || price).toFixed(2)}`
+            `${type === 'buy' ? 'Bought' : 'Sold'} ${(result.executedShares || shares).toFixed(4)} shares of ${symbol} at $${(result.executedPrice || price).toFixed(2)}`
           );
           await refreshAccounts();
         } else {
