@@ -67,7 +67,7 @@ export class MarketDataService {
         .eq('symbol', symbol)
         .order('timestamp', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (cachedData) {
         return {
@@ -126,41 +126,43 @@ export class MarketDataService {
 
         for (const [date, values] of entries) {
           const dateObj = new Date(date);
+          const closePrice = parseFloat((values as any)['4. close']);
           historicalData.push({
             symbol,
-            price: parseFloat((values as any)['4. close']),
+            price: closePrice,
             timestamp: dateObj.getTime(),
             open: parseFloat((values as any)['1. open']),
             high: parseFloat((values as any)['2. high']),
             low: parseFloat((values as any)['3. low']),
-            close: parseFloat((values as any)['4. close']),
+            close: closePrice,
             volume: parseInt((values as any)['5. volume']),
             type: 'historical',
             isDemo: false
           });
         }
 
-        // Cache in database
-        for (const item of historicalData) {
-          await supabase.from('market_data').upsert({
-            symbol: item.symbol,
-            price: item.price,
-            open: item.open,
-            high: item.high,
-            low: item.low,
-            close: item.close,
-            timestamp: item.timestamp,
-            type: 'daily'
-          });
+        // Cache in database (batch, fire-and-forget)
+        if (historicalData.length > 0) {
+          supabase.from('market_data').upsert(
+            historicalData.map(item => ({
+              symbol: item.symbol,
+              price: item.price,
+              open: item.open,
+              high: item.high,
+              low: item.low,
+              close: item.close,
+              timestamp: item.timestamp,
+              type: 'daily'
+            }))
+          ).then(() => {});
         }
 
         return historicalData.reverse(); // Return in ascending order
       }
 
-      // Check for rate limit message
-      if (data?.Information?.includes('rate limit') || data?.Note) {
-        console.log('Alpha Vantage rate limited, using mock data');
-        return MockMarketDataService.getHistoricalData(symbol, days);
+      // Check for rate limit message or any error response
+      if (data?.Information || data?.Note || error) {
+        // Fall through to cached/mock data
       }
 
       // Fallback to cached data

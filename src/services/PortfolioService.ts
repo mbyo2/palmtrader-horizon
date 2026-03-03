@@ -101,7 +101,7 @@ export class PortfolioService {
       .select("*")
       .eq("user_id", userId)
       .eq("symbol", symbol)
-      .single();
+      .maybeSingle();
 
     if (error || !data) return null;
 

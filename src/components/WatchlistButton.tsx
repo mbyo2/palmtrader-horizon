@@ -32,7 +32,7 @@ const WatchlistButton = ({ symbol }: WatchlistButtonProps) => {
         .select()
         .eq("user_id", session.session.user.id)
         .eq("symbol", symbol)
-        .single();
+        .maybeSingle();
 
       setIsInWatchlist(!!data);
       setIsLoading(false);
