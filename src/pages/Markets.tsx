@@ -1,41 +1,22 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
-import AdvancedChart from "@/components/Research/AdvancedChart";
 import ResearchTools from "@/components/Research/ResearchTools";
 import { MarketDataService } from "@/services/MarketDataService";
-import { Card } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { finnhubSocket } from "@/utils/finnhubSocket";
 import MarketOverview from "@/components/MarketOverview";
 import TradingInterface from "@/components/Trading/TradingInterface";
 import RealTimeChart from "@/components/Trading/RealTimeChart";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TechnicalIndicatorService } from "@/services/TechnicalIndicatorService";
 import TechnicalIndicators from "@/components/TechnicalIndicators";
 import SocialShare from "@/components/Social/SocialShare";
 import Comments from "@/components/Social/Comments";
-import { MarketData } from "@/services/market/types";
+import { Card } from "@/components/ui/card";
 
 const Markets = () => {
   const [symbol, setSymbol] = useState("AAPL");
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
-  
-  const { data: marketData = [], isLoading, error, refetch } = useQuery({
-    queryKey: ['marketData', symbol, lastUpdate],
-    queryFn: () => MarketDataService.fetchHistoricalData(symbol, 90),
-    retry: 2,
-    refetchOnWindowFocus: false,
-    staleTime: 60000 // Consider data stale after 1 minute
-  });
-
-  // Preload technical indicators for the current symbol
-  useQuery({
-    queryKey: ["technical-indicators", symbol],
-    queryFn: () => TechnicalIndicatorService.getIndicators(symbol),
-    staleTime: 1000 * 60 * 5, // 5 minutes
-  });
 
   // Subscribe to real-time updates for the current symbol
   useEffect(() => {
@@ -53,45 +34,32 @@ const Markets = () => {
     };
   }, [symbol]);
 
-  useEffect(() => {
-    if (error) {
-      toast.error("Error fetching market data. Using demo data instead.");
-      console.error("Market data error:", error);
-    }
-  }, [error]);
-
-  // Handle symbol change (will be triggered by the ResearchTools component)
   const handleSymbolChange = (newSymbol: string) => {
-    console.log(`Changing symbol from ${symbol} to ${newSymbol}`);
     setSymbol(newSymbol);
   };
 
   return (
-    <div className="container py-4 sm:py-6 px-3 sm:px-4">
-      <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6">Markets</h1>
+    <div className="container py-4 sm:py-6 px-3 sm:px-4 space-y-6">
+      <h1 className="text-2xl sm:text-3xl font-bold">Markets</h1>
       
-      {/* Market Overview section with real-time updates */}
-      <div className="mb-6 sm:mb-8">
-        <h2 className="text-xl sm:text-2xl font-semibold mb-3 sm:mb-4">Market Overview</h2>
+      {/* Market Overview */}
+      <section>
+        <h2 className="text-lg sm:text-xl font-semibold mb-3">Market Overview</h2>
         <MarketOverview />
-      </div>
+      </section>
       
-      <Tabs defaultValue="chart" className="space-y-4 sm:space-y-6">
+      <Tabs defaultValue="chart" className="space-y-4">
         <TabsList className="grid w-full grid-cols-3 h-auto">
-          <TabsTrigger value="chart" className="text-xs sm:text-sm px-2 sm:px-4">Charts</TabsTrigger>
-          <TabsTrigger value="trading" className="text-xs sm:text-sm px-2 sm:px-4">Trading</TabsTrigger>
-          <TabsTrigger value="social" className="text-xs sm:text-sm px-2 sm:px-4">Social</TabsTrigger>
+          <TabsTrigger value="chart" className="text-xs sm:text-sm">Charts</TabsTrigger>
+          <TabsTrigger value="trading" className="text-xs sm:text-sm">Trading</TabsTrigger>
+          <TabsTrigger value="social" className="text-xs sm:text-sm">Social</TabsTrigger>
         </TabsList>
         
-        <TabsContent value="chart" className="space-y-4 sm:space-y-6 mt-4">
-          {/* Real-time streaming chart */}
-          <RealTimeChart symbol={symbol} height={450} />
+        <TabsContent value="chart" className="space-y-6 mt-4">
+          {/* Single real-time chart - no duplicate */}
+          <RealTimeChart symbol={symbol} height={350} />
           
-          {/* Historical data chart with technical analysis */}
-          {marketData.length > 0 && (
-            <AdvancedChart symbol={symbol} data={marketData} />
-          )}
-          
+          {/* Research tools with chart, fundamentals, etc. */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
             <div className="lg:col-span-2">
               <ResearchTools onSymbolChange={handleSymbolChange} initialSymbol={symbol} />
@@ -102,28 +70,25 @@ const Markets = () => {
           </div>
         </TabsContent>
         
-        <TabsContent value="trading" className="space-y-4 sm:space-y-6 mt-4">
+        <TabsContent value="trading" className="space-y-4 mt-4">
           <TradingInterface />
         </TabsContent>
         
-        <TabsContent value="social" className="space-y-4 sm:space-y-6 mt-4">
+        <TabsContent value="social" className="mt-4">
           <Card className="p-4 sm:p-6">
-            <div className="flex flex-col space-y-4 sm:space-y-6">
-              <div className="flex flex-col gap-4">
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <h2 className="text-xl sm:text-2xl font-bold">{symbol}</h2>
-                  <p className="text-sm sm:text-base text-muted-foreground">Share your thoughts and insights about {symbol} with the community</p>
+                  <h2 className="text-xl font-bold">{symbol}</h2>
+                  <p className="text-sm text-muted-foreground">Share your thoughts about {symbol}</p>
                 </div>
-                <div className="flex justify-start sm:justify-end">
-                  <SocialShare 
-                    symbol={symbol} 
-                    title={`Check out ${symbol} on TradeHub!`} 
-                    description={`I'm analyzing ${symbol} on TradeHub. What do you think about this stock?`}
-                  />
-                </div>
+                <SocialShare 
+                  symbol={symbol} 
+                  title={`Check out ${symbol} on TradeHub!`} 
+                  description={`I'm analyzing ${symbol} on TradeHub.`}
+                />
               </div>
-              
-              <div className="border-t pt-4 sm:pt-6">
+              <div className="border-t pt-4">
                 <Comments symbol={symbol} limit={5} />
               </div>
             </div>
