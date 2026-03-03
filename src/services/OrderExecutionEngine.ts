@@ -252,21 +252,18 @@ export class OrderExecutionEngine {
         .select("available_balance")
         .eq("user_id", userId)
         .eq("currency", "USD")
-        .single();
+        .maybeSingle();
 
-      if (fetchError) {
+      if (fetchError || !wallet) {
         // Create wallet if it doesn't exist
-        if (fetchError.code === 'PGRST116') {
-          const initialBalance = amount > 0 ? amount : 10000 + amount;
-          await supabase.from("wallets").insert({
-            user_id: userId,
-            currency: "USD",
-            available_balance: initialBalance,
-            reserved_balance: 0
-          });
-          return true;
-        }
-        return false;
+        const initialBalance = amount > 0 ? amount : 10000 + amount;
+        await supabase.from("wallets").insert({
+          user_id: userId,
+          currency: "USD",
+          available_balance: initialBalance,
+          reserved_balance: 0
+        });
+        return true;
       }
 
       const newBalance = wallet.available_balance + amount;
@@ -392,7 +389,7 @@ export class OrderExecutionEngine {
         .eq("is_active", true)
         .order("created_at", { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (tradingAccount && tradingAccount.available_balance >= requiredAmount) {
         return true;
@@ -404,22 +401,18 @@ export class OrderExecutionEngine {
         .select("available_balance")
         .eq("user_id", userId)
         .eq("currency", "USD")
-        .single();
+        .maybeSingle();
 
-      if (error) {
-        if (error.code === 'PGRST116') {
-          // No wallet - create one synced with trading account
-          const initialBalance = tradingAccount?.available_balance || 100000;
-          await supabase.from("wallets").insert({
-            user_id: userId,
-            currency: "USD",
-            available_balance: initialBalance,
-            reserved_balance: 0
-          });
-          return requiredAmount <= initialBalance;
-        }
-        console.error("Error checking balance:", error);
-        return false;
+      if (!wallet) {
+        // No wallet - create one synced with trading account
+        const initialBalance = tradingAccount?.available_balance || 100000;
+        await supabase.from("wallets").insert({
+          user_id: userId,
+          currency: "USD",
+          available_balance: initialBalance,
+          reserved_balance: 0
+        });
+        return requiredAmount <= initialBalance;
       }
 
       // If wallet balance is much lower than trading account, sync it up
@@ -446,7 +439,7 @@ export class OrderExecutionEngine {
       .select("shares")
       .eq("user_id", userId)
       .eq("symbol", symbol)
-      .single();
+      .maybeSingle();
 
     return data ? data.shares >= requiredShares : false;
   }
@@ -479,7 +472,7 @@ export class OrderExecutionEngine {
         .select("*")
         .eq("user_id", userId)
         .eq("symbol", symbol)
-        .single();
+        .maybeSingle();
 
       if (existing) {
         const newShares = existing.shares + shares;
@@ -508,7 +501,7 @@ export class OrderExecutionEngine {
         .select("*")
         .eq("user_id", userId)
         .eq("symbol", symbol)
-        .single();
+        .maybeSingle();
 
       if (position) {
         const newShares = position.shares - shares;

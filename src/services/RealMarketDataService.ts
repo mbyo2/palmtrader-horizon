@@ -279,7 +279,7 @@ export class RealMarketDataService {
         .eq('type', 'realtime')
         .order('timestamp', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (data) {
         return {
@@ -330,7 +330,7 @@ export class RealMarketDataService {
         .from('company_fundamentals')
         .select('*')
         .eq('symbol', symbol)
-        .single();
+        .maybeSingle();
 
       if (data) {
         return {
@@ -439,7 +439,7 @@ export class RealMarketDataService {
         .eq('symbol', symbol)
         .order('timestamp', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (!data) return false;
 
