@@ -34,10 +34,8 @@ const Navbar = () => {
               <h1 className="text-lg sm:text-2xl font-bold gradient-text">Palm Cacia</h1>
             </Link>
             
-            <div className="hidden lg:block ml-12">
-              <div className="flex items-center space-x-1">
-                <NavigationLinks onItemClick={() => {}} />
-              </div>
+            <div className="hidden lg:block ml-8">
+              <NavigationLinks onItemClick={() => {}} />
             </div>
           </div>
 

@@ -112,7 +112,7 @@ class RealTimeFinnhubSocket {
       };
 
       this.ws.onerror = () => {
-        console.warn('Finnhub WebSocket error');
+        // Suppress repeated error logs - reconnect handles recovery
         this.isConnecting = false;
       };
 
