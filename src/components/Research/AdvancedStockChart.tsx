@@ -62,9 +62,10 @@ export function AdvancedStockChart({ symbol, data, compact = false }: AdvancedSt
     }
 
     return data.filter((item) => {
-      // Use timestamp property for date filtering
-      const itemDate = new Date(item.timestamp);
-      return itemDate >= startDate;
+      // Handle numeric timestamps (ms) passed as string or number
+      const ts = typeof item.timestamp === 'string' ? Number(item.timestamp) : item.timestamp;
+      const itemDate = isNaN(ts) ? new Date(item.timestamp as any) : new Date(ts);
+      return !isNaN(itemDate.getTime()) && itemDate >= startDate;
     });
   })();
 
@@ -85,23 +86,24 @@ export function AdvancedStockChart({ symbol, data, compact = false }: AdvancedSt
   };
 
   // Format data for better visualization
-  const formattedData = filteredData.map((item) => ({
-    ...item,
-    // Format date based on time range
-    displayDate: (() => {
-      const itemDate = new Date(item.timestamp);
-      
-      return timeRange === "1W" || timeRange === "1M"
-        ? itemDate.toLocaleDateString(undefined, {
-            month: "short",
-            day: "numeric",
-          })
-        : itemDate.toLocaleDateString(undefined, {
-            month: "short",
-            year: "2-digit",
-          });
-    })()
-  }));
+  const formattedData = filteredData.map((item) => {
+    const ts = typeof item.timestamp === 'string' ? Number(item.timestamp) : item.timestamp;
+    const itemDate = isNaN(ts) ? new Date(item.timestamp as any) : new Date(ts);
+    const validDate = !isNaN(itemDate.getTime());
+    
+    return {
+      ...item,
+      close: item.close ?? item.price,
+      open: item.open ?? item.price,
+      high: item.high ?? item.price,
+      low: item.low ?? item.price,
+      displayDate: validDate
+        ? (timeRange === "1W" || timeRange === "1M"
+          ? itemDate.toLocaleDateString(undefined, { month: "short", day: "numeric" })
+          : itemDate.toLocaleDateString(undefined, { month: "short", year: "2-digit" }))
+        : ''
+    };
+  });
 
   // If compact mode is enabled, reduce the UI complexity
   if (compact) {

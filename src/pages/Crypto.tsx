@@ -139,13 +139,20 @@ const Crypto = () => {
 const PriceTicker = ({ cryptoId }: { cryptoId: string }) => {
   const { price, change, isLoading } = useCryptoData(cryptoId);
   
+  const formatPrice = (p: number | null) => {
+    if (!p) return "$0.00";
+    if (p >= 1000) return `$${p.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+    if (p >= 1) return `$${p.toFixed(2)}`;
+    return `$${p.toFixed(4)}`;
+  };
+
   return (
     <div className="flex justify-between items-center mt-1">
       <div className="text-sm font-semibold">
-        {isLoading ? <Skeleton className="h-4 w-16" /> : `$${price?.toFixed(2) || "0.00"}`}
+        {isLoading ? "..." : formatPrice(price)}
       </div>
       <div className={`text-xs ${change && change >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-        {isLoading ? <Skeleton className="h-3 w-10" /> : `${change && change >= 0 ? '+' : ''}${change?.toFixed(2) || '0.00'}%`}
+        {isLoading ? "..." : `${change && change >= 0 ? '+' : ''}${change?.toFixed(2) || '0.00'}%`}
       </div>
     </div>
   );

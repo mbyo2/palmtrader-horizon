@@ -131,30 +131,54 @@ export const RealTimeChart: React.FC<RealTimeChartProps> = ({
   useEffect(() => {
     if (!seriesRef.current || ticks.length === 0) return;
     
-    if (chartType === 'candle') {
-      const candleData: CandlestickData[] = ticks
-        .filter(tick => tick.open && tick.high && tick.low && tick.close)
-        .map(tick => ({
-          time: Math.floor(tick.time / 1000) as any,
-          open: tick.open!,
-          high: tick.high!,
-          low: tick.low!,
-          close: tick.close!,
-        }));
-      
-      if (candleData.length > 0) {
-        seriesRef.current.setData(candleData as any);
+    try {
+      if (chartType === 'candle') {
+        // Generate OHLC from price if missing
+        const candleData: CandlestickData[] = ticks.map(tick => {
+          const price = tick.price;
+          const spread = price * 0.002;
+          return {
+            time: Math.floor(tick.time / 1000) as any,
+            open: tick.open ?? price - spread * (Math.random() - 0.5),
+            high: tick.high ?? Math.max(price, (tick.open ?? price)) + spread * Math.random(),
+            low: tick.low ?? Math.min(price, (tick.open ?? price)) - spread * Math.random(),
+            close: tick.close ?? price,
+          };
+        });
+        
+        // Deduplicate by time
+        const seen = new Set<number>();
+        const uniqueCandles = candleData.filter(c => {
+          const t = c.time as number;
+          if (seen.has(t)) return false;
+          seen.add(t);
+          return true;
+        });
+        
+        if (uniqueCandles.length > 0) {
+          seriesRef.current.setData(uniqueCandles as any);
+        }
+      } else {
+        const seen = new Set<number>();
+        const lineData: LineData[] = ticks
+          .map(tick => ({
+            time: Math.floor(tick.time / 1000) as any,
+            value: tick.price,
+          }))
+          .filter(d => {
+            const t = d.time as number;
+            if (seen.has(t)) return false;
+            seen.add(t);
+            return true;
+          });
+        
+        seriesRef.current.setData(lineData as any);
       }
-    } else {
-      const lineData: LineData[] = ticks.map(tick => ({
-        time: Math.floor(tick.time / 1000) as any,
-        value: tick.price,
-      }));
       
-      seriesRef.current.setData(lineData as any);
+      chartRef.current?.timeScale().fitContent();
+    } catch (err) {
+      console.warn('Chart data update error:', err);
     }
-    
-    chartRef.current?.timeScale().fitContent();
   }, [ticks, chartType]);
   
   // Calculate price change
