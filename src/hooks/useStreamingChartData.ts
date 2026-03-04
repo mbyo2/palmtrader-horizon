@@ -181,7 +181,7 @@ export function useStreamingChartData(
     });
     
     // If no real data after 5s, start demo simulation for chart
-    const demoTimeout = setTimeout(() => {
+        const demoTimeout = setTimeout(() => {
       if (!hasRealData.current) {
         const simInterval = setInterval(() => {
           if (hasRealData.current) {
@@ -193,10 +193,18 @@ export function useStreamingChartData(
             if (!prev) return prev;
             const change = prev * (Math.random() - 0.48) * 0.002;
             const newPrice = parseFloat((prev + change).toFixed(2));
+            const high = parseFloat((newPrice * (1 + Math.random() * 0.003)).toFixed(2));
+            const low = parseFloat((newPrice * (1 - Math.random() * 0.003)).toFixed(2));
+            const open = parseFloat((prev + (Math.random() - 0.5) * prev * 0.002).toFixed(2));
             
             const newTick: ChartTick = {
               time: Date.now(),
               price: newPrice,
+              open,
+              high,
+              low,
+              close: newPrice,
+              volume: Math.floor(1000 + Math.random() * 10000),
             };
             aggregateTick(newTick);
             
