@@ -6,7 +6,7 @@ export default function BankingPage() {
   return (
     <>
       <Helmet>
-        <title>Banking - SmartTrade</title>
+        <title>Banking - Palm Cacia</title>
       </Helmet>
       <div className="container py-8">
         <EnhancedBankingInterface />
