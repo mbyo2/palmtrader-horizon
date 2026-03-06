@@ -84,8 +84,8 @@ const Markets = () => {
                 </div>
                 <SocialShare 
                   symbol={symbol} 
-                  title={`Check out ${symbol} on TradeHub!`} 
-                  description={`I'm analyzing ${symbol} on TradeHub.`}
+                  title={`Check out ${symbol} on Palm Cacia!`} 
+                  description={`I'm analyzing ${symbol} on Palm Cacia.`}
                 />
               </div>
               <div className="border-t pt-4">

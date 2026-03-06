@@ -7,6 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { CheckCircle, ArrowRight, ArrowLeft, User, Target, Shield } from 'lucide-react';
@@ -203,50 +205,58 @@ const Onboarding = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="experience">Investment Experience</Label>
-                <select
-                  id="experience"
-                  className="w-full p-2 border rounded-md"
+                <Label>Investment Experience</Label>
+                <Select
                   value={data.investment_experience}
-                  onChange={(e) => setData(prev => ({ ...prev, investment_experience: e.target.value }))}
+                  onValueChange={(value) => setData(prev => ({ ...prev, investment_experience: value }))}
                 >
-                  <option value="">Select your experience level</option>
-                  <option value="beginner">Beginner (0-1 years)</option>
-                  <option value="intermediate">Intermediate (2-5 years)</option>
-                  <option value="advanced">Advanced (5+ years)</option>
-                </select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select your experience level" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="beginner">Beginner (0-1 years)</SelectItem>
+                    <SelectItem value="intermediate">Intermediate (2-5 years)</SelectItem>
+                    <SelectItem value="advanced">Advanced (5+ years)</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="risk">Risk Tolerance</Label>
-                <select
-                  id="risk"
-                  className="w-full p-2 border rounded-md"
+                <Label>Risk Tolerance</Label>
+                <Select
                   value={data.risk_tolerance}
-                  onChange={(e) => setData(prev => ({ ...prev, risk_tolerance: e.target.value }))}
+                  onValueChange={(value) => setData(prev => ({ ...prev, risk_tolerance: value }))}
                 >
-                  <option value="">Select your risk tolerance</option>
-                  <option value="conservative">Conservative - I prefer stable returns</option>
-                  <option value="moderate">Moderate - I'm comfortable with some risk</option>
-                  <option value="aggressive">Aggressive - I'm willing to take higher risks</option>
-                </select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select your risk tolerance" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="conservative">Conservative - Stable returns</SelectItem>
+                    <SelectItem value="moderate">Moderate - Some risk</SelectItem>
+                    <SelectItem value="aggressive">Aggressive - Higher risks</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label>Investment Goals (Select all that apply)</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  {['retirement', 'wealth_building', 'education', 'emergency_fund'].map((goal) => (
-                    <label key={goal} className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        checked={data.investment_goals.includes(goal)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setData(prev => ({ ...prev, investment_goals: [...prev.investment_goals, goal] }));
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { id: 'retirement', label: 'Retirement' },
+                    { id: 'wealth_building', label: 'Wealth Building' },
+                    { id: 'education', label: 'Education' },
+                    { id: 'emergency_fund', label: 'Emergency Fund' },
+                  ].map((goal) => (
+                    <label key={goal.id} className="flex items-center space-x-2 cursor-pointer">
+                      <Checkbox
+                        checked={data.investment_goals.includes(goal.id)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setData(prev => ({ ...prev, investment_goals: [...prev.investment_goals, goal.id] }));
                           } else {
-                            setData(prev => ({ ...prev, investment_goals: prev.investment_goals.filter(g => g !== goal) }));
+                            setData(prev => ({ ...prev, investment_goals: prev.investment_goals.filter(g => g !== goal.id) }));
                           }
                         }}
                       />
-                      <span className="capitalize">{goal.replace('_', ' ')}</span>
+                      <span className="text-sm">{goal.label}</span>
                     </label>
                   ))}
                 </div>

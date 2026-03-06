@@ -13,7 +13,7 @@ interface SocialShareProps {
 const SocialShare = ({ 
   symbol, 
   title = "Check out this stock!", 
-  description = "I found this interesting stock on TradeHub. Take a look!" 
+  description = "I found this interesting stock on Palm Cacia. Take a look!" 
 }: SocialShareProps) => {
   const [copied, setCopied] = useState(false);
   
