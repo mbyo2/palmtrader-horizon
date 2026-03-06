@@ -1,4 +1,7 @@
-
 User-agent: *
 Allow: /
-Sitemap: https://palmcacia.com/sitemap.xml
+Disallow: /admin
+Disallow: /settings
+Disallow: /account-settings
+
+Sitemap: https://palmtrader-horizon.lovable.app/sitemap.xml
