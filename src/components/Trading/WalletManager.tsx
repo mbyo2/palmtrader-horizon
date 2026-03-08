@@ -16,6 +16,7 @@ import { supabase } from '@/integrations/supabase/client';
 const DEMO_QUICK_AMOUNTS = [1000, 5000, 10000, 25000, 50000];
 
 export const WalletManager: React.FC = () => {
+  const { user } = useAuth();
   const { balances, transactions, isLoading, deposit, withdraw, getBalance } = useWallet();
   const { isDemo, activeAccount, refreshAccounts } = useTradingAccount();
   const [depositAmount, setDepositAmount] = useState('');
