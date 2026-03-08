@@ -149,7 +149,7 @@ export const SuperUserDashboard = () => {
             <CardContent>
               <div className="text-2xl font-bold">{stat.value}</div>
               <p className="text-xs text-muted-foreground">
-                <span className="text-green-600">{stat.change}</span> from last month
+                <span className={stat.change.startsWith('+') ? "text-success" : stat.change.startsWith('-') ? "text-destructive" : "text-muted-foreground"}>{stat.change}</span>{stat.change ? ' from last month' : ''}
               </p>
             </CardContent>
           </Card>

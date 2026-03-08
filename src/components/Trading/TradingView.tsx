@@ -1,16 +1,18 @@
-
-import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import OrderForm from "./OrderForm";
 import PositionsList from "./PositionsList";
 import { useTrading } from "@/hooks/useTrading";
 import { TradingErrorBoundary } from "@/components/ErrorBoundary/TradingErrorBoundary";
+import { useRealTimePortfolio } from "@/hooks/useRealTimePortfolio";
 
 const TradingView = () => {
-  const [positions, setPositions] = useState([
-    { symbol: "AAPL", shares: 10, averagePrice: 150.5 },
-    { symbol: "GOOGL", shares: 5, averagePrice: 2750.0 },
-  ]);
+  const { positions } = useRealTimePortfolio();
+
+  const positionsForList = positions.map(p => ({
+    symbol: p.symbol,
+    shares: p.shares,
+    averagePrice: p.averagePrice,
+  }));
 
   const {
     symbol, 
@@ -40,7 +42,7 @@ const TradingView = () => {
 
         <Card className="p-6 card-gradient">
           <h2 className="text-xl font-semibold mb-4">Current Positions</h2>
-          <PositionsList positions={positions} />
+          <PositionsList positions={positionsForList} />
         </Card>
       </div>
     </TradingErrorBoundary>

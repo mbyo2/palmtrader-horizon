@@ -395,12 +395,12 @@ const PortfolioPerformance = () => {
             <div className="flex items-center justify-between">
               <h4 className="text-sm text-muted-foreground">Today's Change</h4>
               {metrics.todayGain.percentage >= 0 ? (
-                <TrendingUp className="h-4 w-4 text-green-500" />
+                <TrendingUp className="h-4 w-4 text-success" />
               ) : (
-                <TrendingDown className="h-4 w-4 text-red-500" />
+                <TrendingDown className="h-4 w-4 text-destructive" />
               )}
             </div>
-            <p className={`text-lg font-semibold ${metrics.todayGain.percentage >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+            <p className={`text-lg font-semibold ${metrics.todayGain.percentage >= 0 ? 'text-success' : 'text-destructive'}`}>
               {metrics.todayGain.percentage >= 0 ? '+' : ''}{metrics.todayGain.percentage.toFixed(2)}%
             </p>
           </div>

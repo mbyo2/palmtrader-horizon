@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import {
   Select,
@@ -13,18 +13,25 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
   ResponsiveContainer,
   PieChart,
   Pie,
   Cell,
   Legend,
+  Tooltip,
 } from "recharts";
-import { ChartContainer, ChartTooltip, ChartLegend } from "@/components/ui/chart";
+import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useRealTimePortfolio } from "@/hooks/useRealTimePortfolio";
 
-const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8"];
+const COLORS = [
+  "hsl(var(--primary))",
+  "hsl(var(--success))",
+  "hsl(var(--warning))",
+  "hsl(var(--destructive))",
+  "hsl(var(--info))",
+];
 
 const PortfolioAnalytics = () => {
   const [timeRange, setTimeRange] = useState<"1d" | "1w" | "1m" | "3m" | "1y">("1m");
@@ -33,22 +40,7 @@ const PortfolioAnalytics = () => {
     returns: true,
   });
 
-  // Fetch portfolio data
-  const { data: portfolioData } = useQuery({
-    queryKey: ["portfolio"],
-    queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return null;
-
-      const { data, error } = await supabase
-        .from("portfolio")
-        .select("*")
-        .eq("user_id", user.id);
-
-      if (error) throw error;
-      return data;
-    },
-  });
+  const { positions, summary } = useRealTimePortfolio();
 
   // Fetch historical trades for performance tracking
   const { data: tradesHistory } = useQuery({
@@ -68,24 +60,55 @@ const PortfolioAnalytics = () => {
     },
   });
 
-  // Calculate portfolio value and diversification
-  const portfolioValue = portfolioData?.reduce(
-    (total, position) => total + position.shares * position.average_price,
-    0
-  ) || 0;
+  // Diversification from real portfolio positions
+  const diversificationData = useMemo(() => {
+    if (!positions.length || summary.totalValue === 0) return [];
+    return positions.map(p => ({
+      name: p.symbol,
+      value: parseFloat(((p.currentValue / summary.totalValue) * 100).toFixed(1)),
+    }));
+  }, [positions, summary.totalValue]);
 
-  const diversificationData = portfolioData?.map((position) => ({
-    name: position.symbol,
-    value: (position.shares * position.average_price / portfolioValue) * 100,
-  })) || [];
+  // Build performance data from actual trades
+  const performanceData = useMemo(() => {
+    if (!tradesHistory || tradesHistory.length === 0) return [];
 
-  // Mock performance data (in a real app, this would come from historical price data)
-  const performanceData = [
-    { date: "2024-01", value: 10000, returns: 0 },
-    { date: "2024-02", value: 12000, returns: 20 },
-    { date: "2024-03", value: 11500, returns: 15 },
-    { date: "2024-04", value: 13000, returns: 30 },
-  ];
+    const days = timeRange === '1d' ? 1 : timeRange === '1w' ? 7 : timeRange === '1m' ? 30 : timeRange === '3m' ? 90 : 365;
+    const cutoff = new Date(Date.now() - days * 86400000);
+
+    // Build cumulative invested amount by date
+    let invested = 0;
+    const tradePoints: Array<{ date: string; value: number }> = [];
+
+    tradesHistory
+      .filter(t => new Date(t.created_at) >= cutoff)
+      .forEach(trade => {
+        invested += trade.type === 'buy' ? (trade.total_amount || 0) : -(trade.total_amount || 0);
+        tradePoints.push({
+          date: new Date(trade.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' }),
+          value: Math.max(0, invested),
+        });
+      });
+
+    // Append current value as the last point
+    if (summary.totalValue > 0) {
+      tradePoints.push({
+        date: 'Now',
+        value: summary.totalValue,
+      });
+    }
+
+    const initial = tradePoints[0]?.value || 1;
+    return tradePoints.map(p => ({
+      ...p,
+      returns: parseFloat((((p.value - initial) / initial) * 100).toFixed(2)),
+    }));
+  }, [tradesHistory, timeRange, summary.totalValue]);
+
+  // Compute gain/loss from real data
+  const totalGainPercent = summary.totalInvested > 0
+    ? ((summary.totalValue - summary.totalInvested) / summary.totalInvested) * 100
+    : 0;
 
   const handleLegendClick = (dataKey: keyof typeof visibleSeries) => {
     setVisibleSeries(prev => ({
@@ -117,62 +140,74 @@ const PortfolioAnalytics = () => {
           {/* Performance Chart */}
           <div className="h-64">
             <h3 className="text-lg font-medium mb-2">Performance</h3>
-            <ChartContainer config={{}}>
-              <LineChart data={performanceData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis />
-                <ChartTooltip />
-                <Legend 
-                  onClick={(e) => handleLegendClick(e.dataKey as keyof typeof visibleSeries)}
-                />
-                {visibleSeries.portfolioValue && (
-                  <Line
-                    type="monotone"
-                    dataKey="value"
-                    name="Portfolio Value"
-                    stroke="#8884d8"
-                    strokeWidth={2}
+            {performanceData.length > 0 ? (
+              <ChartContainer config={{}}>
+                <LineChart data={performanceData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis />
+                  <ChartTooltip />
+                  <Legend 
+                    onClick={(e) => handleLegendClick(e.dataKey as keyof typeof visibleSeries)}
                   />
-                )}
-                {visibleSeries.returns && (
-                  <Line
-                    type="monotone"
-                    dataKey="returns"
-                    name="Returns %"
-                    stroke="#82ca9d"
-                    strokeWidth={2}
-                  />
-                )}
-              </LineChart>
-            </ChartContainer>
+                  {visibleSeries.portfolioValue && (
+                    <Line
+                      type="monotone"
+                      dataKey="value"
+                      name="Portfolio Value"
+                      stroke="hsl(var(--primary))"
+                      strokeWidth={2}
+                    />
+                  )}
+                  {visibleSeries.returns && (
+                    <Line
+                      type="monotone"
+                      dataKey="returns"
+                      name="Returns %"
+                      stroke="hsl(var(--success))"
+                      strokeWidth={2}
+                    />
+                  )}
+                </LineChart>
+              </ChartContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
+                No trade history for this period
+              </div>
+            )}
           </div>
 
           {/* Portfolio Diversification */}
           <div className="h-64">
             <h3 className="text-lg font-medium mb-2">Portfolio Diversification</h3>
-            <ResponsiveContainer>
-              <PieChart>
-                <Pie
-                  data={diversificationData}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={80}
-                  label
-                >
-                  {diversificationData.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={COLORS[index % COLORS.length]}
-                    />
-                  ))}
-                </Pie>
-                <Tooltip />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
+            {diversificationData.length > 0 ? (
+              <ResponsiveContainer>
+                <PieChart>
+                  <Pie
+                    data={diversificationData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={80}
+                    label
+                  >
+                    {diversificationData.map((_, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={COLORS[index % COLORS.length]}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
+                No positions to display
+              </div>
+            )}
           </div>
 
           {/* Summary Statistics */}
@@ -180,17 +215,19 @@ const PortfolioAnalytics = () => {
             <div className="p-4 rounded-lg bg-background/50">
               <h4 className="text-sm text-muted-foreground">Total Value</h4>
               <p className="text-lg font-semibold">
-                ${portfolioValue.toLocaleString()}
+                ${summary.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
             </div>
             <div className="p-4 rounded-lg bg-background/50">
               <h4 className="text-sm text-muted-foreground">Total Gain/Loss</h4>
-              <p className="text-lg font-semibold text-green-500">+15.2%</p>
+              <p className={`text-lg font-semibold ${totalGainPercent >= 0 ? 'text-success' : 'text-destructive'}`}>
+                {totalGainPercent >= 0 ? '+' : ''}{totalGainPercent.toFixed(2)}%
+              </p>
             </div>
             <div className="p-4 rounded-lg bg-background/50">
               <h4 className="text-sm text-muted-foreground">Total Positions</h4>
               <p className="text-lg font-semibold">
-                {portfolioData?.length || 0}
+                {positions.length}
               </p>
             </div>
             <div className="p-4 rounded-lg bg-background/50">
