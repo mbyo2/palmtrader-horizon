@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TechnicalIndicators from "@/components/TechnicalIndicators";
 import SocialShare from "@/components/Social/SocialShare";
 import Comments from "@/components/Social/Comments";
+import CopyTradingSystem from "@/components/Social/CopyTradingSystem";
 import { Card } from "@/components/ui/card";
 
 const Markets = () => {
