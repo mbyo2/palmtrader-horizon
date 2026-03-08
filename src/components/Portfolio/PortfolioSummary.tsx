@@ -53,8 +53,15 @@ const PortfolioSummary = ({ portfolioData, totalValue }: PortfolioSummaryProps) 
     const totalGain = currentValue - costBasis;
     const totalGainPercent = costBasis > 0 ? (totalGain / costBasis) * 100 : 0;
     
-    const dayChange = totalValue * 0.01;
-    const dayChangePercent = 1;
+    // Day change derived from position-level price changes
+    let dayChange = 0;
+    portfolioData.forEach(position => {
+      const priceInfo = latestPrices?.find(p => p.symbol === position.symbol);
+      if (priceInfo?.change) {
+        dayChange += position.shares * priceInfo.change;
+      }
+    });
+    const dayChangePercent = currentValue > 0 ? (dayChange / (currentValue - dayChange)) * 100 : 0;
     
     return {
       currentValue,
@@ -67,27 +74,10 @@ const PortfolioSummary = ({ portfolioData, totalValue }: PortfolioSummaryProps) 
   
   const metrics = calculateMetrics();
   
-  const generateHistoricalData = () => {
-    const today = new Date();
-    const data = [];
-    for (let i = 30; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(today.getDate() - i);
-      
-      const randomFactor = 0.98 + Math.random() * 0.04;
-      const value = i === 0 
-        ? metrics.currentValue 
-        : (metrics.currentValue * 0.85) * (1 + (i / 100)) * randomFactor;
-        
-      data.push({
-        date: date.toLocaleDateString(),
-        value: parseFloat(value.toFixed(2)),
-      });
-    }
-    return data;
-  };
-  
-  const chartData = generateHistoricalData();
+  // Chart data is omitted — historical portfolio value tracking requires
+  // a time-series table (portfolio_snapshots) that doesn't exist yet.
+  // Showing summary cards only.
+  const chartData: Array<{ date: string; value: number }> = [];
   const isPositive = metrics.totalGainPercent >= 0;
   
   return (

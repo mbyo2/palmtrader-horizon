@@ -39,7 +39,7 @@ const PositionRow = ({ position }: { position: RealTimePosition }) => {
       
       <div className={cn(
         "text-right ml-4 min-w-[100px]",
-        isPositive ? "text-green-500" : "text-red-500"
+        isPositive ? "text-success" : "text-destructive"
       )}>
         <div className="flex items-center justify-end gap-1">
           {isPositive ? (

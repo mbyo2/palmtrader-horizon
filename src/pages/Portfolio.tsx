@@ -17,6 +17,7 @@ import TradingAccountsList from "@/components/Trading/TradingAccountsList";
 import RealTimeChart from "@/components/Trading/RealTimeChart";
 import StockSelector from "@/components/Trading/StockSelector";
 import { useTradingAccount } from "@/hooks/useTradingAccount";
+import { useRealTimePrice } from "@/hooks/useRealTimePrice";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, LayoutGrid, LineChart } from "lucide-react";
@@ -27,6 +28,7 @@ import LiveModeNotice from "@/components/Trading/LiveModeNotice";
 const PortfolioContent = () => {
   const { activeAccount, isLoading: isAccountLoading, isDemo } = useTradingAccount();
   const [selectedSymbol, setSelectedSymbol] = useState("AAPL");
+  const { price: currentSymbolPrice } = useRealTimePrice(selectedSymbol);
   const [showAccountSelector, setShowAccountSelector] = useState(false);
   const [tradingView, setTradingView] = useState<'quick' | 'advanced'>('quick');
 
@@ -120,7 +122,7 @@ const PortfolioContent = () => {
 
               {/* Risk Management Sidebar */}
               <div className="space-y-6">
-                <PositionSizer currentPrice={150} symbol={selectedSymbol} />
+                <PositionSizer currentPrice={currentSymbolPrice ?? 0} symbol={selectedSymbol} />
                 <RiskMetricsPanel />
               </div>
             </div>

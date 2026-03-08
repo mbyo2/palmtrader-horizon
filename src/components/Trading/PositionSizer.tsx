@@ -18,6 +18,11 @@ const PositionSizer = ({ currentPrice, symbol }: PositionSizerProps) => {
   const [stopLossPercent, setStopLossPercent] = useState(5);
   const [entryPrice, setEntryPrice] = useState(currentPrice);
 
+  // Sync entryPrice when currentPrice changes from upstream
+  useMemo(() => {
+    if (currentPrice > 0) setEntryPrice(currentPrice);
+  }, [currentPrice]);
+
   const calculations = useMemo(() => {
     const accountBalance = getAvailableBalance();
     const riskAmount = accountBalance * (riskPercent / 100);
@@ -43,10 +48,10 @@ const PositionSizer = ({ currentPrice, symbol }: PositionSizerProps) => {
   }, [riskPercent, stopLossPercent, entryPrice, getAvailableBalance, activeAccount]);
 
   const getRiskLevel = (percent: number) => {
-    if (percent <= 1) return { label: 'Conservative', color: 'text-green-500', bg: 'bg-green-500/10' };
-    if (percent <= 2) return { label: 'Moderate', color: 'text-blue-500', bg: 'bg-blue-500/10' };
-    if (percent <= 5) return { label: 'Aggressive', color: 'text-amber-500', bg: 'bg-amber-500/10' };
-    return { label: 'High Risk', color: 'text-red-500', bg: 'bg-red-500/10' };
+    if (percent <= 1) return { label: 'Conservative', color: 'text-success', bg: 'bg-success/10' };
+    if (percent <= 2) return { label: 'Moderate', color: 'text-info', bg: 'bg-info/10' };
+    if (percent <= 5) return { label: 'Aggressive', color: 'text-warning', bg: 'bg-warning/10' };
+    return { label: 'High Risk', color: 'text-destructive', bg: 'bg-destructive/10' };
   };
 
   const riskLevel = getRiskLevel(riskPercent);
@@ -133,11 +138,11 @@ const PositionSizer = ({ currentPrice, symbol }: PositionSizerProps) => {
           </div>
           <div className="p-3 bg-muted rounded-lg">
             <p className="text-xs text-muted-foreground">Stop Loss Price</p>
-            <p className="text-lg font-bold text-red-500">${calculations.stopLossPrice.toFixed(2)}</p>
+            <p className="text-lg font-bold text-destructive">${calculations.stopLossPrice.toFixed(2)}</p>
           </div>
           <div className="p-3 bg-muted rounded-lg">
             <p className="text-xs text-muted-foreground">Max Loss</p>
-            <p className="text-lg font-bold text-red-500">-${calculations.maxLoss.toFixed(2)}</p>
+            <p className="text-lg font-bold text-destructive">-${calculations.maxLoss.toFixed(2)}</p>
           </div>
         </div>
 
@@ -158,9 +163,9 @@ const PositionSizer = ({ currentPrice, symbol }: PositionSizerProps) => {
 
         {/* Risk Warning */}
         {riskPercent > 5 && (
-          <div className="p-3 bg-red-500/10 rounded-lg flex items-start gap-2">
-            <AlertTriangle className="h-4 w-4 text-red-500 mt-0.5" />
-            <div className="text-sm text-red-500">
+          <div className="p-3 bg-destructive/10 rounded-lg flex items-start gap-2">
+            <AlertTriangle className="h-4 w-4 text-destructive mt-0.5" />
+            <div className="text-sm text-destructive">
               <p className="font-medium">High Risk Warning</p>
               <p>Risking more than 5% per trade can lead to significant account drawdown.</p>
             </div>

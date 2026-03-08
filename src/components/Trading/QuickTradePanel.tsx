@@ -58,7 +58,6 @@ const QuickTradePanel = ({ symbol, onTrade }: QuickTradePanelProps) => {
       if (onTrade) {
         await onTrade(type, tradeAmount);
       } else {
-        // Use fractional shares for dollar-based trading
         const result = await OrderExecutionEngine.executeOrder({
           userId: user.id,
           symbol,
@@ -96,10 +95,10 @@ const QuickTradePanel = ({ symbol, onTrade }: QuickTradePanelProps) => {
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Zap className="h-5 w-5 text-amber-500" />
+            <Zap className="h-5 w-5 text-warning" />
             <CardTitle className="text-lg">Quick Trade</CardTitle>
           </div>
-          <Badge variant={isDemo ? "secondary" : "default"} className={isDemo ? "" : "bg-green-500"}>
+          <Badge variant={isDemo ? "secondary" : "default"} className={isDemo ? "" : "bg-success"}>
             {isDemo ? 'Demo' : 'Live'}
           </Badge>
         </div>
@@ -116,7 +115,7 @@ const QuickTradePanel = ({ symbol, onTrade }: QuickTradePanelProps) => {
               ${isLoading ? '...' : price?.toFixed(2)}
             </p>
             {change !== null && changePercent !== null && (
-              <p className={`text-sm flex items-center justify-end gap-1 ${change >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+              <p className={`text-sm flex items-center justify-end gap-1 ${change >= 0 ? 'text-success' : 'text-destructive'}`}>
                 {change >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
                 {change >= 0 ? '+' : ''}{changePercent.toFixed(2)}%
               </p>
@@ -176,7 +175,7 @@ const QuickTradePanel = ({ symbol, onTrade }: QuickTradePanelProps) => {
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Available:</span>
-              <span className={`font-medium ${canAfford ? 'text-green-500' : 'text-red-500'}`}>
+              <span className={`font-medium ${canAfford ? 'text-success' : 'text-destructive'}`}>
                 ${availableBalance.toLocaleString()}
               </span>
             </div>
@@ -185,7 +184,7 @@ const QuickTradePanel = ({ symbol, onTrade }: QuickTradePanelProps) => {
 
         {/* Trade Warning for Live Mode */}
         {!isDemo && tradeAmount > 0 && (
-          <div className="p-2 bg-amber-500/10 rounded-lg flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400">
+          <div className="p-2 bg-warning/10 rounded-lg flex items-center gap-2 text-sm text-warning">
             <AlertTriangle className="h-4 w-4" />
             <span>You are trading with real money!</span>
           </div>
@@ -195,7 +194,7 @@ const QuickTradePanel = ({ symbol, onTrade }: QuickTradePanelProps) => {
         <div className="grid grid-cols-2 gap-3">
           <Button
             size="lg"
-            className="bg-green-500 hover:bg-green-600 text-white"
+            className="bg-success hover:bg-success/90 text-success-foreground"
             disabled={!tradeAmount || !canAfford || isExecuting || !price}
             onClick={() => handleQuickTrade('buy')}
           >
