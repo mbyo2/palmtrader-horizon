@@ -287,8 +287,8 @@ const Verification = () => {
             </div>
           ) : accountDetails?.kyc_status === 'pending' ? (
             <div className="text-center py-8">
-              <Clock className="h-16 w-16 text-yellow-500 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-yellow-700">Under Review</h3>
+              <Clock className="h-16 w-16 text-warning mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-warning">Under Review</h3>
               <p className="text-muted-foreground">Your documents are being reviewed. We'll notify you within 2-3 business days.</p>
             </div>
           ) : (
