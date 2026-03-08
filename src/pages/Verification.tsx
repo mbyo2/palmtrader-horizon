@@ -281,8 +281,8 @@ const Verification = () => {
         <CardContent className="space-y-6">
           {accountDetails?.kyc_status === 'approved' ? (
             <div className="text-center py-8">
-              <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-green-700">Verification Complete</h3>
+              <CheckCircle className="h-16 w-16 text-success mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-success">Verification Complete</h3>
               <p className="text-muted-foreground">Your identity has been successfully verified</p>
             </div>
           ) : accountDetails?.kyc_status === 'pending' ? (
