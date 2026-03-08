@@ -214,9 +214,9 @@ export default function Index() {
                   {
                     title: "Zero Commissions",
                     description: "Trade stocks, bonds, and ETFs with absolutely no commission fees",
-                    icon: <TrendingUp className="h-12 w-12 text-orange-500" />,
-                    color: "from-orange-500/10 to-red-500/10",
-                    border: "border-orange-500/20"
+                    icon: <TrendingUp className="h-12 w-12 text-warning" />,
+                    color: "from-warning/10 to-warning/5",
+                    border: "border-warning/20"
                   }
                 ].map((feature, index) => (
                   <Card key={index} className={`group relative overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-2xl ${feature.border} bg-gradient-to-br ${feature.color}`}>
