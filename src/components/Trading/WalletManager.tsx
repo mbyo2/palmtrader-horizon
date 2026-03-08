@@ -342,7 +342,7 @@ export const WalletManager: React.FC = () => {
                 variant="outline"
                 className="w-full"
               >
-                {isLoading ? 'Processing...' : isDemo ? 'Simulate Withdrawal' : 'Request Withdrawal'}
+                {isLoading ? 'Processing...' : isDemo ? 'Withdraw Funds' : 'Request Withdrawal'}
               </Button>
             </CardContent>
           </Card>
