@@ -53,7 +53,9 @@ export const WalletManager: React.FC = () => {
   };
 
   const handleResetDemo = async () => {
-    // Reset demo balance to 100,000
+    if (!user) return;
+    
+    // Reset wallet balance to 100,000
     const currentBalance = getBalance('USD')?.available || 0;
     const resetAmount = 100000 - currentBalance;
     if (resetAmount > 0) {
@@ -61,8 +63,25 @@ export const WalletManager: React.FC = () => {
     } else if (resetAmount < 0) {
       await withdraw(Math.abs(resetAmount));
     }
+
+    // Clear all portfolio positions
+    const { error: portfolioError } = await supabase
+      .from("portfolio")
+      .delete()
+      .eq("user_id", user.id);
+    
+    if (portfolioError) console.error("Error clearing portfolio:", portfolioError);
+
+    // Clear all trade records
+    const { error: tradesError } = await supabase
+      .from("trades")
+      .delete()
+      .eq("user_id", user.id);
+    
+    if (tradesError) console.error("Error clearing trades:", tradesError);
+
     await refreshAccounts();
-    toast.success("Demo account reset to $100,000");
+    toast.success("Demo account reset to $100,000 — positions and history cleared");
   };
 
   const formatCurrency = (amount: number, currency: string) => {
