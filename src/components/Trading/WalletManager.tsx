@@ -12,15 +12,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Wallet, TrendingUp, TrendingDown, Clock, CheckCircle, XCircle, Shield, Smartphone, Building2, AlertTriangle, RefreshCw } from 'lucide-react';
-import { useWallet } from '@/hooks/useWallet';
-import { useTradingAccount } from '@/hooks/useTradingAccount';
-import { Badge } from '@/components/ui/badge';
-import { toast } from 'sonner';
 
 const DEMO_QUICK_AMOUNTS = [1000, 5000, 10000, 25000, 50000];
 
