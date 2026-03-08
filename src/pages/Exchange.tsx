@@ -7,7 +7,7 @@ import { ConvertSwap } from '@/components/Exchange/ConvertSwap';
 import { EarnStaking } from '@/components/Exchange/EarnStaking';
 import { FuturesTrading } from '@/components/Exchange/FuturesTrading';
 import { Launchpad } from '@/components/Exchange/Launchpad';
-import { CopyTradingSystem } from '@/components/Social/CopyTradingSystem';
+import CopyTradingSystem from '@/components/Social/CopyTradingSystem';
 import { 
   Wallet, 
   Users, 
