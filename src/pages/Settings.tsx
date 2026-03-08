@@ -202,14 +202,7 @@ const Settings = () => {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
-                <div>
-                  <Label>Change Password</Label>
-                  <div className="flex space-x-2 mt-2">
-                    <Input type="password" placeholder="Current password" />
-                    <Input type="password" placeholder="New password" />
-                    <Button>Update</Button>
-                  </div>
-                </div>
+                <PasswordChangeForm />
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label>Two-Factor Authentication</Label>
