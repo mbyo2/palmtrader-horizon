@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useTradingAccount } from "@/hooks/useTradingAccount";
+import { useQueryClient } from "@tanstack/react-query";
 import { useRealTimePrice } from "@/hooks/useRealTimePrice";
 import { useAuth } from "@/hooks/useAuth";
 import { OrderExecutionEngine } from "@/services/OrderExecutionEngine";
