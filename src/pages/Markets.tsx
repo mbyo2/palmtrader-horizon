@@ -71,11 +71,11 @@ const Markets = () => {
           </div>
         </TabsContent>
         
-        <TabsContent value="trading" className="space-y-4 mt-4">
+        <TabsContent value="trading" className="space-y-6 mt-4">
           <TradingInterface />
         </TabsContent>
         
-        <TabsContent value="social" className="mt-4 space-y-6">
+        <TabsContent value="social" className="mt-4 space-y-6 sm:space-y-8">
           <CopyTradingSystem />
           <Card className="p-4 sm:p-6">
             <div className="space-y-4">
