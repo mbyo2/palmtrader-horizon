@@ -42,8 +42,13 @@ const PortfolioContent = () => {
     );
   }
 
+  const { isDemo } = useTradingAccount();
+
   return (
     <div className="container py-4 sm:py-6 space-y-4 sm:space-y-6 px-3 sm:px-4">
+      {/* Demo/Live Banner */}
+      <DemoModeBanner />
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <h1 className="text-2xl sm:text-3xl font-bold">Portfolio & Trading</h1>
