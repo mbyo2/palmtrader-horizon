@@ -59,6 +59,7 @@ const PositionRow = ({ position }: { position: RealTimePosition }) => {
 
 export const RealTimePositionsList = () => {
   const { positions, isLoading } = useRealTimePortfolio();
+  const { isDemo } = useTradingAccount();
 
   if (isLoading) {
     return (
