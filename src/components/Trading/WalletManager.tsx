@@ -209,11 +209,11 @@ export const WalletManager: React.FC = () => {
           <Card>
             <CardHeader>
               <CardTitle>
-                {isDemo ? 'Add Virtual Funds' : 'Deposit Funds'}
+                {isDemo ? 'Add Funds' : 'Deposit Funds'}
               </CardTitle>
               <CardDescription>
                 {isDemo 
-                  ? 'Instantly add virtual money to practice trading' 
+                  ? 'Add virtual funds to your demo account' 
                   : 'Add funds via Mobile Money, Bank Transfer, or Card'}
               </CardDescription>
             </CardHeader>
