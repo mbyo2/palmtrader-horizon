@@ -359,7 +359,7 @@ export default function Index() {
                 </Card>
               </div>
               
-              <div className="lg:col-span-1 xl:col-span-2 space-y-6 md:space-y-8">
+              <div className="lg:col-span-1 xl:col-span-2 space-y-8 md:space-y-10">
                 <Card className="bg-gradient-to-br from-primary/10 to-secondary/10 border-primary/20">
                   <CardHeader>
                     <CardTitle className="text-primary text-lg md:text-xl">Trending Stocks</CardTitle>
