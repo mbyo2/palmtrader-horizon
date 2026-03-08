@@ -354,7 +354,7 @@ export const WalletManager: React.FC = () => {
         <CardHeader>
           <CardTitle>Recent Transactions</CardTitle>
           <CardDescription>
-            {isDemo ? 'Demo transaction history' : 'Your latest wallet activity'}
+            Your latest wallet activity
           </CardDescription>
         </CardHeader>
         <CardContent>
