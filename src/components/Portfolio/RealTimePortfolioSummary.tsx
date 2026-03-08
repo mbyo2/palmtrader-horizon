@@ -1,7 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
 import { useRealTimePortfolio } from '@/hooks/useRealTimePortfolio';
-import { TrendingUp, TrendingDown, DollarSign, PieChart } from 'lucide-react';
+import { useTradingAccount } from '@/hooks/useTradingAccount';
+import { TrendingUp, TrendingDown, DollarSign, PieChart, Shield } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const formatCurrency = (value: number) => {
