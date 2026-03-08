@@ -20,6 +20,7 @@ const formatPercent = (value: number) => {
 
 export const RealTimePortfolioSummary = () => {
   const { summary, isLoading } = useRealTimePortfolio();
+  const { isDemo } = useTradingAccount();
 
   if (isLoading) {
     return (
