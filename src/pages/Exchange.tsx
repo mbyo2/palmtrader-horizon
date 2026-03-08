@@ -7,6 +7,7 @@ import { ConvertSwap } from '@/components/Exchange/ConvertSwap';
 import { EarnStaking } from '@/components/Exchange/EarnStaking';
 import { FuturesTrading } from '@/components/Exchange/FuturesTrading';
 import { Launchpad } from '@/components/Exchange/Launchpad';
+import { CopyTradingSystem } from '@/components/Social/CopyTradingSystem';
 import { 
   Wallet, 
   Users, 
@@ -14,7 +15,8 @@ import {
   ArrowDownUp, 
   Percent, 
   Rocket,
-  BarChart3
+  BarChart3,
+  Copy
 } from 'lucide-react';
 
 const Exchange = () => {
@@ -28,6 +30,7 @@ const Exchange = () => {
     { id: 'futures', label: 'Futures', icon: BarChart3 },
     { id: 'earn', label: 'Earn', icon: Percent },
     { id: 'launchpad', label: 'Launchpad', icon: Rocket },
+    { id: 'copy', label: 'Copy Trade', icon: Copy },
   ];
 
   return (
@@ -75,6 +78,10 @@ const Exchange = () => {
 
           <TabsContent value="launchpad">
             <Launchpad />
+          </TabsContent>
+
+          <TabsContent value="copy">
+            <CopyTradingSystem />
           </TabsContent>
         </div>
       </Tabs>
