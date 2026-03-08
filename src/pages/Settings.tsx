@@ -8,9 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/useAuth";
-import { Settings as SettingsIcon, User, Bell, Shield, CreditCard, Loader2 } from "lucide-react";
+import { Settings as SettingsIcon, User, Bell, Shield, CreditCard, Key, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import AdvancedSecuritySettings from "@/components/Security/AdvancedSecuritySettings";
 
 const PasswordChangeForm = () => {
   const [newPassword, setNewPassword] = useState('');
