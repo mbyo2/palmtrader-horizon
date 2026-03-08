@@ -35,27 +35,43 @@ export const SuperUserDashboard = () => {
   const { data: systemStats, isLoading: statsLoading } = useQuery({
     queryKey: ["adminSystemStats"],
     queryFn: async () => {
-      const [usersResult, tradesResult, ordersResult] = await Promise.all([
+      const now = new Date();
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+
+      const [usersResult, tradesResult, prevTradesResult, ordersResult, prevUsersResult] = await Promise.all([
         supabase.from('account_details').select('id', { count: 'exact', head: true }),
-        supabase.from('trades').select('total_amount, created_at').gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()),
-        supabase.from('orders').select('id', { count: 'exact', head: true }).eq('status', 'pending')
+        supabase.from('trades').select('total_amount, created_at').gte('created_at', thirtyDaysAgo.toISOString()),
+        supabase.from('trades').select('total_amount').gte('created_at', sixtyDaysAgo.toISOString()).lt('created_at', thirtyDaysAgo.toISOString()),
+        supabase.from('orders').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+        supabase.from('account_details').select('id', { count: 'exact', head: true }).lt('created_at', thirtyDaysAgo.toISOString()),
       ]);
       
       const totalUsers = usersResult.count || 0;
+      const prevUsers = prevUsersResult.count || 0;
       const trades = tradesResult.data || [];
+      const prevTrades = prevTradesResult.data || [];
       const activeTrades = ordersResult.count || 0;
       
       const totalVolume = trades.reduce((sum, t) => sum + (t.total_amount || 0), 0);
-      const revenue = totalVolume * 0.001; // 0.1% commission estimate
+      const prevVolume = prevTrades.reduce((sum, t) => sum + (t.total_amount || 0), 0);
+      const revenue = totalVolume * 0.001;
+      const prevRevenue = prevVolume * 0.001;
+
+      const pctChange = (current: number, previous: number) => {
+        if (previous === 0) return current > 0 ? '+100%' : '0%';
+        const change = ((current - previous) / previous) * 100;
+        return `${change >= 0 ? '+' : ''}${change.toFixed(0)}%`;
+      };
       
       return [
-        { title: "Total Users", value: totalUsers.toLocaleString(), icon: Users, change: "+12%" },
-        { title: "Total Volume", value: `$${(totalVolume / 1000000).toFixed(2)}M`, icon: TrendingUp, change: "+8%" },
-        { title: "Revenue", value: `$${(revenue / 1000).toFixed(1)}K`, icon: DollarSign, change: "+15%" },
-        { title: "Active Trades", value: activeTrades.toString(), icon: Activity, change: "+5%" },
+        { title: "Total Users", value: totalUsers.toLocaleString(), icon: Users, change: pctChange(totalUsers, prevUsers) },
+        { title: "Total Volume", value: `$${(totalVolume / 1000000).toFixed(2)}M`, icon: TrendingUp, change: pctChange(totalVolume, prevVolume) },
+        { title: "Revenue", value: `$${(revenue / 1000).toFixed(1)}K`, icon: DollarSign, change: pctChange(revenue, prevRevenue) },
+        { title: "Active Trades", value: activeTrades.toString(), icon: Activity, change: '' },
       ];
     },
-    refetchInterval: 60000, // Refresh every minute
+    refetchInterval: 60000,
   });
 
   const createAdminUser = async (email: string, password: string) => {
