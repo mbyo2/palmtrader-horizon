@@ -207,9 +207,9 @@ export default function Index() {
                   {
                     title: "AI-Powered Analytics",
                     description: "Smart insights and personalized recommendations powered by advanced AI",
-                    icon: <BarChart3 className="h-12 w-12 text-purple-500" />,
-                    color: "from-purple-500/10 to-pink-500/10",
-                    border: "border-purple-500/20"
+                    icon: <BarChart3 className="h-12 w-12 text-primary" />,
+                    color: "from-primary/10 to-primary/5",
+                    border: "border-primary/20"
                   },
                   {
                     title: "Zero Commissions",
