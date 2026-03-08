@@ -28,6 +28,7 @@ import LiveModeNotice from "@/components/Trading/LiveModeNotice";
 const PortfolioContent = () => {
   const { activeAccount, isLoading: isAccountLoading, isDemo } = useTradingAccount();
   const [selectedSymbol, setSelectedSymbol] = useState("AAPL");
+  const { price: currentSymbolPrice } = useRealTimePrice(selectedSymbol);
   const [showAccountSelector, setShowAccountSelector] = useState(false);
   const [tradingView, setTradingView] = useState<'quick' | 'advanced'>('quick');
 
