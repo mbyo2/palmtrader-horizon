@@ -297,7 +297,7 @@ export default function Index() {
                     <Button 
                       size="lg" 
                       variant="outline" 
-                      className="border-white text-white hover:bg-white/10 font-semibold px-8 py-4 h-auto text-lg"
+                      className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground/10 font-semibold px-8 py-4 h-auto text-lg"
                     >
                       Watch Demo
                     </Button>
