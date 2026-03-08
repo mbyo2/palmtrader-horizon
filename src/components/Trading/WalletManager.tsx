@@ -290,7 +290,7 @@ export const WalletManager: React.FC = () => {
                 disabled={isLoading || !depositAmount}
                 className="w-full"
               >
-                {isLoading ? 'Processing...' : isDemo ? 'Add Virtual Funds' : 'Deposit Funds'}
+                {isLoading ? 'Processing...' : isDemo ? 'Add Funds' : 'Deposit Funds'}
               </Button>
             </CardContent>
           </Card>
