@@ -57,8 +57,8 @@ const Markets = () => {
         </TabsList>
         
         <TabsContent value="chart" className="space-y-6 mt-4">
-          {/* Single real-time chart - no duplicate */}
-          <RealTimeChart symbol={symbol} height={350} />
+          {/* Professional TradingView chart */}
+          <TradingViewWidget symbol={symbol} height={500} />
           
           {/* Research tools with chart, fundamentals, etc. */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
