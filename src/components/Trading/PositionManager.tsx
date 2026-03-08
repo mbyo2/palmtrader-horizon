@@ -157,9 +157,9 @@ const PositionManager = () => {
                   </div>
                   
                   {position.riskLevel >= 7 && (
-                    <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded flex items-center gap-2">
-                      <AlertTriangle className="h-4 w-4 text-yellow-600" />
-                      <span className="text-sm text-yellow-800">High risk position - consider review</span>
+                    <div className="mt-3 p-2 bg-warning/10 border border-warning/20 rounded flex items-center gap-2">
+                      <AlertTriangle className="h-4 w-4 text-warning" />
+                      <span className="text-sm text-warning">High risk position - consider review</span>
                     </div>
                   )}
                 </Card>
@@ -171,7 +171,7 @@ const PositionManager = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Card className="p-4">
                 <div className="flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-green-500" />
+                  <TrendingUp className="h-4 w-4 text-success" />
                   <span className="text-sm text-muted-foreground">Total P&L</span>
                 </div>
                 <p className="text-2xl font-bold">
@@ -181,7 +181,7 @@ const PositionManager = () => {
               
               <Card className="p-4">
                 <div className="flex items-center gap-2">
-                  <DollarSign className="h-4 w-4 text-blue-500" />
+                  <DollarSign className="h-4 w-4 text-info" />
                   <span className="text-sm text-muted-foreground">Total Value</span>
                 </div>
                 <p className="text-2xl font-bold">
@@ -191,7 +191,7 @@ const PositionManager = () => {
               
               <Card className="p-4">
                 <div className="flex items-center gap-2">
-                  <Percent className="h-4 w-4 text-purple-500" />
+                  <Percent className="h-4 w-4 text-primary" />
                   <span className="text-sm text-muted-foreground">Avg. Return</span>
                 </div>
                 <p className="text-2xl font-bold">

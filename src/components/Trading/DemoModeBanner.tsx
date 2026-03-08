@@ -16,8 +16,8 @@ const DemoModeBanner = ({ compact = false }: DemoModeBannerProps) => {
     return (
       <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${
         isDemo 
-          ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20' 
-          : 'bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20'
+          ? 'bg-warning/10 text-warning border border-warning/20' 
+          : 'bg-success/10 text-success border border-success/20'
       }`}>
         {isDemo ? (
           <>
@@ -37,27 +37,27 @@ const DemoModeBanner = ({ compact = false }: DemoModeBannerProps) => {
   return (
     <div className={`w-full px-4 py-2.5 flex items-center justify-between ${
       isDemo 
-        ? 'bg-amber-500/10 border-b border-amber-500/20' 
-        : 'bg-green-500/10 border-b border-green-500/20'
+        ? 'bg-warning/10 border-b border-warning/20' 
+        : 'bg-success/10 border-b border-success/20'
     }`}>
       <div className="flex items-center gap-2">
         {isDemo ? (
           <>
-            <Shield className="h-4 w-4 text-amber-500" />
-            <span className="text-sm font-medium text-amber-600 dark:text-amber-400">
+            <Shield className="h-4 w-4 text-warning" />
+            <span className="text-sm font-medium text-warning">
               Demo Mode — Virtual funds only. Trades are simulated.
             </span>
-            <Badge variant="outline" className="text-amber-500 border-amber-500/30 text-xs">
+            <Badge variant="outline" className="text-warning border-warning/30 text-xs">
               ${activeAccount.available_balance.toLocaleString()} virtual
             </Badge>
           </>
         ) : (
           <>
-            <TrendingUp className="h-4 w-4 text-green-500" />
-            <span className="text-sm font-medium text-green-600 dark:text-green-400">
+            <TrendingUp className="h-4 w-4 text-success" />
+            <span className="text-sm font-medium text-success">
               Live Trading — Real money. All trades are final.
             </span>
-            <Badge variant="outline" className="text-green-500 border-green-500/30 text-xs">
+            <Badge variant="outline" className="text-success border-success/30 text-xs">
               {activeAccount.account_name}
             </Badge>
           </>

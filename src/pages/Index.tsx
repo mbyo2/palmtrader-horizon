@@ -369,9 +369,9 @@ export default function Index() {
                   </CardContent>
                 </Card>
                 
-                <Card className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border-blue-500/20">
+                <Card className="bg-gradient-to-br from-info/10 to-info/5 border-info/20">
                   <CardHeader>
-                    <CardTitle className="text-blue-600 dark:text-blue-400 text-lg md:text-xl">Latest News</CardTitle>
+                    <CardTitle className="text-info text-lg md:text-xl">Latest News</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <NewsFeed defaultCategory="general" limit={5} />
