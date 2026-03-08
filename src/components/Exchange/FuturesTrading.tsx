@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,12 +14,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { TrendingUp, TrendingDown, AlertTriangle, DollarSign, Target, StopCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useRealTimePrice, useMultipleRealTimePrices } from '@/hooks/useRealTimePrice';
 
-const FUTURES_PAIRS = [
-  { symbol: 'BTCUSDT', name: 'Bitcoin', price: 65000 },
-  { symbol: 'ETHUSDT', name: 'Ethereum', price: 3500 },
-  { symbol: 'SOLUSDT', name: 'Solana', price: 150 },
-  { symbol: 'XRPUSDT', name: 'XRP', price: 0.55 },
+const FUTURES_SYMBOLS = [
+  { symbol: 'BTCUSDT', name: 'Bitcoin', priceSymbol: 'BTC' },
+  { symbol: 'ETHUSDT', name: 'Ethereum', priceSymbol: 'ETH' },
+  { symbol: 'SOLUSDT', name: 'Solana', priceSymbol: 'SOL' },
+  { symbol: 'XRPUSDT', name: 'XRP', priceSymbol: 'XRP' },
 ];
 
 export const FuturesTrading = () => {
@@ -33,8 +34,9 @@ export const FuturesTrading = () => {
   const [stopLoss, setStopLoss] = useState('');
   const [showTpSl, setShowTpSl] = useState(false);
 
-  const currentPair = FUTURES_PAIRS.find(p => p.symbol === selectedSymbol);
-  const currentPrice = currentPair?.price || 0;
+  const currentPair = FUTURES_SYMBOLS.find(p => p.symbol === selectedSymbol);
+  const { price: livePrice } = useRealTimePrice(currentPair?.priceSymbol || null);
+  const currentPrice = livePrice ?? 0;
 
   const { data: positions = [], refetch } = useQuery({
     queryKey: ['futures-positions', user?.id],
@@ -52,6 +54,7 @@ export const FuturesTrading = () => {
   const openMutation = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error('Not authenticated');
+      if (!currentPrice) throw new Error('Price unavailable');
       const marginValue = parseFloat(margin);
       const quantity = (marginValue * leverage[0]) / currentPrice;
       
@@ -82,12 +85,8 @@ export const FuturesTrading = () => {
 
   const closeMutation = useMutation({
     mutationFn: async (positionId: string) => {
-      const position = positions.find(p => p.id === positionId);
-      if (!position) throw new Error('Position not found');
-      
-      // Simulate slight price movement for exit
-      const exitPrice = currentPrice * (1 + (Math.random() - 0.5) * 0.01);
-      return FuturesService.closePosition(positionId, exitPrice);
+      if (!currentPrice) throw new Error('Price unavailable');
+      return FuturesService.closePosition(positionId, currentPrice);
     },
     onSuccess: (result) => {
       if (result.success) {
@@ -99,12 +98,13 @@ export const FuturesTrading = () => {
   });
 
   const marginValue = parseFloat(margin) || 0;
-  const quantity = marginValue > 0 ? (marginValue * leverage[0]) / currentPrice : 0;
-  const liquidationPrice = marginValue > 0 
+  const quantity = marginValue > 0 && currentPrice > 0 ? (marginValue * leverage[0]) / currentPrice : 0;
+  const liquidationPrice = marginValue > 0 && currentPrice > 0
     ? FuturesService.calculateLiquidationPrice(currentPrice, leverage[0], side)
     : 0;
 
   const totalUnrealizedPnL = positions.reduce((sum, p) => {
+    if (!currentPrice) return sum;
     const pnl = FuturesService.calculatePnL(p.entry_price, currentPrice, p.quantity, p.side, p.leverage);
     return sum + pnl;
   }, 0);
@@ -112,9 +112,9 @@ export const FuturesTrading = () => {
   return (
     <div className="space-y-4">
       {/* Warning Banner */}
-      <Card className="border-yellow-500/50 bg-yellow-500/10">
+      <Card className="border-warning/50 bg-warning/10">
         <CardContent className="p-3 flex items-center gap-2">
-          <AlertTriangle className="h-5 w-5 text-yellow-500" />
+          <AlertTriangle className="h-5 w-5 text-warning" />
           <span className="text-sm">
             <strong>High Risk:</strong> Futures trading with leverage can result in significant losses. Trade responsibly.
           </span>
@@ -133,7 +133,7 @@ export const FuturesTrading = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {FUTURES_PAIRS.map(pair => (
+                    {FUTURES_SYMBOLS.map(pair => (
                       <SelectItem key={pair.symbol} value={pair.symbol}>
                         {pair.symbol}
                       </SelectItem>
@@ -142,7 +142,7 @@ export const FuturesTrading = () => {
                 </Select>
 
                 <div className="text-2xl font-bold">
-                  ${currentPrice.toLocaleString()}
+                  {currentPrice > 0 ? `$${currentPrice.toLocaleString()}` : 'Loading...'}
                 </div>
 
                 <Badge variant="outline">{leverage[0]}x</Badge>
@@ -157,7 +157,7 @@ export const FuturesTrading = () => {
                 <span>Open Positions ({positions.length})</span>
                 <span className={cn(
                   "text-lg font-bold",
-                  totalUnrealizedPnL >= 0 ? "text-green-500" : "text-red-500"
+                  totalUnrealizedPnL >= 0 ? "text-success" : "text-destructive"
                 )}>
                   {totalUnrealizedPnL >= 0 ? '+' : ''}{totalUnrealizedPnL.toFixed(2)} USDT
                 </span>
@@ -169,8 +169,8 @@ export const FuturesTrading = () => {
               ) : (
                 <div className="space-y-3">
                   {positions.map(position => {
-                    const pnl = FuturesService.calculatePnL(position.entry_price, currentPrice, position.quantity, position.side, position.leverage);
-                    const roe = FuturesService.calculateROE(position.entry_price, currentPrice, position.leverage, position.side);
+                    const pnl = currentPrice ? FuturesService.calculatePnL(position.entry_price, currentPrice, position.quantity, position.side, position.leverage) : 0;
+                    const roe = currentPrice ? FuturesService.calculateROE(position.entry_price, currentPrice, position.leverage, position.side) : 0;
 
                     return (
                       <div key={position.id} className="p-3 rounded-lg bg-muted/50">
@@ -200,11 +200,11 @@ export const FuturesTrading = () => {
                           </div>
                           <div>
                             <div className="text-muted-foreground">Liq. Price</div>
-                            <div className="text-red-500">${position.liquidation_price?.toFixed(2)}</div>
+                            <div className="text-destructive">${position.liquidation_price?.toFixed(2)}</div>
                           </div>
                           <div>
                             <div className="text-muted-foreground">PnL (ROE%)</div>
-                            <div className={pnl >= 0 ? "text-green-500" : "text-red-500"}>
+                            <div className={pnl >= 0 ? "text-success" : "text-destructive"}>
                               {pnl >= 0 ? '+' : ''}{pnl.toFixed(2)} ({roe.toFixed(2)}%)
                             </div>
                           </div>
@@ -223,11 +223,11 @@ export const FuturesTrading = () => {
           <CardContent className="p-4">
             <Tabs value={side} onValueChange={(v) => setSide(v as 'long' | 'short')}>
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="long" className="data-[state=active]:bg-green-500 data-[state=active]:text-white">
+                <TabsTrigger value="long" className="data-[state=active]:bg-success data-[state=active]:text-success-foreground">
                   <TrendingUp className="h-4 w-4 mr-2" />
                   Long
                 </TabsTrigger>
-                <TabsTrigger value="short" className="data-[state=active]:bg-red-500 data-[state=active]:text-white">
+                <TabsTrigger value="short" className="data-[state=active]:bg-destructive data-[state=active]:text-destructive-foreground">
                   <TrendingDown className="h-4 w-4 mr-2" />
                   Short
                 </TabsTrigger>
@@ -276,11 +276,11 @@ export const FuturesTrading = () => {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Entry Price</span>
-                  <span>${currentPrice.toLocaleString()}</span>
+                  <span>{currentPrice > 0 ? `$${currentPrice.toLocaleString()}` : '—'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Liquidation Price</span>
-                  <span className="text-red-500">${liquidationPrice.toFixed(2)}</span>
+                  <span className="text-destructive">{liquidationPrice > 0 ? `$${liquidationPrice.toFixed(2)}` : '—'}</span>
                 </div>
               </div>
 
@@ -319,11 +319,11 @@ export const FuturesTrading = () => {
               <Button 
                 className={cn(
                   "w-full",
-                  side === 'long' ? 'bg-green-500 hover:bg-green-600' : 'bg-red-500 hover:bg-red-600'
+                  side === 'long' ? 'bg-success hover:bg-success/90 text-success-foreground' : 'bg-destructive hover:bg-destructive/90 text-destructive-foreground'
                 )}
                 size="lg"
                 onClick={() => openMutation.mutate()}
-                disabled={openMutation.isPending || !margin}
+                disabled={openMutation.isPending || !margin || currentPrice <= 0}
               >
                 {openMutation.isPending ? 'Opening...' : `Open ${side.toUpperCase()}`}
               </Button>

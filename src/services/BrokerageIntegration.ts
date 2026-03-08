@@ -1,5 +1,5 @@
-
 import { supabase } from "@/integrations/supabase/client";
+import { unifiedPriceService } from "@/services/UnifiedPriceService";
 
 export interface BrokerageAccount {
   id: string;
@@ -42,27 +42,30 @@ export class BrokerageIntegration {
 
   static async getAccountInfo(userId: string): Promise<BrokerageAccount | null> {
     try {
-      // For now, return a mock account based on user account details
-      const { data, error } = await supabase
-        .from('account_details')
-        .select('*')
-        .eq('id', userId)
-        .single();
+      const [accountResult, walletResult] = await Promise.all([
+        supabase.from('account_details').select('*').eq('id', userId).single(),
+        supabase.from('wallets').select('available_balance, reserved_balance').eq('user_id', userId).eq('currency', 'USD').maybeSingle(),
+      ]);
 
-      if (error) throw error;
+      if (accountResult.error) throw accountResult.error;
+      const data = accountResult.data;
+      const wallet = walletResult.data;
       
-      // Create a mock brokerage account from account details
+      const available = wallet?.available_balance ?? 0;
+      const reserved = wallet?.reserved_balance ?? 0;
+      const equity = available + reserved;
+
       return {
         id: data.id,
         userId: data.id,
-        brokerName: 'Mock Broker',
+        brokerName: 'PalmCacia',
         accountNumber: `ACC${data.id.slice(0, 8)}`,
         accountType: 'cash',
         status: data.account_status === 'active' ? 'active' : 'pending',
-        buyingPower: 10000, // Mock value
-        dayTradingBuyingPower: 25000, // Mock value
-        equity: 15000, // Mock value
-        maintenanceMargin: 0,
+        buyingPower: available,
+        dayTradingBuyingPower: available,
+        equity,
+        maintenanceMargin: reserved,
         isPatternDayTrader: false
       };
     } catch (error) {
@@ -73,7 +76,6 @@ export class BrokerageIntegration {
 
   static async executeOrder(request: OrderExecutionRequest): Promise<OrderExecutionResponse> {
     try {
-      // Validate order before execution
       const validation = await this.validateOrder(request);
       if (!validation.valid) {
         return {
@@ -84,13 +86,12 @@ export class BrokerageIntegration {
         };
       }
 
-      // For now, simulate order execution
-      const mockPrice = Math.random() * 100 + 50; // Mock price between 50-150
+      const currentPrice = await this.getCurrentPrice(request.symbol);
+      const executionPrice = request.limitPrice || currentPrice;
       
-      // Record the order in our database
       await this.recordOrder(request, {
         orderId: `ORD_${Date.now()}`,
-        executedPrice: mockPrice,
+        executedPrice: executionPrice,
         executedQuantity: request.quantity,
         status: 'filled'
       });
@@ -98,7 +99,7 @@ export class BrokerageIntegration {
       return {
         success: true,
         orderId: `ORD_${Date.now()}`,
-        executedPrice: mockPrice,
+        executedPrice: executionPrice,
         executedQuantity: request.quantity,
         remainingQuantity: 0,
         status: 'filled',
@@ -116,13 +117,11 @@ export class BrokerageIntegration {
   }
 
   private static async validateOrder(request: OrderExecutionRequest): Promise<{ valid: boolean; error?: string }> {
-    // Check account status
     const account = await this.getAccountByOrderRequest(request);
     if (!account) {
       return { valid: false, error: 'Account not found or inactive' };
     }
 
-    // Check buying power for buy orders
     if (request.side === 'buy') {
       const requiredBuyingPower = request.quantity * (request.limitPrice || await this.getCurrentPrice(request.symbol));
       if (requiredBuyingPower > account.buyingPower) {
@@ -130,7 +129,6 @@ export class BrokerageIntegration {
       }
     }
 
-    // Check position for sell orders
     if (request.side === 'sell') {
       const position = await this.getPosition(request.accountId, request.symbol);
       if (!position || position.quantity < request.quantity) {
@@ -138,30 +136,31 @@ export class BrokerageIntegration {
       }
     }
 
-    // Pattern day trader checks
-    if (account.isPatternDayTrader && request.side === 'buy') {
-      const requiredBuyingPower = request.quantity * (request.limitPrice || await this.getCurrentPrice(request.symbol));
-      if (requiredBuyingPower > account.dayTradingBuyingPower) {
-        return { valid: false, error: 'Insufficient day trading buying power' };
-      }
-    }
-
     return { valid: true };
   }
 
   private static async getCurrentPrice(symbol: string): Promise<number> {
-    try {
-      const response = await fetch(`/api/market-data/quote/${symbol}`);
-      const data = await response.json();
-      return data.price || 100; // Default price if API fails
-    } catch (error) {
-      console.error('Error fetching current price:', error);
-      return 100; // Default price
-    }
+    return new Promise<number>((resolve) => {
+      let resolved = false;
+      const unsub = unifiedPriceService.subscribe(symbol, (data) => {
+        if (!resolved) {
+          resolved = true;
+          unsub();
+          resolve(data.price);
+        }
+      });
+      // Timeout after 5s — use 0 as fallback
+      setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          unsub();
+          resolve(0);
+        }
+      }, 5000);
+    });
   }
 
   private static async getAccountByOrderRequest(request: OrderExecutionRequest): Promise<BrokerageAccount | null> {
-    // Use the userId from the request accountId for now
     return await this.getAccountInfo(request.accountId);
   }
 

@@ -39,7 +39,7 @@ import {
   ChartPie 
 } from "lucide-react";
 
-const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8"];
+const COLORS = ["hsl(var(--primary))", "hsl(var(--success))", "hsl(var(--warning))", "hsl(var(--destructive))", "hsl(var(--info))"];
 
 const PortfolioPerformance = () => {
   const [timeRange, setTimeRange] = useState<"1d" | "1w" | "1m" | "3m" | "1y">("1m");
@@ -381,12 +381,12 @@ const PortfolioPerformance = () => {
             <div className="flex items-center justify-between">
               <h4 className="text-sm text-muted-foreground">Total Gain/Loss</h4>
               {metrics.totalGain.percentage >= 0 ? (
-                <TrendingUp className="h-4 w-4 text-green-500" />
+                <TrendingUp className="h-4 w-4 text-success" />
               ) : (
-                <TrendingDown className="h-4 w-4 text-red-500" />
+                <TrendingDown className="h-4 w-4 text-destructive" />
               )}
             </div>
-            <p className={`text-lg font-semibold ${metrics.totalGain.percentage >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+            <p className={`text-lg font-semibold ${metrics.totalGain.percentage >= 0 ? 'text-success' : 'text-destructive'}`}>
               {metrics.totalGain.percentage >= 0 ? '+' : ''}{metrics.totalGain.percentage.toFixed(2)}%
             </p>
           </div>
@@ -395,12 +395,12 @@ const PortfolioPerformance = () => {
             <div className="flex items-center justify-between">
               <h4 className="text-sm text-muted-foreground">Today's Change</h4>
               {metrics.todayGain.percentage >= 0 ? (
-                <TrendingUp className="h-4 w-4 text-green-500" />
+                <TrendingUp className="h-4 w-4 text-success" />
               ) : (
-                <TrendingDown className="h-4 w-4 text-red-500" />
+                <TrendingDown className="h-4 w-4 text-destructive" />
               )}
             </div>
-            <p className={`text-lg font-semibold ${metrics.todayGain.percentage >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+            <p className={`text-lg font-semibold ${metrics.todayGain.percentage >= 0 ? 'text-success' : 'text-destructive'}`}>
               {metrics.todayGain.percentage >= 0 ? '+' : ''}{metrics.todayGain.percentage.toFixed(2)}%
             </p>
           </div>

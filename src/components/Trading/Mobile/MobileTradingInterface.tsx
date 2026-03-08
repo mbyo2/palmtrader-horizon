@@ -26,7 +26,7 @@ export const MobileTradingInterface = ({
   currentPrice: initialPrice,
   priceChange: initialChange,
   priceChangePercent: initialChangePercent,
-  availableBalance = 10000,
+  availableBalance = 0,
   onOrderSubmit,
 }: MobileTradingInterfaceProps) => {
   const [showConfirmation, setShowConfirmation] = useState(false);
