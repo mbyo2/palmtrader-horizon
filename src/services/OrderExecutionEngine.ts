@@ -539,8 +539,30 @@ export class OrderExecutionEngine {
         .maybeSingle();
 
       if (position) {
+        // Calculate realized P&L
+        const realizedPnl = (price - position.average_price) * shares;
+        
+        // Store realized P&L in the trade record
+        const { data: latestTrade } = await supabase
+          .from("trades")
+          .select("id")
+          .eq("user_id", userId)
+          .eq("symbol", symbol)
+          .eq("type", "sell")
+          .eq("status", "completed")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (latestTrade) {
+          await supabase
+            .from("trades")
+            .update({ realized_pnl: realizedPnl })
+            .eq("id", latestTrade.id);
+        }
+
         const newShares = position.shares - shares;
-        if (newShares <= 0) {
+        if (newShares <= 0.000001) {
           await supabase
             .from("portfolio")
             .delete()
