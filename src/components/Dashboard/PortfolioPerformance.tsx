@@ -293,76 +293,80 @@ const PortfolioPerformance = () => {
           </SelectContent>
         </Select>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-8">
         {/* Portfolio Value Chart */}
-        <div className="h-64">
-          <h3 className="text-lg font-medium mb-2 flex items-center gap-2">
+        <div>
+          <h3 className="text-lg font-medium mb-3 flex items-center gap-2">
             <ChartLine className="h-5 w-5" />
             Performance
           </h3>
-          <ChartContainer config={{}}>
-            <LineChart data={performanceData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" />
-              <YAxis />
-              <ChartTooltip />
-              <Legend 
-                onClick={(e) => handleLegendClick(e.dataKey as keyof typeof visibleSeries)}
-              />
-              {visibleSeries.portfolioValue && (
-                <Line
-                  type="monotone"
-                  dataKey="value"
-                  name="Portfolio Value"
-                  stroke="#8884d8"
-                  strokeWidth={2}
+          <div className="h-[280px] w-full">
+            <ChartContainer config={{}}>
+              <LineChart data={performanceData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                <YAxis tick={{ fontSize: 12 }} />
+                <ChartTooltip />
+                <Legend 
+                  onClick={(e) => handleLegendClick(e.dataKey as keyof typeof visibleSeries)}
                 />
-              )}
-              {visibleSeries.returns && (
-                <Line
-                  type="monotone"
-                  dataKey="returns"
-                  name="Returns %"
-                  stroke="#82ca9d"
-                  strokeWidth={2}
-                />
-              )}
-            </LineChart>
-          </ChartContainer>
+                {visibleSeries.portfolioValue && (
+                  <Line
+                    type="monotone"
+                    dataKey="value"
+                    name="Portfolio Value"
+                    stroke="#8884d8"
+                    strokeWidth={2}
+                  />
+                )}
+                {visibleSeries.returns && (
+                  <Line
+                    type="monotone"
+                    dataKey="returns"
+                    name="Returns %"
+                    stroke="#82ca9d"
+                    strokeWidth={2}
+                  />
+                )}
+              </LineChart>
+            </ChartContainer>
+          </div>
         </div>
 
         {/* Portfolio Diversification */}
-        <div className="h-64">
-          <h3 className="text-lg font-medium mb-2 flex items-center gap-2">
+        <div>
+          <h3 className="text-lg font-medium mb-3 flex items-center gap-2">
             <ChartPie className="h-5 w-5" />
             Portfolio Diversification
           </h3>
-          <ResponsiveContainer>
-            <PieChart>
-              <Pie
-                data={diversificationData}
-                dataKey="value"
-                nameKey="name"
-                cx="50%"
-                cy="50%"
-                outerRadius={80}
-                label
-              >
-                {diversificationData.map((entry, index) => (
-                  <Cell
-                    key={`cell-${index}`}
-                    fill={COLORS[index % COLORS.length]}
-                  />
-                ))}
-              </Pie>
-              <Tooltip />
-              <Legend />
-            </PieChart>
-          </ResponsiveContainer>
+          <div className="h-[280px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={diversificationData}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={80}
+                  label
+                >
+                  {diversificationData.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={COLORS[index % COLORS.length]}
+                    />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
         </div>
 
         {/* Metrics */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
           <div className="p-4 rounded-lg bg-background/50">
             <div className="flex items-center justify-between">
               <h4 className="text-sm text-muted-foreground">Total Value</h4>

@@ -40,28 +40,28 @@ const Markets = () => {
   };
 
   return (
-    <div className="container py-4 sm:py-6 px-3 sm:px-4 space-y-6">
+    <div className="container py-4 sm:py-6 px-3 sm:px-4 space-y-6 sm:space-y-8">
       <h1 className="text-2xl sm:text-3xl font-bold">Markets</h1>
       
       {/* Market Overview */}
       <section>
-        <h2 className="text-lg sm:text-xl font-semibold mb-3">Market Overview</h2>
+        <h2 className="text-lg sm:text-xl font-semibold mb-4">Market Overview</h2>
         <MarketOverview />
       </section>
       
-      <Tabs defaultValue="chart" className="space-y-4">
+      <Tabs defaultValue="chart" className="space-y-6">
         <TabsList className="grid w-full grid-cols-3 h-auto">
           <TabsTrigger value="chart" className="text-xs sm:text-sm">Charts</TabsTrigger>
           <TabsTrigger value="trading" className="text-xs sm:text-sm">Trading</TabsTrigger>
           <TabsTrigger value="social" className="text-xs sm:text-sm">Social</TabsTrigger>
         </TabsList>
         
-        <TabsContent value="chart" className="space-y-6 mt-4">
+        <TabsContent value="chart" className="space-y-6 sm:space-y-8 mt-4">
           {/* Professional TradingView chart */}
           <TradingViewWidget symbol={symbol} height={500} />
           
           {/* Research tools with chart, fundamentals, etc. */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
             <div className="lg:col-span-2">
               <ResearchTools onSymbolChange={handleSymbolChange} initialSymbol={symbol} />
             </div>
@@ -71,11 +71,11 @@ const Markets = () => {
           </div>
         </TabsContent>
         
-        <TabsContent value="trading" className="space-y-4 mt-4">
+        <TabsContent value="trading" className="space-y-6 mt-4">
           <TradingInterface />
         </TabsContent>
         
-        <TabsContent value="social" className="mt-4 space-y-6">
+        <TabsContent value="social" className="mt-4 space-y-6 sm:space-y-8">
           <CopyTradingSystem />
           <Card className="p-4 sm:p-6">
             <div className="space-y-4">

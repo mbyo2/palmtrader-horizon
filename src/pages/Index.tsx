@@ -309,7 +309,7 @@ export default function Index() {
         </div>
       ) : (
         <div className="min-h-screen bg-gradient-to-br from-background to-primary/5">
-          <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8 space-y-6 md:space-y-8">
+          <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8 space-y-8 md:space-y-10">
             {/* Enhanced Dashboard Header */}
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6">
               <div className="space-y-1">
@@ -333,8 +333,8 @@ export default function Index() {
             </div>
             
             {/* Enhanced Dashboard Grid */}
-            <div className="grid gap-6 md:gap-8 lg:grid-cols-3 xl:grid-cols-6">
-              <div className="lg:col-span-2 xl:col-span-4 space-y-6 md:space-y-8">
+            <div className="grid gap-8 md:gap-10 lg:grid-cols-3 xl:grid-cols-6">
+              <div className="lg:col-span-2 xl:col-span-4 space-y-8 md:space-y-10">
                 <Card className="bg-gradient-to-r from-card to-card/50 border-border/50 shadow-lg">
                   <CardHeader>
                     <CardTitle className="flex items-center space-x-2 text-lg md:text-xl">
@@ -359,7 +359,7 @@ export default function Index() {
                 </Card>
               </div>
               
-              <div className="lg:col-span-1 xl:col-span-2 space-y-6 md:space-y-8">
+              <div className="lg:col-span-1 xl:col-span-2 space-y-8 md:space-y-10">
                 <Card className="bg-gradient-to-br from-primary/10 to-secondary/10 border-primary/20">
                   <CardHeader>
                     <CardTitle className="text-primary text-lg md:text-xl">Trending Stocks</CardTitle>

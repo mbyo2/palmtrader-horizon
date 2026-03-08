@@ -81,7 +81,7 @@ const PortfolioContent = () => {
         </TabsList>
 
         {/* Trading Tab */}
-        <TabsContent value="trading" className="space-y-4 sm:space-y-6 mt-4">
+        <TabsContent value="trading" className="space-y-6 sm:space-y-8 mt-4">
           {!isDemo && <LiveModeNotice />}
           <TradingErrorBoundary>
             {/* Stock Selector */}
@@ -110,7 +110,7 @@ const PortfolioContent = () => {
               </Button>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
               {/* Main Trading Panel */}
               <div className="lg:col-span-2 space-y-6">
                 {tradingView === 'quick' ? (
@@ -130,7 +130,7 @@ const PortfolioContent = () => {
         </TabsContent>
 
         {/* Portfolio Tab */}
-        <TabsContent value="portfolio" className="space-y-4 sm:space-y-6 mt-4">
+        <TabsContent value="portfolio" className="space-y-6 sm:space-y-8 mt-4">
           <RealTimePortfolioSummary />
           <RealTimePositionsList />
         </TabsContent>
