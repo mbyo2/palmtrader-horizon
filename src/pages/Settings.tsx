@@ -131,7 +131,7 @@ const Settings = () => {
       </div>
       
       <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="profile" className="flex items-center gap-2">
             <User className="h-4 w-4" />
             Profile
@@ -143,6 +143,10 @@ const Settings = () => {
           <TabsTrigger value="security" className="flex items-center gap-2">
             <Shield className="h-4 w-4" />
             Security
+          </TabsTrigger>
+          <TabsTrigger value="advanced" className="flex items-center gap-2">
+            <Key className="h-4 w-4" />
+            API & VIP
           </TabsTrigger>
           <TabsTrigger value="billing" className="flex items-center gap-2">
             <CreditCard className="h-4 w-4" />
