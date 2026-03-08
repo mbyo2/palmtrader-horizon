@@ -53,13 +53,13 @@ const PortfolioSummary = ({ portfolioData, totalValue }: PortfolioSummaryProps) 
     const totalGain = currentValue - costBasis;
     const totalGainPercent = costBasis > 0 ? (totalGain / costBasis) * 100 : 0;
     
-    // Day change derived from position-level price changes (not hardcoded)
+    // Day change derived from position-level price changes
     let dayChange = 0;
     portfolioData.forEach(position => {
       const priceInfo = latestPrices?.find(p => p.symbol === position.symbol);
-      const prevClose = priceInfo?.previousClose ?? position.average_price;
-      const curPrice = priceInfo?.price ?? position.average_price;
-      dayChange += position.shares * (curPrice - prevClose);
+      if (priceInfo?.change) {
+        dayChange += position.shares * priceInfo.change;
+      }
     });
     const dayChangePercent = currentValue > 0 ? (dayChange / (currentValue - dayChange)) * 100 : 0;
     
