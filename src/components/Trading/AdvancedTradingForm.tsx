@@ -326,7 +326,7 @@ const AdvancedTradingForm = ({ onOrderSubmit }: AdvancedOrderFormProps) => {
         <Button
           onClick={handleSubmit}
           disabled={isSubmitting || (!canAfford && side === 'buy')}
-          className={`w-full ${side === 'buy' ? 'bg-green-500 hover:bg-green-600' : 'bg-red-500 hover:bg-red-600'}`}
+          className={`w-full ${side === 'buy' ? 'bg-success hover:bg-success/90 text-success-foreground' : 'bg-destructive hover:bg-destructive/90 text-destructive-foreground'}`}
         >
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {side === 'buy' ? 'Buy' : 'Sell'} {symbol}

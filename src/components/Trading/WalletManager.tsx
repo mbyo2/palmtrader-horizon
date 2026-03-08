@@ -322,7 +322,7 @@ export const WalletManager: React.FC = () => {
               <div className="p-3 bg-muted rounded-lg">
                 <p className="text-sm text-muted-foreground">
                   Available: {formatCurrency(getBalance('USD')?.available || activeAccount?.available_balance || 0, 'USD')}
-                  {isDemo && <span className="ml-1 text-amber-500">(virtual)</span>}
+                  
                 </p>
               </div>
 
