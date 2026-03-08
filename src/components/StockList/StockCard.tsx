@@ -27,7 +27,6 @@ const StockCard = memo(({ stock }: StockCardProps) => {
   const { trigger } = useHaptic();
   const isMobile = useIsMobile();
   
-  // Use the optimized hook for market price data
   const { data: priceData, isLoading } = useMarketPrice(stock.symbol, {
     initialData: { 
       symbol: stock.symbol, 
@@ -62,14 +61,14 @@ const StockCard = memo(({ stock }: StockCardProps) => {
           <div className="text-right">
             <p className={`font-bold text-foreground transition-colors duration-300 ${
               stock.previousPrice && parseFloat(currentPrice) > parseFloat(stock.previousPrice)
-                ? 'text-green-500'
+                ? 'text-success'
                 : stock.previousPrice && parseFloat(currentPrice) < parseFloat(stock.previousPrice)
-                ? 'text-red-500'
+                ? 'text-destructive'
                 : ''
             }`}>
               ${currentPrice}
             </p>
-            <span className={`text-sm ${stock.change.startsWith("+") ? "text-green-500" : "text-red-500"}`}>
+            <span className={`text-sm ${stock.change.startsWith("+") ? "text-success" : "text-destructive"}`}>
               {stock.change}
             </span>
           </div>

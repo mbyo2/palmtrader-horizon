@@ -1,13 +1,7 @@
-
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -37,7 +31,6 @@ const PortfolioPositions = ({ portfolioData, onRefresh }: PortfolioPositionsProp
   const [sortField, setSortField] = useState<SortField>("currentValue");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   
-  // Fetch latest prices for all symbols in portfolio
   const { data: latestPrices, isLoading } = useQuery({
     queryKey: ["portfolioPrices", portfolioData.map(item => item.symbol).join(',')],
     queryFn: async () => {
@@ -47,10 +40,9 @@ const PortfolioPositions = ({ portfolioData, onRefresh }: PortfolioPositionsProp
       );
     },
     enabled: portfolioData.length > 0,
-    staleTime: 30 * 1000, // 30 seconds
+    staleTime: 30 * 1000,
   });
   
-  // Handle sorting
   const handleSort = (field: SortField) => {
     if (sortField === field) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
@@ -60,18 +52,15 @@ const PortfolioPositions = ({ portfolioData, onRefresh }: PortfolioPositionsProp
     }
   };
   
-  // Filter and sort the portfolio data
   const getFilteredAndSortedData = () => {
     let filtered = [...portfolioData];
     
-    // Apply search filter
     if (searchTerm) {
       filtered = filtered.filter(position => 
         position.symbol.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
     
-    // Apply sorting
     return filtered.sort((a, b) => {
       const priceA = latestPrices?.find(p => p.symbol === a.symbol)?.price || a.average_price;
       const priceB = latestPrices?.find(p => p.symbol === b.symbol)?.price || b.average_price;
@@ -108,14 +97,12 @@ const PortfolioPositions = ({ portfolioData, onRefresh }: PortfolioPositionsProp
   
   const filteredAndSortedData = getFilteredAndSortedData();
   
-  // Sell position handler
   const handleSellPosition = async (position: typeof portfolioData[0]) => {
     if (!user) return;
     
     try {
       const currentPrice = latestPrices?.find(p => p.symbol === position.symbol)?.price || position.average_price;
       
-      // Insert the sell trade
       const { error } = await supabase.from("trades").insert({
         user_id: user.id,
         symbol: position.symbol,
@@ -128,7 +115,6 @@ const PortfolioPositions = ({ portfolioData, onRefresh }: PortfolioPositionsProp
       
       if (error) throw error;
       
-      // Refresh portfolio data
       onRefresh();
       
       toast.success(`Sold all ${position.shares} shares of ${position.symbol}`);
@@ -138,7 +124,6 @@ const PortfolioPositions = ({ portfolioData, onRefresh }: PortfolioPositionsProp
     }
   };
   
-  // Render a sort indicator
   const renderSortIndicator = (field: SortField) => {
     if (sortField !== field) return null;
     return sortDirection === "asc" ? <SortAsc className="w-4 h-4 ml-1" /> : <SortDesc className="w-4 h-4 ml-1" />;
@@ -162,45 +147,20 @@ const PortfolioPositions = ({ portfolioData, onRefresh }: PortfolioPositionsProp
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead 
-                className="cursor-pointer"
-                onClick={() => handleSort("symbol")}
-              >
-                <div className="flex items-center">
-                  Symbol {renderSortIndicator("symbol")}
-                </div>
+              <TableHead className="cursor-pointer" onClick={() => handleSort("symbol")}>
+                <div className="flex items-center">Symbol {renderSortIndicator("symbol")}</div>
               </TableHead>
-              <TableHead 
-                className="cursor-pointer text-right"
-                onClick={() => handleSort("shares")}
-              >
-                <div className="flex items-center justify-end">
-                  Shares {renderSortIndicator("shares")}
-                </div>
+              <TableHead className="cursor-pointer text-right" onClick={() => handleSort("shares")}>
+                <div className="flex items-center justify-end">Shares {renderSortIndicator("shares")}</div>
               </TableHead>
-              <TableHead 
-                className="cursor-pointer text-right"
-                onClick={() => handleSort("averagePrice")}
-              >
-                <div className="flex items-center justify-end">
-                  Avg Price {renderSortIndicator("averagePrice")}
-                </div>
+              <TableHead className="cursor-pointer text-right" onClick={() => handleSort("averagePrice")}>
+                <div className="flex items-center justify-end">Avg Price {renderSortIndicator("averagePrice")}</div>
               </TableHead>
-              <TableHead 
-                className="cursor-pointer text-right"
-                onClick={() => handleSort("currentValue")}
-              >
-                <div className="flex items-center justify-end">
-                  Current Value {renderSortIndicator("currentValue")}
-                </div>
+              <TableHead className="cursor-pointer text-right" onClick={() => handleSort("currentValue")}>
+                <div className="flex items-center justify-end">Current Value {renderSortIndicator("currentValue")}</div>
               </TableHead>
-              <TableHead 
-                className="cursor-pointer text-right"
-                onClick={() => handleSort("gain")}
-              >
-                <div className="flex items-center justify-end">
-                  Gain/Loss {renderSortIndicator("gain")}
-                </div>
+              <TableHead className="cursor-pointer text-right" onClick={() => handleSort("gain")}>
+                <div className="flex items-center justify-end">Gain/Loss {renderSortIndicator("gain")}</div>
               </TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -237,7 +197,7 @@ const PortfolioPositions = ({ portfolioData, onRefresh }: PortfolioPositionsProp
                     <TableCell className="text-right">{position.shares.toFixed(position.shares % 1 === 0 ? 0 : 8)}</TableCell>
                     <TableCell className="text-right">${position.average_price.toFixed(2)}</TableCell>
                     <TableCell className="text-right">${currentValue.toFixed(2)}</TableCell>
-                    <TableCell className={`text-right ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
+                    <TableCell className={`text-right ${isPositive ? 'text-success' : 'text-destructive'}`}>
                       {isPositive ? '+' : ''}{gainPercent.toFixed(2)}%
                     </TableCell>
                     <TableCell className="text-right">

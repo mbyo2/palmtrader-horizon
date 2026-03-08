@@ -40,11 +40,11 @@ const TradingModeSwitch = () => {
   const getTypeColor = (type: TradingAccountType) => {
     const colors: Record<TradingAccountType, string> = {
       demo: "bg-muted text-muted-foreground",
-      cent: "bg-green-500/10 text-green-500",
-      standard_stp: "bg-blue-500/10 text-blue-500",
-      raw_ecn: "bg-purple-500/10 text-purple-500",
-      pro_ecn: "bg-amber-500/10 text-amber-500",
-      islamic: "bg-emerald-500/10 text-emerald-500"
+      cent: "bg-success/10 text-success",
+      standard_stp: "bg-info/10 text-info",
+      raw_ecn: "bg-primary/10 text-primary",
+      pro_ecn: "bg-warning/10 text-warning",
+      islamic: "bg-success/10 text-success"
     };
     return colors[type] || colors.demo;
   };
@@ -60,16 +60,15 @@ const TradingModeSwitch = () => {
   if (!activeAccount) return null;
 
   return (
-    <Card className={`border-2 transition-colors ${isDemo ? 'border-muted-foreground/30 bg-muted/20' : 'border-green-500/30 bg-green-500/5'}`}>
+    <Card className={`border-2 transition-colors ${isDemo ? 'border-muted-foreground/30 bg-muted/20' : 'border-success/30 bg-success/5'}`}>
       <CardContent className="p-4">
         <div className="flex items-center justify-between gap-4">
-          {/* Mode Indicator */}
           <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-lg ${isDemo ? 'bg-muted' : 'bg-green-500/10'}`}>
+            <div className={`p-2 rounded-lg ${isDemo ? 'bg-muted' : 'bg-success/10'}`}>
               {isDemo ? (
                 <Shield className="h-5 w-5 text-muted-foreground" />
               ) : (
-                <TrendingUp className="h-5 w-5 text-green-500" />
+                <TrendingUp className="h-5 w-5 text-success" />
               )}
             </div>
             <div>
@@ -77,7 +76,7 @@ const TradingModeSwitch = () => {
                 <span className="font-semibold">
                   {isDemo ? 'Demo Mode' : 'Live Trading'}
                 </span>
-                <Badge variant={isDemo ? "secondary" : "default"} className={isDemo ? "" : "bg-green-500"}>
+                <Badge variant={isDemo ? "secondary" : "success"}>
                   {isDemo ? 'Virtual' : 'Real Money'}
                 </Badge>
               </div>
@@ -87,7 +86,6 @@ const TradingModeSwitch = () => {
             </div>
           </div>
 
-          {/* Balance Display */}
           <div className="text-right hidden sm:block">
             <p className="text-2xl font-bold">{formatBalance(getAccountBalance())}</p>
             <p className="text-sm text-muted-foreground">
@@ -95,7 +93,6 @@ const TradingModeSwitch = () => {
             </p>
           </div>
 
-          {/* Demo/Real Toggle */}
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
               <span className={`text-sm ${isDemo ? 'text-muted-foreground' : 'font-medium'}`}>Demo</span>
@@ -108,12 +105,11 @@ const TradingModeSwitch = () => {
                     switchToDemo();
                   }
                 }}
-                className="data-[state=checked]:bg-green-500"
+                className="data-[state=checked]:bg-success"
               />
-              <span className={`text-sm ${!isDemo ? 'text-green-500 font-medium' : 'text-muted-foreground'}`}>Live</span>
+              <span className={`text-sm ${!isDemo ? 'text-success font-medium' : 'text-muted-foreground'}`}>Live</span>
             </div>
 
-            {/* Account Selector Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm">
@@ -124,7 +120,6 @@ const TradingModeSwitch = () => {
                 <DropdownMenuLabel>Select Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 
-                {/* Demo Accounts */}
                 {accounts.filter(a => a.account_type === 'demo').map(account => (
                   <DropdownMenuItem
                     key={account.id}
@@ -153,7 +148,6 @@ const TradingModeSwitch = () => {
                   </>
                 )}
 
-                {/* Real Accounts */}
                 {accounts.filter(a => a.account_type !== 'demo').map(account => (
                   <DropdownMenuItem
                     key={account.id}
@@ -179,9 +173,8 @@ const TradingModeSwitch = () => {
           </div>
         </div>
 
-        {/* Demo Warning */}
         {isDemo && (
-          <div className="mt-3 p-2 bg-amber-500/10 rounded-lg flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400">
+          <div className="mt-3 p-2 bg-warning/10 rounded-lg flex items-center gap-2 text-sm text-warning">
             <AlertTriangle className="h-4 w-4" />
             <span>Demo mode uses virtual funds. Switch to Live for real trading.</span>
           </div>

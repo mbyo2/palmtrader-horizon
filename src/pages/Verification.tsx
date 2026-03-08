@@ -216,12 +216,12 @@ const Verification = () => {
               <div className="flex items-center space-x-2">
                 {accountDetails?.is_email_verified ? (
                   <>
-                    <CheckCircle className="h-5 w-5 text-green-500" />
-                    <Badge className="bg-green-100 text-green-800">Verified</Badge>
+                    <CheckCircle className="h-5 w-5 text-success" />
+                    <Badge variant="success">Verified</Badge>
                   </>
                 ) : (
                   <>
-                    <XCircle className="h-5 w-5 text-red-500" />
+                    <XCircle className="h-5 w-5 text-destructive" />
                     <Button size="sm" onClick={sendVerificationEmail}>
                       Send Verification Email
                     </Button>
@@ -250,12 +250,12 @@ const Verification = () => {
               <div className="flex items-center space-x-2">
                 {accountDetails?.is_phone_verified ? (
                   <>
-                    <CheckCircle className="h-5 w-5 text-green-500" />
-                    <Badge className="bg-green-100 text-green-800">Verified</Badge>
+                    <CheckCircle className="h-5 w-5 text-success" />
+                    <Badge variant="success">Verified</Badge>
                   </>
                 ) : (
                   <>
-                    <XCircle className="h-5 w-5 text-red-500" />
+                    <XCircle className="h-5 w-5 text-destructive" />
                     <Button size="sm">
                       Verify Phone
                     </Button>
@@ -281,14 +281,14 @@ const Verification = () => {
         <CardContent className="space-y-6">
           {accountDetails?.kyc_status === 'approved' ? (
             <div className="text-center py-8">
-              <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-green-700">Verification Complete</h3>
+              <CheckCircle className="h-16 w-16 text-success mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-success">Verification Complete</h3>
               <p className="text-muted-foreground">Your identity has been successfully verified</p>
             </div>
           ) : accountDetails?.kyc_status === 'pending' ? (
             <div className="text-center py-8">
-              <Clock className="h-16 w-16 text-yellow-500 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-yellow-700">Under Review</h3>
+              <Clock className="h-16 w-16 text-warning mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-warning">Under Review</h3>
               <p className="text-muted-foreground">Your documents are being reviewed. We'll notify you within 2-3 business days.</p>
             </div>
           ) : (
@@ -415,7 +415,7 @@ const Verification = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-yellow-500" />
+            <AlertTriangle className="h-5 w-5 text-warning" />
             Important Notes
           </CardTitle>
         </CardHeader>

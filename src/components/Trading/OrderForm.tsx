@@ -43,6 +43,31 @@ const OrderForm = ({
   const [isAdvancedOrder, setIsAdvancedOrder] = useState(false);
   const [isFractional, setIsFractional] = useState(false);
 
+  const availableShares = userPosition ? userPosition.shares : 0;
+
+  const handleSharesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setShares(value);
+  };
+
+  const handleLimitPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setLimitPrice(value);
+  };
+
+  const handleStopPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setStopPrice(value);
+  };
+
+  const handleIsAdvancedOrderChange = (checked: boolean) => {
+    setIsAdvancedOrder(checked);
+  };
+
+  const handleIsFractionalChange = (checked: boolean) => {
+    setIsFractional(checked);
+  };
+
   const handleOrderTypeChange = (value: OrderType) => {
     setOrderType(value);
     if (value === "market") {
@@ -97,7 +122,6 @@ const OrderForm = ({
     };
     onSubmitOrder(formData);
     
-    // Reset form after submission
     setShares("");
     setLimitPrice("");
     setStopPrice("");
@@ -109,8 +133,8 @@ const OrderForm = ({
     <div className="space-y-4">
       <Tabs value={orderAction} onValueChange={(value) => onOrderActionChange(value as "buy" | "sell")}>
         <TabsList className="grid grid-cols-2">
-          <TabsTrigger value="buy" className="data-[state=active]:bg-green-500 data-[state=active]:text-white">Buy</TabsTrigger>
-          <TabsTrigger value="sell" className="data-[state=active]:bg-red-500 data-[state=active]:text-white">Sell</TabsTrigger>
+          <TabsTrigger value="buy" className="data-[state=active]:bg-success data-[state=active]:text-success-foreground">Buy</TabsTrigger>
+          <TabsTrigger value="sell" className="data-[state=active]:bg-destructive data-[state=active]:text-destructive-foreground">Sell</TabsTrigger>
         </TabsList>
       </Tabs>
 

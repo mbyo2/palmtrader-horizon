@@ -23,7 +23,7 @@ export default function SuspiciousActivityMonitor() {
 
   useEffect(() => {
     loadActivities();
-    const interval = setInterval(loadActivities, 30000); // Refresh every 30 seconds
+    const interval = setInterval(loadActivities, 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -85,8 +85,8 @@ export default function SuspiciousActivityMonitor() {
 
   const getSeverityColor = (severity: string) => {
     const colors: Record<string, string> = {
-      low: "text-blue-500 bg-blue-500/10",
-      medium: "text-yellow-500 bg-yellow-500/10",
+      low: "text-info bg-info/10",
+      medium: "text-warning bg-warning/10",
       high: "text-orange-500 bg-orange-500/10",
       critical: "text-destructive bg-destructive/10"
     };
@@ -130,7 +130,6 @@ export default function SuspiciousActivityMonitor() {
     );
   };
 
-  // Calculate statistics
   const stats = {
     total: activities.length,
     critical: activities.filter(a => a.severity === 'critical').length,

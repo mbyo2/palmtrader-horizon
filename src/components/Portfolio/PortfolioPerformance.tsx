@@ -11,7 +11,6 @@ interface PortfolioPerformanceProps {
 }
 
 const PortfolioPerformance = ({ portfolioData, totalValue }: PortfolioPerformanceProps) => {
-  // Mock performance data - in a real app, this would come from backend
   const performanceData = [
     { name: "Jan", value: 10000, change: 500 },
     { name: "Feb", value: 11000, change: 1000 },
@@ -27,7 +26,6 @@ const PortfolioPerformance = ({ portfolioData, totalValue }: PortfolioPerformanc
     { name: "Dec", value: 16000, change: 800 },
   ];
 
-  // Calculate total gain/loss
   const initialValue = performanceData[0].value;
   const currentValue = performanceData[performanceData.length - 1].value;
   const totalGain = currentValue - initialValue;
@@ -96,12 +94,12 @@ const PortfolioPerformance = ({ portfolioData, totalValue }: PortfolioPerformanc
                   labelFormatter={(label) => `Month: ${label}`}
                 />
                 <Legend />
-                <Bar dataKey="change" name="Monthly Change" fill="#8884d8" />
+                <Bar dataKey="change" name="Monthly Change" fill="hsl(var(--primary))" />
                 <Line 
                   type="monotone" 
                   dataKey="value" 
                   name="Portfolio Value" 
-                  stroke="#10b981" 
+                  stroke="hsl(var(--success))" 
                   dot={{ r: 4 }} 
                   activeDot={{ r: 8 }}
                 />

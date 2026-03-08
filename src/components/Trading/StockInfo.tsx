@@ -35,7 +35,7 @@ const StockInfo = ({ symbol, price, change = 0, changePercent = 0, volume }: Sto
           
           <div className="flex justify-between">
             <span className="text-sm text-muted-foreground">Change</span>
-            <span className={`font-medium ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
+            <span className={`font-medium ${isPositive ? 'text-success' : 'text-destructive'}`}>
               {isPositive ? '+' : ''}${change.toFixed(2)}
             </span>
           </div>

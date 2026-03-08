@@ -15,31 +15,31 @@ const PriceSourceIndicator = ({ source, timestamp, isRealTime }: PriceSourceIndi
       case 'finnhub':
         return {
           label: 'Finnhub',
-          color: 'bg-green-100 text-green-800',
+          color: 'bg-success/10 text-success',
           icon: isRealTime ? <Wifi className="h-3 w-3" /> : <WifiOff className="h-3 w-3" />
         };
       case 'alpha_vantage':
         return {
           label: 'Alpha Vantage',
-          color: 'bg-blue-100 text-blue-800',
+          color: 'bg-info/10 text-info',
           icon: <Database className="h-3 w-3" />
         };
       case 'cache':
         return {
           label: 'Cached',
-          color: 'bg-yellow-100 text-yellow-800',
+          color: 'bg-warning/10 text-warning',
           icon: <Clock className="h-3 w-3" />
         };
       case 'mock':
         return {
           label: 'Demo',
-          color: 'bg-gray-100 text-gray-800',
+          color: 'bg-muted text-muted-foreground',
           icon: <WifiOff className="h-3 w-3" />
         };
       default:
         return {
           label: 'Unknown',
-          color: 'bg-gray-100 text-gray-800',
+          color: 'bg-muted text-muted-foreground',
           icon: <WifiOff className="h-3 w-3" />
         };
     }

@@ -23,21 +23,17 @@ const RiskMetricsPanel = ({ positions = [] }: RiskMetricsProps) => {
     const exposedBalance = totalBalance - availableBalance;
     const exposurePercent = totalBalance > 0 ? (exposedBalance / totalBalance) * 100 : 0;
     
-    // Calculate portfolio metrics
     const totalPnL = positions.reduce((sum, p) => sum + p.pnl, 0);
     const totalValue = positions.reduce((sum, p) => sum + p.value, 0);
     const winningPositions = positions.filter(p => p.pnl > 0).length;
     const losingPositions = positions.filter(p => p.pnl < 0).length;
     const winRate = positions.length > 0 ? (winningPositions / positions.length) * 100 : 0;
     
-    // Concentration risk (largest position as % of portfolio)
     const largestPosition = positions.length > 0 ? Math.max(...positions.map(p => p.value)) : 0;
     const concentrationRisk = totalValue > 0 ? (largestPosition / totalValue) * 100 : 0;
     
-    // Drawdown (simplified - would need historical data for accurate calculation)
     const drawdownPercent = totalPnL < 0 ? Math.abs((totalPnL / totalBalance) * 100) : 0;
     
-    // Margin level for leveraged accounts
     const leverage = activeAccount?.leverage || 1;
     const marginUsed = exposedBalance / leverage;
     const marginLevel = marginUsed > 0 ? (availableBalance / marginUsed) * 100 : 100;
@@ -60,15 +56,15 @@ const RiskMetricsPanel = ({ positions = [] }: RiskMetricsProps) => {
   }, [getAccountBalance, getAvailableBalance, positions, activeAccount]);
 
   const getExposureColor = (percent: number) => {
-    if (percent < 30) return "text-green-500";
-    if (percent < 60) return "text-amber-500";
-    return "text-red-500";
+    if (percent < 30) return "text-success";
+    if (percent < 60) return "text-warning";
+    return "text-destructive";
   };
 
   const getMarginLevelColor = (level: number) => {
-    if (level > 200) return "text-green-500";
-    if (level > 100) return "text-amber-500";
-    return "text-red-500";
+    if (level > 200) return "text-success";
+    if (level > 100) return "text-warning";
+    return "text-destructive";
   };
 
   return (
@@ -86,7 +82,6 @@ const RiskMetricsPanel = ({ positions = [] }: RiskMetricsProps) => {
         <CardDescription>Monitor your portfolio risk exposure</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Capital Exposure */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium flex items-center gap-2">
@@ -104,7 +99,6 @@ const RiskMetricsPanel = ({ positions = [] }: RiskMetricsProps) => {
           </div>
         </div>
 
-        {/* Margin Level (for leveraged accounts) */}
         {metrics.leverage > 1 && (
           <div className="space-y-2">
             <div className="flex items-center justify-between">
@@ -121,7 +115,7 @@ const RiskMetricsPanel = ({ positions = [] }: RiskMetricsProps) => {
               className="h-2" 
             />
             {metrics.marginLevel < 150 && (
-              <div className="flex items-center gap-1 text-xs text-amber-500">
+              <div className="flex items-center gap-1 text-xs text-warning">
                 <AlertTriangle className="h-3 w-3" />
                 <span>Margin call at 100%</span>
               </div>
@@ -129,14 +123,13 @@ const RiskMetricsPanel = ({ positions = [] }: RiskMetricsProps) => {
           </div>
         )}
 
-        {/* Key Metrics Grid */}
         <div className="grid grid-cols-2 gap-3">
           <div className="p-3 bg-muted rounded-lg">
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
               <DollarSign className="h-3 w-3" />
               Total P&L
             </div>
-            <p className={`text-lg font-bold ${metrics.totalPnL >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+            <p className={`text-lg font-bold ${metrics.totalPnL >= 0 ? 'text-success' : 'text-destructive'}`}>
               {metrics.totalPnL >= 0 ? '+' : ''}{metrics.totalPnL.toFixed(2)}
             </p>
           </div>
@@ -146,7 +139,7 @@ const RiskMetricsPanel = ({ positions = [] }: RiskMetricsProps) => {
               <TrendingDown className="h-3 w-3" />
               Drawdown
             </div>
-            <p className={`text-lg font-bold ${metrics.drawdownPercent > 10 ? 'text-red-500' : 'text-muted-foreground'}`}>
+            <p className={`text-lg font-bold ${metrics.drawdownPercent > 10 ? 'text-destructive' : 'text-muted-foreground'}`}>
               {metrics.drawdownPercent.toFixed(1)}%
             </p>
           </div>
@@ -163,17 +156,16 @@ const RiskMetricsPanel = ({ positions = [] }: RiskMetricsProps) => {
           
           <div className="p-3 bg-muted rounded-lg">
             <div className="text-xs text-muted-foreground">Concentration</div>
-            <p className={`text-lg font-bold ${metrics.concentrationRisk > 50 ? 'text-amber-500' : ''}`}>
+            <p className={`text-lg font-bold ${metrics.concentrationRisk > 50 ? 'text-warning' : ''}`}>
               {metrics.concentrationRisk.toFixed(0)}%
             </p>
           </div>
         </div>
 
-        {/* Risk Warnings */}
         {metrics.concentrationRisk > 40 && (
-          <div className="p-3 bg-amber-500/10 rounded-lg flex items-start gap-2">
-            <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5" />
-            <div className="text-sm text-amber-500">
+          <div className="p-3 bg-warning/10 rounded-lg flex items-start gap-2">
+            <AlertTriangle className="h-4 w-4 text-warning mt-0.5" />
+            <div className="text-sm text-warning">
               <p className="font-medium">High Concentration Risk</p>
               <p className="text-xs">Consider diversifying - single position is {metrics.concentrationRisk.toFixed(0)}% of portfolio.</p>
             </div>
@@ -181,9 +173,9 @@ const RiskMetricsPanel = ({ positions = [] }: RiskMetricsProps) => {
         )}
 
         {metrics.drawdownPercent > 20 && (
-          <div className="p-3 bg-red-500/10 rounded-lg flex items-start gap-2">
-            <AlertTriangle className="h-4 w-4 text-red-500 mt-0.5" />
-            <div className="text-sm text-red-500">
+          <div className="p-3 bg-destructive/10 rounded-lg flex items-start gap-2">
+            <AlertTriangle className="h-4 w-4 text-destructive mt-0.5" />
+            <div className="text-sm text-destructive">
               <p className="font-medium">Significant Drawdown</p>
               <p className="text-xs">Your account is down {metrics.drawdownPercent.toFixed(1)}%. Consider reducing position sizes.</p>
             </div>

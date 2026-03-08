@@ -22,9 +22,7 @@ export const WalletBalanceDisplay = () => {
   const available = usdBalance?.available ?? 0;
   const reserved = usdBalance?.reserved ?? 0;
 
-  if (!user) {
-    return null;
-  }
+  if (!user) return null;
 
   if (isLoading) {
     return (
@@ -50,7 +48,7 @@ export const WalletBalanceDisplay = () => {
           <div className="flex items-center gap-2">
             <span className={cn(
               "text-lg font-bold",
-              available > 0 ? "text-green-500" : "text-muted-foreground"
+              available > 0 ? "text-success" : "text-muted-foreground"
             )}>
               {formatCurrency(available)}
             </span>

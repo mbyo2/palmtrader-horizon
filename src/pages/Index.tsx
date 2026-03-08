@@ -194,29 +194,29 @@ export default function Index() {
                     title: "Zambian Focus",
                     description: "Tailored for Zambian investors with deep local market insights and currency support",
                     icon: <DollarSign className="h-12 w-12 text-primary" />,
-                    color: "from-green-500/10 to-emerald-500/10",
-                    border: "border-green-500/20"
+                    color: "from-success/10 to-success/5",
+                    border: "border-success/20"
                   },
                   {
                     title: "Real-time Data",
                     description: "Lightning-fast market updates with institutional-grade data feeds",
-                    icon: <Clock className="h-12 w-12 text-blue-500" />,
-                    color: "from-blue-500/10 to-cyan-500/10",
-                    border: "border-blue-500/20"
+                    icon: <Clock className="h-12 w-12 text-info" />,
+                    color: "from-info/10 to-info/5",
+                    border: "border-info/20"
                   },
                   {
                     title: "AI-Powered Analytics",
                     description: "Smart insights and personalized recommendations powered by advanced AI",
-                    icon: <BarChart3 className="h-12 w-12 text-purple-500" />,
-                    color: "from-purple-500/10 to-pink-500/10",
-                    border: "border-purple-500/20"
+                    icon: <BarChart3 className="h-12 w-12 text-primary" />,
+                    color: "from-primary/10 to-primary/5",
+                    border: "border-primary/20"
                   },
                   {
                     title: "Zero Commissions",
                     description: "Trade stocks, bonds, and ETFs with absolutely no commission fees",
-                    icon: <TrendingUp className="h-12 w-12 text-orange-500" />,
-                    color: "from-orange-500/10 to-red-500/10",
-                    border: "border-orange-500/20"
+                    icon: <TrendingUp className="h-12 w-12 text-warning" />,
+                    color: "from-warning/10 to-warning/5",
+                    border: "border-warning/20"
                   }
                 ].map((feature, index) => (
                   <Card key={index} className={`group relative overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-2xl ${feature.border} bg-gradient-to-br ${feature.color}`}>
@@ -242,7 +242,7 @@ export default function Index() {
                   <p className="text-sm sm:text-base text-muted-foreground">Real-time insights from global markets</p>
                 </div>
                 <Badge variant="secondary" className="px-3 py-1">
-                  <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
+                  <div className="w-2 h-2 bg-success rounded-full mr-2 animate-pulse"></div>
                   Live
                 </Badge>
               </div>
@@ -260,9 +260,9 @@ export default function Index() {
                   <h2 className="text-2xl sm:text-3xl font-bold">Join Our Community</h2>
                    <CommunityStatsCard />
                   
-                  <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-green-500/20">
+                  <div className="bg-gradient-to-r from-success/10 to-success/5 rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-success/20">
                     <div className="flex items-center space-x-3 sm:space-x-4 mb-3 sm:mb-4">
-                      <Shield className="h-6 w-6 sm:h-8 sm:w-8 text-green-500 flex-shrink-0" />
+                      <Shield className="h-6 w-6 sm:h-8 sm:w-8 text-success flex-shrink-0" />
                       <div>
                         <h3 className="text-sm sm:text-base font-semibold">Bank-Level Security</h3>
                         <p className="text-xs sm:text-sm text-muted-foreground">Your money is safe</p>
@@ -290,14 +290,14 @@ export default function Index() {
                     <Button 
                       size="lg" 
                       onClick={() => navigate("/auth")} 
-                      className="bg-white text-primary hover:bg-gray-100 font-semibold px-8 py-4 h-auto text-lg"
+                      className="bg-background text-primary hover:bg-muted font-semibold px-8 py-4 h-auto text-lg"
                     >
                       Create Free Account
                     </Button>
                     <Button 
                       size="lg" 
                       variant="outline" 
-                      className="border-white text-white hover:bg-white/10 font-semibold px-8 py-4 h-auto text-lg"
+                      className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground/10 font-semibold px-8 py-4 h-auto text-lg"
                     >
                       Watch Demo
                     </Button>
@@ -369,9 +369,9 @@ export default function Index() {
                   </CardContent>
                 </Card>
                 
-                <Card className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border-blue-500/20">
+                <Card className="bg-gradient-to-br from-info/10 to-info/5 border-info/20">
                   <CardHeader>
-                    <CardTitle className="text-blue-600 dark:text-blue-400 text-lg md:text-xl">Latest News</CardTitle>
+                    <CardTitle className="text-info text-lg md:text-xl">Latest News</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <NewsFeed defaultCategory="general" limit={5} />

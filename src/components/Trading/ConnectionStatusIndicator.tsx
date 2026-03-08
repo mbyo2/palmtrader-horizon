@@ -19,9 +19,9 @@ export const ConnectionStatusIndicator = () => {
   return (
     <div className={cn(
       "flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium transition-colors",
-      status === 'connected' && "bg-green-500/10 text-green-500",
-      status === 'connecting' && "bg-yellow-500/10 text-yellow-500",
-      status === 'disconnected' && "bg-red-500/10 text-red-500"
+      status === 'connected' && "bg-success/10 text-success",
+      status === 'connecting' && "bg-warning/10 text-warning",
+      status === 'disconnected' && "bg-destructive/10 text-destructive"
     )}>
       {status === 'connected' && (
         <>

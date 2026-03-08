@@ -79,8 +79,8 @@ const StockChart = ({
                     <div className="text-right ml-4">
                       <div className={`font-medium text-sm sm:text-base ${
                         transaction.type === "buy" || transaction.type === "withdrawal" 
-                          ? "text-red-500" 
-                          : "text-green-500"
+                          ? "text-destructive" 
+                          : "text-success"
                       }`}>
                         {transaction.type === "buy" || transaction.type === "withdrawal" ? "-" : "+"}
                         ${transaction.amount.toFixed(2)}
