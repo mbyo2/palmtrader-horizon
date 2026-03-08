@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { finnhubSocket } from "@/utils/finnhubSocket";
 import MarketOverview from "@/components/MarketOverview";
 import TradingInterface from "@/components/Trading/TradingInterface";
-import RealTimeChart from "@/components/Trading/RealTimeChart";
+import TradingViewWidget from "@/components/Trading/TradingViewWidget";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TechnicalIndicators from "@/components/TechnicalIndicators";
 import SocialShare from "@/components/Social/SocialShare";
