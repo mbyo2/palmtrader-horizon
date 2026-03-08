@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useTradingAccount } from "@/hooks/useTradingAccount";
+import { useQueryClient } from "@tanstack/react-query";
 import { useRealTimePrice } from "@/hooks/useRealTimePrice";
 import { useAuth } from "@/hooks/useAuth";
 import { OrderExecutionEngine } from "@/services/OrderExecutionEngine";
@@ -20,6 +21,7 @@ const QUICK_AMOUNTS = [100, 500, 1000, 2500, 5000];
 const QuickTradePanel = ({ symbol, onTrade }: QuickTradePanelProps) => {
   const { user } = useAuth();
   const { activeAccount, isDemo, getAvailableBalance, refreshAccounts } = useTradingAccount();
+  const queryClient = useQueryClient();
   const { price, change, changePercent, isLoading } = useRealTimePrice(symbol);
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [customAmount, setCustomAmount] = useState("");
@@ -72,6 +74,9 @@ const QuickTradePanel = ({ symbol, onTrade }: QuickTradePanelProps) => {
             `${type === 'buy' ? 'Bought' : 'Sold'} ${(result.executedShares || shares).toFixed(4)} shares of ${symbol} at $${(result.executedPrice || price).toFixed(2)}`
           );
           await refreshAccounts();
+          queryClient.invalidateQueries({ queryKey: ["portfolio"] });
+          queryClient.invalidateQueries({ queryKey: ["portfolioSummary"] });
+          queryClient.invalidateQueries({ queryKey: ["walletBalances"] });
         } else {
           toast.error(result.error || "Trade execution failed");
         }

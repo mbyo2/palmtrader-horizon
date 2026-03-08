@@ -85,9 +85,11 @@ export const useTrading = (initialSymbol = "AAPL") => {
       });
       
       if (result.success) {
-        // Refresh portfolio and wallet data
+        // Refresh portfolio, wallet, and trading account data
         await refetchPortfolio();
         queryClient.invalidateQueries({ queryKey: ["walletBalances"] });
+        queryClient.invalidateQueries({ queryKey: ["portfolio"] });
+        queryClient.invalidateQueries({ queryKey: ["portfolioSummary"] });
         
         if (orderType !== "market") {
           toast.info("Your order will be executed when conditions are met. Check Order History for updates.", {
