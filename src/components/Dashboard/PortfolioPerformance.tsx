@@ -293,42 +293,44 @@ const PortfolioPerformance = () => {
           </SelectContent>
         </Select>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-8">
         {/* Portfolio Value Chart */}
-        <div className="h-64">
-          <h3 className="text-lg font-medium mb-2 flex items-center gap-2">
+        <div>
+          <h3 className="text-lg font-medium mb-3 flex items-center gap-2">
             <ChartLine className="h-5 w-5" />
             Performance
           </h3>
-          <ChartContainer config={{}}>
-            <LineChart data={performanceData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" />
-              <YAxis />
-              <ChartTooltip />
-              <Legend 
-                onClick={(e) => handleLegendClick(e.dataKey as keyof typeof visibleSeries)}
-              />
-              {visibleSeries.portfolioValue && (
-                <Line
-                  type="monotone"
-                  dataKey="value"
-                  name="Portfolio Value"
-                  stroke="#8884d8"
-                  strokeWidth={2}
+          <div className="h-[280px] w-full">
+            <ChartContainer config={{}}>
+              <LineChart data={performanceData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                <YAxis tick={{ fontSize: 12 }} />
+                <ChartTooltip />
+                <Legend 
+                  onClick={(e) => handleLegendClick(e.dataKey as keyof typeof visibleSeries)}
                 />
-              )}
-              {visibleSeries.returns && (
-                <Line
-                  type="monotone"
-                  dataKey="returns"
-                  name="Returns %"
-                  stroke="#82ca9d"
-                  strokeWidth={2}
-                />
-              )}
-            </LineChart>
-          </ChartContainer>
+                {visibleSeries.portfolioValue && (
+                  <Line
+                    type="monotone"
+                    dataKey="value"
+                    name="Portfolio Value"
+                    stroke="#8884d8"
+                    strokeWidth={2}
+                  />
+                )}
+                {visibleSeries.returns && (
+                  <Line
+                    type="monotone"
+                    dataKey="returns"
+                    name="Returns %"
+                    stroke="#82ca9d"
+                    strokeWidth={2}
+                  />
+                )}
+              </LineChart>
+            </ChartContainer>
+          </div>
         </div>
 
         {/* Portfolio Diversification */}
