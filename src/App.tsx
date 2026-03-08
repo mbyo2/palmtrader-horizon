@@ -41,6 +41,7 @@ import About from '@/pages/About';
 import Contact from '@/pages/Contact';
 import Terms from '@/pages/Terms';
 import Cookies from '@/pages/Cookies';
+import Privacy from '@/pages/Privacy';
 import Compliance from '@/pages/Compliance';
 import OptionsTrading from '@/pages/OptionsTrading';
 import MobileTrade from '@/pages/MobileTrade';
