@@ -504,6 +504,87 @@ export type Database = {
         }
         Relationships: []
       }
+      copy_trading_follows: {
+        Row: {
+          allocation_amount: number
+          created_at: string
+          follower_id: string
+          id: string
+          is_active: boolean
+          leader_id: string
+          max_trade_size: number | null
+          total_profit: number | null
+          total_trades_copied: number | null
+          updated_at: string
+        }
+        Insert: {
+          allocation_amount?: number
+          created_at?: string
+          follower_id: string
+          id?: string
+          is_active?: boolean
+          leader_id: string
+          max_trade_size?: number | null
+          total_profit?: number | null
+          total_trades_copied?: number | null
+          updated_at?: string
+        }
+        Update: {
+          allocation_amount?: number
+          created_at?: string
+          follower_id?: string
+          id?: string
+          is_active?: boolean
+          leader_id?: string
+          max_trade_size?: number | null
+          total_profit?: number | null
+          total_trades_copied?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      copy_trading_trades: {
+        Row: {
+          copied_price: number
+          copied_quantity: number
+          created_at: string
+          follower_id: string
+          id: string
+          leader_id: string
+          original_trade_price: number
+          original_trade_side: string
+          original_trade_symbol: string
+          profit_loss: number | null
+          status: string
+        }
+        Insert: {
+          copied_price: number
+          copied_quantity: number
+          created_at?: string
+          follower_id: string
+          id?: string
+          leader_id: string
+          original_trade_price: number
+          original_trade_side: string
+          original_trade_symbol: string
+          profit_loss?: number | null
+          status?: string
+        }
+        Update: {
+          copied_price?: number
+          copied_quantity?: number
+          created_at?: string
+          follower_id?: string
+          id?: string
+          leader_id?: string
+          original_trade_price?: number
+          original_trade_side?: string
+          original_trade_symbol?: string
+          profit_loss?: number | null
+          status?: string
+        }
+        Relationships: []
+      }
       crypto_wallets: {
         Row: {
           available_balance: number
@@ -2379,6 +2460,57 @@ export type Database = {
           symbol?: string
           timestamp?: string
           value?: number
+        }
+        Relationships: []
+      }
+      trader_stats: {
+        Row: {
+          bio: string | null
+          created_at: string
+          display_name: string | null
+          followers_count: number | null
+          id: string
+          is_public: boolean | null
+          is_verified: boolean | null
+          risk_score: number | null
+          specialization: string | null
+          total_return_pct: number | null
+          total_trades: number | null
+          updated_at: string
+          user_id: string
+          win_rate: number | null
+        }
+        Insert: {
+          bio?: string | null
+          created_at?: string
+          display_name?: string | null
+          followers_count?: number | null
+          id?: string
+          is_public?: boolean | null
+          is_verified?: boolean | null
+          risk_score?: number | null
+          specialization?: string | null
+          total_return_pct?: number | null
+          total_trades?: number | null
+          updated_at?: string
+          user_id: string
+          win_rate?: number | null
+        }
+        Update: {
+          bio?: string | null
+          created_at?: string
+          display_name?: string | null
+          followers_count?: number | null
+          id?: string
+          is_public?: boolean | null
+          is_verified?: boolean | null
+          risk_score?: number | null
+          specialization?: string | null
+          total_return_pct?: number | null
+          total_trades?: number | null
+          updated_at?: string
+          user_id?: string
+          win_rate?: number | null
         }
         Relationships: []
       }

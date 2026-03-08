@@ -7,11 +7,12 @@ import { toast } from "sonner";
 import { finnhubSocket } from "@/utils/finnhubSocket";
 import MarketOverview from "@/components/MarketOverview";
 import TradingInterface from "@/components/Trading/TradingInterface";
-import RealTimeChart from "@/components/Trading/RealTimeChart";
+import TradingViewWidget from "@/components/Trading/TradingViewWidget";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TechnicalIndicators from "@/components/TechnicalIndicators";
 import SocialShare from "@/components/Social/SocialShare";
 import Comments from "@/components/Social/Comments";
+import CopyTradingSystem from "@/components/Social/CopyTradingSystem";
 import { Card } from "@/components/ui/card";
 
 const Markets = () => {
@@ -56,8 +57,8 @@ const Markets = () => {
         </TabsList>
         
         <TabsContent value="chart" className="space-y-6 mt-4">
-          {/* Single real-time chart - no duplicate */}
-          <RealTimeChart symbol={symbol} height={350} />
+          {/* Professional TradingView chart */}
+          <TradingViewWidget symbol={symbol} height={500} />
           
           {/* Research tools with chart, fundamentals, etc. */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
@@ -74,7 +75,8 @@ const Markets = () => {
           <TradingInterface />
         </TabsContent>
         
-        <TabsContent value="social" className="mt-4">
+        <TabsContent value="social" className="mt-4 space-y-6">
+          <CopyTradingSystem />
           <Card className="p-4 sm:p-6">
             <div className="space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
