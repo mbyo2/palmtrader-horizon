@@ -130,7 +130,7 @@ const PortfolioContent = () => {
         </TabsContent>
 
         {/* Portfolio Tab */}
-        <TabsContent value="portfolio" className="space-y-4 sm:space-y-6 mt-4">
+        <TabsContent value="portfolio" className="space-y-6 sm:space-y-8 mt-4">
           <RealTimePortfolioSummary />
           <RealTimePositionsList />
         </TabsContent>
