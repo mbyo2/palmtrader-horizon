@@ -63,6 +63,7 @@ const PasswordChangeForm = () => {
   );
 };
 
+const Settings = () => {
   const { isLoading } = useProtectedRoute();
   const { user, accountDetails, refetchAccountDetails } = useAuth();
   
