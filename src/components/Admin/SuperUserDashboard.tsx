@@ -119,7 +119,7 @@ export const SuperUserDashboard = () => {
           <h1 className="text-3xl font-bold">Super User Dashboard</h1>
           <p className="text-muted-foreground">Complete system administration and monitoring</p>
         </div>
-        <Badge variant="secondary" className="bg-red-100 text-red-800">
+        <Badge variant="secondary" className="bg-destructive/10 text-destructive">
           <Shield className="h-4 w-4 mr-1" />
           Super Admin
         </Badge>
