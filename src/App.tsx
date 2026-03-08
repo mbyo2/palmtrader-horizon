@@ -12,7 +12,7 @@ import SwipeNavigation from './components/Mobile/SwipeNavigation';
 import { usePullToRefresh } from './hooks/usePullToRefresh';
 import { useIsMobile } from './hooks/use-mobile';
 import { TradingAccountProvider } from '@/hooks/useTradingAccount';
-import Home from '@/pages/Home';
+import Index from '@/pages/Index';
 import Markets from '@/pages/Markets';
 import Portfolio from '@/pages/Portfolio';
 import Watchlist from '@/pages/Watchlist';
