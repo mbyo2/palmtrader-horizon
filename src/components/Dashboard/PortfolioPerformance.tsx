@@ -334,33 +334,35 @@ const PortfolioPerformance = () => {
         </div>
 
         {/* Portfolio Diversification */}
-        <div className="h-64">
-          <h3 className="text-lg font-medium mb-2 flex items-center gap-2">
+        <div>
+          <h3 className="text-lg font-medium mb-3 flex items-center gap-2">
             <ChartPie className="h-5 w-5" />
             Portfolio Diversification
           </h3>
-          <ResponsiveContainer>
-            <PieChart>
-              <Pie
-                data={diversificationData}
-                dataKey="value"
-                nameKey="name"
-                cx="50%"
-                cy="50%"
-                outerRadius={80}
-                label
-              >
-                {diversificationData.map((entry, index) => (
-                  <Cell
-                    key={`cell-${index}`}
-                    fill={COLORS[index % COLORS.length]}
-                  />
-                ))}
-              </Pie>
-              <Tooltip />
-              <Legend />
-            </PieChart>
-          </ResponsiveContainer>
+          <div className="h-[280px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={diversificationData}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={80}
+                  label
+                >
+                  {diversificationData.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={COLORS[index % COLORS.length]}
+                    />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
         </div>
 
         {/* Metrics */}
