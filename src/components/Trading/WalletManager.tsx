@@ -371,7 +371,7 @@ export const WalletManager: React.FC = () => {
                     <div>
                       <p className="font-medium">
                         {transaction.description}
-                        {isDemo && <span className="text-xs text-amber-500 ml-1">(demo)</span>}
+                        
                       </p>
                       <p className="text-sm text-muted-foreground">
                         {new Date(transaction.createdAt).toLocaleDateString()}
