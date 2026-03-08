@@ -44,7 +44,6 @@ export const WalletManager: React.FC = () => {
     if (isNaN(amount) || amount <= 0) return;
     
     if (isDemo) {
-      toast.info("Demo withdrawals are simulated — no real money is involved.");
       await withdraw(amount);
       await refreshAccounts();
     } else {
