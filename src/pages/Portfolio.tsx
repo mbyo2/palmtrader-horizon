@@ -25,7 +25,7 @@ import DemoModeBanner from "@/components/Trading/DemoModeBanner";
 import LiveModeNotice from "@/components/Trading/LiveModeNotice";
 
 const PortfolioContent = () => {
-  const { activeAccount, isLoading: isAccountLoading } = useTradingAccount();
+  const { activeAccount, isLoading: isAccountLoading, isDemo } = useTradingAccount();
   const [selectedSymbol, setSelectedSymbol] = useState("AAPL");
   const [showAccountSelector, setShowAccountSelector] = useState(false);
   const [tradingView, setTradingView] = useState<'quick' | 'advanced'>('quick');
@@ -41,8 +41,6 @@ const PortfolioContent = () => {
       </div>
     );
   }
-
-  const { isDemo } = useTradingAccount();
 
   return (
     <div className="container py-4 sm:py-6 space-y-4 sm:space-y-6 px-3 sm:px-4">
