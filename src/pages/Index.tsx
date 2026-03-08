@@ -200,9 +200,9 @@ export default function Index() {
                   {
                     title: "Real-time Data",
                     description: "Lightning-fast market updates with institutional-grade data feeds",
-                    icon: <Clock className="h-12 w-12 text-blue-500" />,
-                    color: "from-blue-500/10 to-cyan-500/10",
-                    border: "border-blue-500/20"
+                    icon: <Clock className="h-12 w-12 text-info" />,
+                    color: "from-info/10 to-info/5",
+                    border: "border-info/20"
                   },
                   {
                     title: "AI-Powered Analytics",
