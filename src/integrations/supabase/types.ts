@@ -2066,48 +2066,42 @@ export type Database = {
       }
       spot_trades: {
         Row: {
+          buy_order_id: string
+          buyer_fee: number
           created_at: string
           id: string
-          maker_fee: number
-          maker_order_id: string
-          maker_user_id: string
           pair_id: string
           price: number
           quantity: number
-          taker_fee: number
-          taker_order_id: string
-          taker_user_id: string
+          sell_order_id: string
+          seller_fee: number
         }
         Insert: {
+          buy_order_id: string
+          buyer_fee?: number
           created_at?: string
           id?: string
-          maker_fee: number
-          maker_order_id: string
-          maker_user_id: string
           pair_id: string
           price: number
           quantity: number
-          taker_fee: number
-          taker_order_id: string
-          taker_user_id: string
+          sell_order_id: string
+          seller_fee?: number
         }
         Update: {
+          buy_order_id?: string
+          buyer_fee?: number
           created_at?: string
           id?: string
-          maker_fee?: number
-          maker_order_id?: string
-          maker_user_id?: string
           pair_id?: string
           price?: number
           quantity?: number
-          taker_fee?: number
-          taker_order_id?: string
-          taker_user_id?: string
+          sell_order_id?: string
+          seller_fee?: number
         }
         Relationships: [
           {
-            foreignKeyName: "spot_trades_maker_order_id_fkey"
-            columns: ["maker_order_id"]
+            foreignKeyName: "spot_trades_buy_order_id_fkey"
+            columns: ["buy_order_id"]
             isOneToOne: false
             referencedRelation: "spot_orders"
             referencedColumns: ["id"]
@@ -2120,8 +2114,8 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "spot_trades_taker_order_id_fkey"
-            columns: ["taker_order_id"]
+            foreignKeyName: "spot_trades_sell_order_id_fkey"
+            columns: ["sell_order_id"]
             isOneToOne: false
             referencedRelation: "spot_orders"
             referencedColumns: ["id"]
