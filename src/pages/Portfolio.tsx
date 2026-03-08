@@ -21,6 +21,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, LayoutGrid, LineChart } from "lucide-react";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import DemoModeBanner from "@/components/Trading/DemoModeBanner";
+import LiveModeNotice from "@/components/Trading/LiveModeNotice";
 
 const PortfolioContent = () => {
   const { activeAccount, isLoading: isAccountLoading } = useTradingAccount();
