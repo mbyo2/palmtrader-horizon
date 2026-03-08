@@ -75,7 +75,8 @@ const Markets = () => {
           <TradingInterface />
         </TabsContent>
         
-        <TabsContent value="social" className="mt-4">
+        <TabsContent value="social" className="mt-4 space-y-6">
+          <CopyTradingSystem />
           <Card className="p-4 sm:p-6">
             <div className="space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
