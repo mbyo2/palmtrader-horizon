@@ -141,13 +141,15 @@ function App() {
       <BrowserRouter>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
-            <AccessibilityProvider>
-              <NotificationsProvider>
-                <ErrorBoundary>
-                  <AppContent />
-                </ErrorBoundary>
-              </NotificationsProvider>
-            </AccessibilityProvider>
+            <TradingAccountProvider>
+              <AccessibilityProvider>
+                <NotificationsProvider>
+                  <ErrorBoundary>
+                    <AppContent />
+                  </ErrorBoundary>
+                </NotificationsProvider>
+              </AccessibilityProvider>
+            </TradingAccountProvider>
           </AuthProvider>
         </QueryClientProvider>
       </BrowserRouter>
