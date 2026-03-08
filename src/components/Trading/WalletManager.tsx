@@ -26,7 +26,7 @@ export const WalletManager: React.FC = () => {
     if (isDemo) {
       await deposit(amount);
       await refreshAccounts();
-      toast.success(`$${amount.toLocaleString()} virtual funds added to demo account`);
+      toast.success(`$${amount.toLocaleString()} added to demo account`);
     } else {
       toast.info("Live deposits will be available once payment APIs are connected.");
     }
@@ -36,7 +36,7 @@ export const WalletManager: React.FC = () => {
   const handleDemoQuickDeposit = async (amount: number) => {
     await deposit(amount);
     await refreshAccounts();
-    toast.success(`$${amount.toLocaleString()} virtual funds added`);
+    toast.success(`$${amount.toLocaleString()} added`);
   };
 
   const handleWithdraw = async () => {
@@ -44,7 +44,6 @@ export const WalletManager: React.FC = () => {
     if (isNaN(amount) || amount <= 0) return;
     
     if (isDemo) {
-      toast.info("Demo withdrawals are simulated — no real money is involved.");
       await withdraw(amount);
       await refreshAccounts();
     } else {
@@ -116,7 +115,7 @@ export const WalletManager: React.FC = () => {
                 Demo Wallet — Virtual funds for practice trading
               </p>
               <p className="text-xs text-muted-foreground">
-                Add or reset virtual funds instantly. No real money involved.
+                Virtual funds — trades execute exactly like live mode.
               </p>
             </div>
             <Button variant="outline" size="sm" onClick={handleResetDemo} className="text-xs">
@@ -150,7 +149,7 @@ export const WalletManager: React.FC = () => {
             </Badge>
           </CardTitle>
           <CardDescription>
-            {isDemo ? 'Virtual funds for practice trading' : 'Manage your real trading funds'}
+            {isDemo ? 'Virtual funds — same trading experience as live' : 'Manage your real trading funds'}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -210,11 +209,11 @@ export const WalletManager: React.FC = () => {
           <Card>
             <CardHeader>
               <CardTitle>
-                {isDemo ? 'Add Virtual Funds' : 'Deposit Funds'}
+                {isDemo ? 'Add Funds' : 'Deposit Funds'}
               </CardTitle>
               <CardDescription>
                 {isDemo 
-                  ? 'Instantly add virtual money to practice trading' 
+                  ? 'Add virtual funds to your demo account' 
                   : 'Add funds via Mobile Money, Bank Transfer, or Card'}
               </CardDescription>
             </CardHeader>
@@ -291,7 +290,7 @@ export const WalletManager: React.FC = () => {
                 disabled={isLoading || !depositAmount}
                 className="w-full"
               >
-                {isLoading ? 'Processing...' : isDemo ? 'Add Virtual Funds' : 'Deposit Funds'}
+                {isLoading ? 'Processing...' : isDemo ? 'Add Funds' : 'Deposit Funds'}
               </Button>
             </CardContent>
           </Card>
@@ -301,11 +300,11 @@ export const WalletManager: React.FC = () => {
           <Card>
             <CardHeader>
               <CardTitle>
-                {isDemo ? 'Simulate Withdrawal' : 'Withdraw Funds'}
+                {isDemo ? 'Withdraw Funds' : 'Withdraw Funds'}
               </CardTitle>
               <CardDescription>
                 {isDemo 
-                  ? 'Practice the withdrawal process (no real money)' 
+                  ? 'Withdraw virtual funds from your demo account' 
                   : 'Transfer funds to your bank or mobile money account'}
               </CardDescription>
             </CardHeader>
@@ -323,7 +322,7 @@ export const WalletManager: React.FC = () => {
               <div className="p-3 bg-muted rounded-lg">
                 <p className="text-sm text-muted-foreground">
                   Available: {formatCurrency(getBalance('USD')?.available || activeAccount?.available_balance || 0, 'USD')}
-                  {isDemo && <span className="ml-1 text-amber-500">(virtual)</span>}
+                  
                 </p>
               </div>
 
@@ -343,7 +342,7 @@ export const WalletManager: React.FC = () => {
                 variant="outline"
                 className="w-full"
               >
-                {isLoading ? 'Processing...' : isDemo ? 'Simulate Withdrawal' : 'Request Withdrawal'}
+                {isLoading ? 'Processing...' : isDemo ? 'Withdraw Funds' : 'Request Withdrawal'}
               </Button>
             </CardContent>
           </Card>
@@ -355,14 +354,14 @@ export const WalletManager: React.FC = () => {
         <CardHeader>
           <CardTitle>Recent Transactions</CardTitle>
           <CardDescription>
-            {isDemo ? 'Demo transaction history' : 'Your latest wallet activity'}
+            Your latest wallet activity
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             {transactions.length === 0 ? (
               <p className="text-center text-muted-foreground py-4">
-                No transactions yet. {isDemo ? 'Start by adding virtual funds above.' : 'Deposit funds to get started.'}
+                No transactions yet. {isDemo ? 'Add funds above to start trading.' : 'Deposit funds to get started.'}
               </p>
             ) : (
               transactions.slice(0, 10).map(transaction => (
@@ -372,7 +371,7 @@ export const WalletManager: React.FC = () => {
                     <div>
                       <p className="font-medium">
                         {transaction.description}
-                        {isDemo && <span className="text-xs text-amber-500 ml-1">(demo)</span>}
+                        
                       </p>
                       <p className="text-sm text-muted-foreground">
                         {new Date(transaction.createdAt).toLocaleDateString()}

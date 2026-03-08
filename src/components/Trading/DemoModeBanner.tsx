@@ -45,7 +45,7 @@ const DemoModeBanner = ({ compact = false }: DemoModeBannerProps) => {
           <>
             <Shield className="h-4 w-4 text-warning" />
             <span className="text-sm font-medium text-warning">
-              Demo Mode — Virtual funds only. Trades are simulated.
+              Demo Mode — Trading with virtual funds. Same execution as live.
             </span>
             <Badge variant="outline" className="text-warning border-warning/30 text-xs">
               ${activeAccount.available_balance.toLocaleString()} virtual

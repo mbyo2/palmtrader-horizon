@@ -314,10 +314,10 @@ const AdvancedTradingForm = ({ onOrderSubmit }: AdvancedOrderFormProps) => {
         )}
 
         {!isDemo && (
-          <Alert className="border-amber-500/50 bg-amber-500/10">
-            <AlertTriangle className="h-4 w-4 text-amber-500" />
-            <AlertDescription className="text-amber-500">
-              You are trading with real money!
+          <Alert className="border-warning/50 bg-warning/10">
+            <AlertTriangle className="h-4 w-4 text-warning" />
+            <AlertDescription className="text-warning">
+              Live account — real funds at risk.
             </AlertDescription>
           </Alert>
         )}
@@ -326,7 +326,7 @@ const AdvancedTradingForm = ({ onOrderSubmit }: AdvancedOrderFormProps) => {
         <Button
           onClick={handleSubmit}
           disabled={isSubmitting || (!canAfford && side === 'buy')}
-          className={`w-full ${side === 'buy' ? 'bg-green-500 hover:bg-green-600' : 'bg-red-500 hover:bg-red-600'}`}
+          className={`w-full ${side === 'buy' ? 'bg-success hover:bg-success/90 text-success-foreground' : 'bg-destructive hover:bg-destructive/90 text-destructive-foreground'}`}
         >
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {side === 'buy' ? 'Buy' : 'Sell'} {symbol}
