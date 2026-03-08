@@ -14,7 +14,7 @@ export interface ApiKey {
 
 export class ApiKeyService {
   static async getApiKeys(userId: string): Promise<ApiKey[]> {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('api_keys')
       .select('id, key_name, api_key, permissions, ip_whitelist, is_active, last_used_at, created_at')
       .eq('user_id', userId)
@@ -27,7 +27,7 @@ export class ApiKeyService {
     const apiKey = `pc_${nanoid(32)}`;
     const apiSecret = `ps_${nanoid(48)}`;
 
-    const { error } = await supabase.from('api_keys').insert({
+    const { error } = await (supabase as any).from('api_keys').insert({
       user_id: userId,
       key_name: keyName,
       api_key: apiKey,
@@ -40,17 +40,17 @@ export class ApiKeyService {
   }
 
   static async deleteApiKey(keyId: string): Promise<void> {
-    const { error } = await supabase.from('api_keys').delete().eq('id', keyId);
+    const { error } = await (supabase as any).from('api_keys').delete().eq('id', keyId);
     if (error) throw error;
   }
 
   static async toggleApiKey(keyId: string, isActive: boolean): Promise<void> {
-    const { error } = await supabase.from('api_keys').update({ is_active: isActive }).eq('id', keyId);
+    const { error } = await (supabase as any).from('api_keys').update({ is_active: isActive }).eq('id', keyId);
     if (error) throw error;
   }
 
   static async updateIpWhitelist(keyId: string, ips: string[]): Promise<void> {
-    const { error } = await supabase.from('api_keys').update({ ip_whitelist: ips }).eq('id', keyId);
+    const { error } = await (supabase as any).from('api_keys').update({ ip_whitelist: ips }).eq('id', keyId);
     if (error) throw error;
   }
 }

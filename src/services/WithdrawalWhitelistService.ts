@@ -12,7 +12,7 @@ export interface WhitelistAddress {
 
 export class WithdrawalWhitelistService {
   static async getWhitelist(userId: string): Promise<WhitelistAddress[]> {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('withdrawal_whitelist')
       .select('*')
       .eq('user_id', userId)
@@ -22,7 +22,7 @@ export class WithdrawalWhitelistService {
   }
 
   static async addAddress(userId: string, address: Omit<WhitelistAddress, 'id' | 'is_verified' | 'created_at'>): Promise<void> {
-    const { error } = await supabase.from('withdrawal_whitelist').insert({
+    const { error } = await (supabase as any).from('withdrawal_whitelist').insert({
       user_id: userId,
       ...address,
     });
@@ -30,14 +30,14 @@ export class WithdrawalWhitelistService {
   }
 
   static async removeAddress(id: string): Promise<void> {
-    const { error } = await supabase.from('withdrawal_whitelist').delete().eq('id', id);
+    const { error } = await (supabase as any).from('withdrawal_whitelist').delete().eq('id', id);
     if (error) throw error;
   }
 
   static async getAntiPhishingCode(userId: string): Promise<string | null> {
     const { data } = await supabase
       .from('account_details')
-      .select('anti_phishing_code')
+      .select('anti_phishing_code' as any)
       .eq('id', userId)
       .single();
     return (data as any)?.anti_phishing_code || null;

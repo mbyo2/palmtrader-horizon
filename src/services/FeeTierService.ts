@@ -20,12 +20,12 @@ export interface UserVolume {
 
 export class FeeTierService {
   static async getFeeTiers(): Promise<FeeTier[]> {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('fee_tiers')
       .select('*')
       .order('tier_level');
     if (error) throw error;
-    return (data || []).map(t => ({
+    return (data || []).map((t: any) => ({
       ...t,
       min_30d_volume: Number(t.min_30d_volume),
       maker_fee: Number(t.maker_fee),
@@ -35,7 +35,7 @@ export class FeeTierService {
   }
 
   static async getUserVolume(userId: string): Promise<UserVolume> {
-    const { data } = await supabase
+    const { data } = await (supabase as any)
       .from('user_trading_volumes')
       .select('*')
       .eq('user_id', userId)
