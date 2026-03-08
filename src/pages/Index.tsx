@@ -194,8 +194,8 @@ export default function Index() {
                     title: "Zambian Focus",
                     description: "Tailored for Zambian investors with deep local market insights and currency support",
                     icon: <DollarSign className="h-12 w-12 text-primary" />,
-                    color: "from-green-500/10 to-emerald-500/10",
-                    border: "border-green-500/20"
+                    color: "from-success/10 to-success/5",
+                    border: "border-success/20"
                   },
                   {
                     title: "Real-time Data",
