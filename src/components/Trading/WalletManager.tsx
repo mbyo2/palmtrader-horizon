@@ -149,7 +149,7 @@ export const WalletManager: React.FC = () => {
             </Badge>
           </CardTitle>
           <CardDescription>
-            {isDemo ? 'Virtual funds for practice trading' : 'Manage your real trading funds'}
+            {isDemo ? 'Virtual funds — same trading experience as live' : 'Manage your real trading funds'}
           </CardDescription>
         </CardHeader>
         <CardContent>
