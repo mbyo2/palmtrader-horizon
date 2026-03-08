@@ -376,10 +376,10 @@ export class RealMarketDataService {
 
   static async storeNewsData(news: NewsItem[]): Promise<void> {
     try {
+      // Don't pass external IDs as they may not be valid UUIDs
       const { error } = await supabase
         .from('market_news')
-        .upsert(news.map(item => ({
-          id: item.id,
+        .insert(news.map(item => ({
           title: item.title,
           summary: item.summary,
           source: item.source,
@@ -391,7 +391,8 @@ export class RealMarketDataService {
 
       if (error) throw error;
     } catch (error) {
-      console.error('Error storing news data:', error);
+      // Silently handle duplicate/insert errors for news
+      console.warn('News storage skipped (possible duplicates):', (error as any)?.code);
     }
   }
 

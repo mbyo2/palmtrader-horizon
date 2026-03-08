@@ -11,6 +11,7 @@ import PullToRefresh from './components/Mobile/PullToRefresh';
 import SwipeNavigation from './components/Mobile/SwipeNavigation';
 import { usePullToRefresh } from './hooks/usePullToRefresh';
 import { useIsMobile } from './hooks/use-mobile';
+import { TradingAccountProvider } from '@/hooks/useTradingAccount';
 import Home from '@/pages/Home';
 import Markets from '@/pages/Markets';
 import Portfolio from '@/pages/Portfolio';
@@ -41,6 +42,7 @@ import About from '@/pages/About';
 import Contact from '@/pages/Contact';
 import Terms from '@/pages/Terms';
 import Cookies from '@/pages/Cookies';
+import Privacy from '@/pages/Privacy';
 import Compliance from '@/pages/Compliance';
 import OptionsTrading from '@/pages/OptionsTrading';
 import MobileTrade from '@/pages/MobileTrade';
@@ -94,6 +96,7 @@ function AppContent() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/cookies" element={<Cookies />} />
+          <Route path="/privacy" element={<Privacy />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/transfers" element={<Transfers />} />
           <Route path="/settings" element={<Settings />} />
@@ -138,13 +141,15 @@ function App() {
       <BrowserRouter>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
-            <AccessibilityProvider>
-              <NotificationsProvider>
-                <ErrorBoundary>
-                  <AppContent />
-                </ErrorBoundary>
-              </NotificationsProvider>
-            </AccessibilityProvider>
+            <TradingAccountProvider>
+              <AccessibilityProvider>
+                <NotificationsProvider>
+                  <ErrorBoundary>
+                    <AppContent />
+                  </ErrorBoundary>
+                </NotificationsProvider>
+              </AccessibilityProvider>
+            </TradingAccountProvider>
           </AuthProvider>
         </QueryClientProvider>
       </BrowserRouter>

@@ -16,7 +16,7 @@ import AccountTypeSelector from "@/components/Trading/AccountTypeSelector";
 import TradingAccountsList from "@/components/Trading/TradingAccountsList";
 import RealTimeChart from "@/components/Trading/RealTimeChart";
 import StockSelector from "@/components/Trading/StockSelector";
-import { TradingAccountProvider, useTradingAccount } from "@/hooks/useTradingAccount";
+import { useTradingAccount } from "@/hooks/useTradingAccount";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, LayoutGrid, LineChart } from "lucide-react";
@@ -157,11 +157,7 @@ const Portfolio = () => {
     return <div className="container py-6">Loading...</div>;
   }
 
-  return (
-    <TradingAccountProvider>
-      <PortfolioContent />
-    </TradingAccountProvider>
-  );
+  return <PortfolioContent />;
 };
 
 export default Portfolio;
