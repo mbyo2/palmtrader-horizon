@@ -26,7 +26,7 @@ export const WalletManager: React.FC = () => {
     if (isDemo) {
       await deposit(amount);
       await refreshAccounts();
-      toast.success(`$${amount.toLocaleString()} virtual funds added to demo account`);
+      toast.success(`$${amount.toLocaleString()} added to demo account`);
     } else {
       toast.info("Live deposits will be available once payment APIs are connected.");
     }
