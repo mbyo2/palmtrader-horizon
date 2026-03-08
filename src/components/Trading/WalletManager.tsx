@@ -300,11 +300,11 @@ export const WalletManager: React.FC = () => {
           <Card>
             <CardHeader>
               <CardTitle>
-                {isDemo ? 'Simulate Withdrawal' : 'Withdraw Funds'}
+                {isDemo ? 'Withdraw Funds' : 'Withdraw Funds'}
               </CardTitle>
               <CardDescription>
                 {isDemo 
-                  ? 'Practice the withdrawal process (no real money)' 
+                  ? 'Withdraw virtual funds from your demo account' 
                   : 'Transfer funds to your bank or mobile money account'}
               </CardDescription>
             </CardHeader>
