@@ -334,7 +334,7 @@ export default function Index() {
             
             {/* Enhanced Dashboard Grid */}
             <div className="grid gap-8 md:gap-10 lg:grid-cols-3 xl:grid-cols-6">
-              <div className="lg:col-span-2 xl:col-span-4 space-y-6 md:space-y-8">
+              <div className="lg:col-span-2 xl:col-span-4 space-y-8 md:space-y-10">
                 <Card className="bg-gradient-to-r from-card to-card/50 border-border/50 shadow-lg">
                   <CardHeader>
                     <CardTitle className="flex items-center space-x-2 text-lg md:text-xl">
