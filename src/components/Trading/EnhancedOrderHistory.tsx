@@ -252,6 +252,7 @@ const EnhancedOrderHistory = () => {
                 <TableHead>Shares</TableHead>
                 <TableHead>Price</TableHead>
                 <TableHead>Total</TableHead>
+                <TableHead>P&L</TableHead>
                 <TableHead>Order Type</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Actions</TableHead>
