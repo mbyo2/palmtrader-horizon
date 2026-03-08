@@ -2,3 +2,21 @@ project_id = "hvrcchjbqumlknaboczh"
 
 [functions.compliance-alert]
 verify_jwt = false
+
+[functions.finnhub-websocket]
+verify_jwt = false
+
+[functions.alpha-vantage]
+verify_jwt = false
+
+[functions.sumsub-kyc]
+verify_jwt = false
+
+[functions.broker-api]
+verify_jwt = false
+
+[functions.metatrader-bridge]
+verify_jwt = false
+
+[functions.trading-api]
+verify_jwt = false
