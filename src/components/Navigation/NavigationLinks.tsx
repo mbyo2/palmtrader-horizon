@@ -55,8 +55,8 @@ const NavigationLinks = ({ onItemClick }: NavigationLinksProps) => {
 
   return (
     <>
-      {/* Desktop: primary links + More dropdown */}
-      <div className="hidden lg:flex items-center space-x-1">
+      {/* Desktop: primary links (scrollable) + More dropdown */}
+      <div className="hidden lg:flex items-center space-x-1 overflow-x-auto max-w-[calc(100vw-400px)] scrollbar-hide">
         {primaryItems.map((item) => (
           <NavLink
             key={item.to}
@@ -64,15 +64,15 @@ const NavigationLinks = ({ onItemClick }: NavigationLinksProps) => {
             onClick={onItemClick}
             className={linkClass}
           >
-            <item.icon className="h-4 w-4" />
-            <span>{item.label}</span>
+            <item.icon className="h-4 w-4 flex-shrink-0" />
+            <span className="whitespace-nowrap">{item.label}</span>
           </NavLink>
         ))}
 
         {secondaryItems.length > 0 && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex items-center space-x-1 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-200">
+              <button className="flex items-center space-x-1 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-200 flex-shrink-0">
                 <span>More</span>
                 <ChevronDown className="h-3 w-3" />
               </button>

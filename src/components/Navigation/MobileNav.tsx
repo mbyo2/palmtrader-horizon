@@ -10,8 +10,8 @@ interface MobileNavProps {
 const MobileNav = ({ isOpen, onClose }: MobileNavProps) => {
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent side="left" className="w-[280px] sm:w-[350px]">
-        <div className="py-4 px-2">
+      <SheetContent side="left" className="w-[280px] sm:w-[350px] flex flex-col">
+        <div className="py-4 px-2 overflow-y-auto flex-1">
           <NavigationLinks onItemClick={onClose} />
         </div>
       </SheetContent>
