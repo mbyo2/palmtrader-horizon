@@ -15,7 +15,6 @@ interface PortfolioSummaryProps {
 }
 
 const PortfolioSummary = ({ portfolioData, totalValue }: PortfolioSummaryProps) => {
-  // Fetch latest prices for calculating current value
   const { data: latestPrices, isLoading } = useQuery({
     queryKey: ["portfolioPrices", portfolioData.map(item => item.symbol).join(',')],
     queryFn: async () => {
@@ -25,10 +24,9 @@ const PortfolioSummary = ({ portfolioData, totalValue }: PortfolioSummaryProps) 
       );
     },
     enabled: portfolioData.length > 0,
-    staleTime: 30 * 1000, // 30 seconds
+    staleTime: 30 * 1000,
   });
   
-  // Calculate portfolio metrics
   const calculateMetrics = () => {
     if (!latestPrices || latestPrices.length === 0) {
       return {
@@ -55,9 +53,8 @@ const PortfolioSummary = ({ portfolioData, totalValue }: PortfolioSummaryProps) 
     const totalGain = currentValue - costBasis;
     const totalGainPercent = costBasis > 0 ? (totalGain / costBasis) * 100 : 0;
     
-    // Mocked day change - in a real app this would use actual daily data
-    const dayChange = totalValue * 0.01; // Mocked 1% daily change
-    const dayChangePercent = 1; // Mocked 1%
+    const dayChange = totalValue * 0.01;
+    const dayChangePercent = 1;
     
     return {
       currentValue,
@@ -70,7 +67,6 @@ const PortfolioSummary = ({ portfolioData, totalValue }: PortfolioSummaryProps) 
   
   const metrics = calculateMetrics();
   
-  // Generate mock historical data for the chart
   const generateHistoricalData = () => {
     const today = new Date();
     const data = [];
@@ -78,8 +74,7 @@ const PortfolioSummary = ({ portfolioData, totalValue }: PortfolioSummaryProps) 
       const date = new Date();
       date.setDate(today.getDate() - i);
       
-      // Create a realistic growth pattern with some volatility
-      const randomFactor = 0.98 + Math.random() * 0.04; // Random factor between 0.98 and 1.02
+      const randomFactor = 0.98 + Math.random() * 0.04;
       const value = i === 0 
         ? metrics.currentValue 
         : (metrics.currentValue * 0.85) * (1 + (i / 100)) * randomFactor;
@@ -114,7 +109,7 @@ const PortfolioSummary = ({ portfolioData, totalValue }: PortfolioSummaryProps) 
           {isLoading ? (
             <Skeleton className="h-8 w-3/4 mt-2" />
           ) : (
-            <div className={`text-2xl font-bold mt-1 ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
+            <div className={`text-2xl font-bold mt-1 ${isPositive ? 'text-success' : 'text-destructive'}`}>
               {metrics.dayChange >= 0 ? '+' : ''}${metrics.dayChange.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               <span className="text-sm ml-1">
                 ({metrics.dayChangePercent >= 0 ? '+' : ''}{metrics.dayChangePercent.toFixed(2)}%)
@@ -128,7 +123,7 @@ const PortfolioSummary = ({ portfolioData, totalValue }: PortfolioSummaryProps) 
           {isLoading ? (
             <Skeleton className="h-8 w-3/4 mt-2" />
           ) : (
-            <div className={`text-2xl font-bold mt-1 ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
+            <div className={`text-2xl font-bold mt-1 ${isPositive ? 'text-success' : 'text-destructive'}`}>
               {metrics.totalGain >= 0 ? '+' : ''}${metrics.totalGain.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               <span className="text-sm ml-1">
                 ({metrics.totalGainPercent >= 0 ? '+' : ''}{metrics.totalGainPercent.toFixed(2)}%)
@@ -148,8 +143,8 @@ const PortfolioSummary = ({ portfolioData, totalValue }: PortfolioSummaryProps) 
               <AreaChart data={chartData}>
                 <defs>
                   <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={isPositive ? "#10b981" : "#ef4444"} stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor={isPositive ? "#10b981" : "#ef4444"} stopOpacity={0}/>
+                    <stop offset="5%" stopColor={isPositive ? "hsl(var(--success))" : "hsl(var(--destructive))"} stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor={isPositive ? "hsl(var(--success))" : "hsl(var(--destructive))"} stopOpacity={0}/>
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
@@ -180,7 +175,7 @@ const PortfolioSummary = ({ portfolioData, totalValue }: PortfolioSummaryProps) 
                 <Area 
                   type="monotone" 
                   dataKey="value" 
-                  stroke={isPositive ? "#10b981" : "#ef4444"} 
+                  stroke={isPositive ? "hsl(var(--success))" : "hsl(var(--destructive))"} 
                   fillOpacity={1} 
                   fill="url(#colorValue)" 
                 />

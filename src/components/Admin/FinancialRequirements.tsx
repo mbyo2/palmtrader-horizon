@@ -20,7 +20,7 @@ const FinancialRequirements = ({
         <div>Shareholders: {total_shareholders}</div>
         <div>
           Financial Statements: 
-          <Badge className={financial_statements_submitted ? "bg-green-500 ml-2" : "bg-red-500 ml-2"}>
+          <Badge className={financial_statements_submitted ? "bg-success ml-2" : "bg-destructive ml-2"}>
             {financial_statements_submitted ? "Submitted" : "Missing"}
           </Badge>
         </div>

@@ -23,7 +23,7 @@ const DocumentStatus = ({ businessId, documents }: DocumentStatusProps) => {
     
     if (doc) {
       return (
-        <Badge className={doc.verified ? "bg-green-500" : "bg-yellow-500"}>
+        <Badge className={doc.verified ? "bg-success" : "bg-warning"}>
           {doc.verified ? (
             <Check className="h-4 w-4 mr-1" />
           ) : (
