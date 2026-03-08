@@ -101,7 +101,15 @@ export const RealTimePositionsList = () => {
   return (
     <Card className="card-gradient">
       <CardHeader>
-        <CardTitle>Positions ({positions.length})</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle>Positions ({positions.length})</CardTitle>
+          {isDemo && (
+            <Badge variant="secondary" className="text-xs">
+              <Shield className="h-3 w-3 mr-1" />
+              Demo Positions
+            </Badge>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
         {positions.map(position => (
