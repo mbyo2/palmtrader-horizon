@@ -115,7 +115,7 @@ export const WalletManager: React.FC = () => {
                 Demo Wallet — Virtual funds for practice trading
               </p>
               <p className="text-xs text-muted-foreground">
-                Add or reset virtual funds instantly. No real money involved.
+                Virtual funds — trades execute exactly like live mode.
               </p>
             </div>
             <Button variant="outline" size="sm" onClick={handleResetDemo} className="text-xs">
