@@ -69,7 +69,7 @@ function AppContent() {
       <Navbar />
       <main className="flex-1" id="main">
         <Routes>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/markets" element={<Markets />} />
