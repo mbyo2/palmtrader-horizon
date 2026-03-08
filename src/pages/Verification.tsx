@@ -216,8 +216,8 @@ const Verification = () => {
               <div className="flex items-center space-x-2">
                 {accountDetails?.is_email_verified ? (
                   <>
-                    <CheckCircle className="h-5 w-5 text-green-500" />
-                    <Badge className="bg-green-100 text-green-800">Verified</Badge>
+                    <CheckCircle className="h-5 w-5 text-success" />
+                    <Badge variant="success">Verified</Badge>
                   </>
                 ) : (
                   <>
