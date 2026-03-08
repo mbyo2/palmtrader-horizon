@@ -309,7 +309,7 @@ export default function Index() {
         </div>
       ) : (
         <div className="min-h-screen bg-gradient-to-br from-background to-primary/5">
-          <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8 space-y-6 md:space-y-8">
+          <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8 space-y-8 md:space-y-10">
             {/* Enhanced Dashboard Header */}
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6">
               <div className="space-y-1">
