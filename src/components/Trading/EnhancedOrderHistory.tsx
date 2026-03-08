@@ -23,6 +23,10 @@ interface TradeRecord {
   status: string;
   order_type: string;
   created_at: string;
+  realized_pnl?: number;
+  limit_price?: number;
+  stop_price?: number;
+  executed_at?: string;
 }
 
 const EnhancedOrderHistory = () => {
