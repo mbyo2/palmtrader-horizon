@@ -242,7 +242,7 @@ export default function Index() {
                   <p className="text-sm sm:text-base text-muted-foreground">Real-time insights from global markets</p>
                 </div>
                 <Badge variant="secondary" className="px-3 py-1">
-                  <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
+                  <div className="w-2 h-2 bg-success rounded-full mr-2 animate-pulse"></div>
                   Live
                 </Badge>
               </div>
