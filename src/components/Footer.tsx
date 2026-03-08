@@ -49,6 +49,9 @@ const Footer = () => {
             <Link to="/cookies" className="hover:text-primary transition-colors whitespace-nowrap">
               Cookies
             </Link>
+            <Link to="/privacy" className="hover:text-primary transition-colors whitespace-nowrap">
+              Privacy
+            </Link>
           </nav>
           <div className="flex items-center gap-1 sm:gap-2">
             {/* GitHub */}

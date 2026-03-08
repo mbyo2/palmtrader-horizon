@@ -95,6 +95,7 @@ function AppContent() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/cookies" element={<Cookies />} />
+          <Route path="/privacy" element={<Privacy />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/transfers" element={<Transfers />} />
           <Route path="/settings" element={<Settings />} />
