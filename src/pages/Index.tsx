@@ -260,9 +260,9 @@ export default function Index() {
                   <h2 className="text-2xl sm:text-3xl font-bold">Join Our Community</h2>
                    <CommunityStatsCard />
                   
-                  <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-green-500/20">
+                  <div className="bg-gradient-to-r from-success/10 to-success/5 rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-success/20">
                     <div className="flex items-center space-x-3 sm:space-x-4 mb-3 sm:mb-4">
-                      <Shield className="h-6 w-6 sm:h-8 sm:w-8 text-green-500 flex-shrink-0" />
+                      <Shield className="h-6 w-6 sm:h-8 sm:w-8 text-success flex-shrink-0" />
                       <div>
                         <h3 className="text-sm sm:text-base font-semibold">Bank-Level Security</h3>
                         <p className="text-xs sm:text-sm text-muted-foreground">Your money is safe</p>
