@@ -290,7 +290,7 @@ export default function Index() {
                     <Button 
                       size="lg" 
                       onClick={() => navigate("/auth")} 
-                      className="bg-white text-primary hover:bg-gray-100 font-semibold px-8 py-4 h-auto text-lg"
+                      className="bg-background text-primary hover:bg-muted font-semibold px-8 py-4 h-auto text-lg"
                     >
                       Create Free Account
                     </Button>
