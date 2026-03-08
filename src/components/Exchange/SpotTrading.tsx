@@ -8,11 +8,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
-import { SpotTradingService, TradingPair, OrderBook, SpotOrder } from '@/services/SpotTradingService';
+import { SpotTradingService, TradingPair, SpotOrder } from '@/services/SpotTradingService';
+import { FeeTierService } from '@/services/FeeTierService';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { TrendingUp, TrendingDown, RefreshCw, X } from 'lucide-react';
+import { RefreshCw, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { RealTimeOrderBook } from './RealTimeOrderBook';
 
 export const SpotTrading = () => {
   const { user } = useAuth();
@@ -31,16 +33,15 @@ export const SpotTrading = () => {
 
   const selectedPair = pairs.find(p => p.id === selectedPairId);
 
-  const { data: orderBook, refetch: refetchOrderBook } = useQuery({
-    queryKey: ['order-book', selectedPairId],
-    queryFn: () => SpotTradingService.getOrderBook(selectedPairId),
-    enabled: !!selectedPairId,
-    refetchInterval: 2000
-  });
-
   const { data: openOrders = [] } = useQuery({
     queryKey: ['open-orders', user?.id, selectedPairId],
     queryFn: () => user ? SpotTradingService.getOpenOrders(user.id, selectedPairId || undefined) : [],
+    enabled: !!user
+  });
+
+  const { data: userVolume } = useQuery({
+    queryKey: ['user-volume', user?.id],
+    queryFn: () => user ? FeeTierService.getUserVolume(user.id) : null,
     enabled: !!user
   });
 
@@ -64,11 +65,10 @@ export const SpotTrading = () => {
     },
     onSuccess: (result) => {
       if (result.success) {
-        toast.success(`${side.toUpperCase()} order placed`);
+        toast.success(`${side.toUpperCase()} order placed — matching engine active`);
         setQuantity('');
         setPrice('');
         queryClient.invalidateQueries({ queryKey: ['open-orders'] });
-        queryClient.invalidateQueries({ queryKey: ['order-book'] });
       } else {
         toast.error(result.error || 'Failed to place order');
       }
@@ -81,7 +81,6 @@ export const SpotTrading = () => {
       if (result.success) {
         toast.success('Order cancelled');
         queryClient.invalidateQueries({ queryKey: ['open-orders'] });
-        queryClient.invalidateQueries({ queryKey: ['order-book'] });
       }
     }
   });
@@ -92,14 +91,15 @@ export const SpotTrading = () => {
   };
 
   const total = parseFloat(price || '0') * parseFloat(quantity || '0');
+  const currentFee = userVolume?.current_tier;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-      {/* Trading Pair Selector & Chart Area */}
+      {/* Left: Pair selector + Order Book + Open Orders */}
       <div className="lg:col-span-3 space-y-4">
         <Card>
           <CardContent className="p-4">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 flex-wrap">
               <Select value={selectedPairId} onValueChange={setSelectedPairId}>
                 <SelectTrigger className="w-40">
                   <SelectValue placeholder="Select pair" />
@@ -113,82 +113,19 @@ export const SpotTrading = () => {
                 </SelectContent>
               </Select>
 
-              {selectedPair && (
-                <>
-                  <div className="text-2xl font-bold">
-                    {orderBook?.lastPrice?.toFixed(selectedPair.price_precision) || '—'}
-                  </div>
-                  {orderBook?.spread && (
-                    <div className="text-sm text-muted-foreground">
-                      Spread: {orderBook.spread.toFixed(2)}
-                    </div>
-                  )}
-                </>
+              {currentFee && (
+                <Badge variant="secondary" className="text-xs">
+                  {currentFee.tier_name} • Maker {(currentFee.maker_fee * 100).toFixed(2)}% / Taker {(currentFee.taker_fee * 100).toFixed(2)}%
+                </Badge>
               )}
-
-              <Button variant="ghost" size="icon" onClick={() => refetchOrderBook()}>
-                <RefreshCw className="h-4 w-4" />
-              </Button>
             </div>
           </CardContent>
         </Card>
 
-        {/* Order Book */}
-        <div className="grid grid-cols-2 gap-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <TrendingDown className="h-4 w-4 text-red-500" />
-                Sell Orders (Asks)
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="max-h-64 overflow-y-auto">
-                {orderBook?.asks.slice(0, 10).reverse().map((entry, i) => (
-                  <div 
-                    key={i} 
-                    className="grid grid-cols-3 gap-2 px-4 py-1.5 text-sm hover:bg-muted/50 cursor-pointer"
-                    onClick={() => handlePriceClick(entry.price)}
-                  >
-                    <span className="text-red-500">{entry.price.toFixed(2)}</span>
-                    <span className="text-right">{entry.quantity.toFixed(4)}</span>
-                    <span className="text-right text-muted-foreground">{entry.total.toFixed(2)}</span>
-                  </div>
-                ))}
-                {(!orderBook?.asks.length) && (
-                  <div className="p-4 text-center text-muted-foreground text-sm">No sell orders</div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-green-500" />
-                Buy Orders (Bids)
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="max-h-64 overflow-y-auto">
-                {orderBook?.bids.slice(0, 10).map((entry, i) => (
-                  <div 
-                    key={i} 
-                    className="grid grid-cols-3 gap-2 px-4 py-1.5 text-sm hover:bg-muted/50 cursor-pointer"
-                    onClick={() => handlePriceClick(entry.price)}
-                  >
-                    <span className="text-green-500">{entry.price.toFixed(2)}</span>
-                    <span className="text-right">{entry.quantity.toFixed(4)}</span>
-                    <span className="text-right text-muted-foreground">{entry.total.toFixed(2)}</span>
-                  </div>
-                ))}
-                {(!orderBook?.bids.length) && (
-                  <div className="p-4 text-center text-muted-foreground text-sm">No buy orders</div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        {/* Real-Time Order Book with Supabase Realtime */}
+        {selectedPairId && (
+          <RealTimeOrderBook pairId={selectedPairId} onPriceClick={handlePriceClick} />
+        )}
 
         {/* Open Orders */}
         <Card>
@@ -206,13 +143,19 @@ export const SpotTrading = () => {
                       <Badge variant={order.side === 'buy' ? 'default' : 'destructive'}>
                         {order.side.toUpperCase()}
                       </Badge>
-                      <span className="font-medium">{order.quantity} @ {order.price}</span>
+                      <span className="font-medium text-sm">{order.quantity} @ {order.price}</span>
                       <Badge variant="outline">{order.order_type}</Badge>
+                      {order.status === 'partially_filled' && (
+                        <Badge variant="secondary" className="text-xs">
+                          Filled: {order.filled_quantity}/{order.quantity}
+                        </Badge>
+                      )}
                     </div>
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={() => cancelMutation.mutate(order.id)}
+                      aria-label="Cancel order"
                     >
                       <X className="h-4 w-4" />
                     </Button>
@@ -224,15 +167,15 @@ export const SpotTrading = () => {
         </Card>
       </div>
 
-      {/* Order Form */}
+      {/* Right: Order Form */}
       <Card>
         <CardContent className="p-4">
           <Tabs value={side} onValueChange={(v) => setSide(v as 'buy' | 'sell')}>
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="buy" className="data-[state=active]:bg-green-500 data-[state=active]:text-white">
+              <TabsTrigger value="buy" className={cn("data-[state=active]:bg-green-600 data-[state=active]:text-white")}>
                 Buy
               </TabsTrigger>
-              <TabsTrigger value="sell" className="data-[state=active]:bg-red-500 data-[state=active]:text-white">
+              <TabsTrigger value="sell" className={cn("data-[state=active]:bg-red-600 data-[state=active]:text-white")}>
                 Sell
               </TabsTrigger>
             </TabsList>
@@ -294,17 +237,25 @@ export const SpotTrading = () => {
               />
             </div>
 
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Total</span>
-              <span className="font-medium">
-                {isNaN(total) ? '0.00' : total.toFixed(2)} {selectedPair?.quote_currency || 'USDT'}
-              </span>
+            <div className="space-y-1 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Total</span>
+                <span className="font-medium">
+                  {isNaN(total) ? '0.00' : total.toFixed(2)} {selectedPair?.quote_currency || 'USDT'}
+                </span>
+              </div>
+              {currentFee && (
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">Est. fee ({currentFee.tier_name})</span>
+                  <span>{(total * currentFee.taker_fee).toFixed(4)} {selectedPair?.quote_currency || 'USDT'}</span>
+                </div>
+              )}
             </div>
 
             <Button 
               className={cn(
                 "w-full",
-                side === 'buy' ? 'bg-green-500 hover:bg-green-600' : 'bg-red-500 hover:bg-red-600'
+                side === 'buy' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'
               )}
               onClick={() => placeMutation.mutate()}
               disabled={placeMutation.isPending || !quantity || (orderType === 'limit' && !price)}
