@@ -81,7 +81,7 @@ const PortfolioContent = () => {
         </TabsList>
 
         {/* Trading Tab */}
-        <TabsContent value="trading" className="space-y-4 sm:space-y-6 mt-4">
+        <TabsContent value="trading" className="space-y-6 sm:space-y-8 mt-4">
           {!isDemo && <LiveModeNotice />}
           <TradingErrorBoundary>
             {/* Stock Selector */}
