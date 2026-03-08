@@ -36,7 +36,7 @@ export const WalletManager: React.FC = () => {
   const handleDemoQuickDeposit = async (amount: number) => {
     await deposit(amount);
     await refreshAccounts();
-    toast.success(`$${amount.toLocaleString()} virtual funds added`);
+    toast.success(`$${amount.toLocaleString()} added`);
   };
 
   const handleWithdraw = async () => {
