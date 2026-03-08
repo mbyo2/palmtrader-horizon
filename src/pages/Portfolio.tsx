@@ -122,7 +122,7 @@ const PortfolioContent = () => {
 
               {/* Risk Management Sidebar */}
               <div className="space-y-6">
-                <PositionSizer currentPrice={150} symbol={selectedSymbol} />
+                <PositionSizer currentPrice={currentSymbolPrice ?? 0} symbol={selectedSymbol} />
                 <RiskMetricsPanel />
               </div>
             </div>

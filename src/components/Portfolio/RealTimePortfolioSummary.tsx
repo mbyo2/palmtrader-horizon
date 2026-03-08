@@ -70,21 +70,21 @@ export const RealTimePortfolioSummary = () => {
             Total P&L
           </CardTitle>
           {isPositive ? (
-            <TrendingUp className="h-4 w-4 text-green-500" />
+            <TrendingUp className="h-4 w-4 text-success" />
           ) : (
-            <TrendingDown className="h-4 w-4 text-red-500" />
+            <TrendingDown className="h-4 w-4 text-destructive" />
           )}
         </CardHeader>
         <CardContent>
           <div className={cn(
             "text-2xl font-bold",
-            isPositive ? "text-green-500" : "text-red-500"
+            isPositive ? "text-success" : "text-destructive"
           )}>
             {formatCurrency(summary.totalGainLoss)}
           </div>
           <p className={cn(
             "text-xs",
-            isPositive ? "text-green-500" : "text-red-500"
+            isPositive ? "text-success" : "text-destructive"
           )}>
             {formatPercent(summary.gainLossPercentage)}
           </p>
@@ -97,21 +97,21 @@ export const RealTimePortfolioSummary = () => {
             Day Change
           </CardTitle>
           {isDayPositive ? (
-            <TrendingUp className="h-4 w-4 text-green-500" />
+            <TrendingUp className="h-4 w-4 text-success" />
           ) : (
-            <TrendingDown className="h-4 w-4 text-red-500" />
+            <TrendingDown className="h-4 w-4 text-destructive" />
           )}
         </CardHeader>
         <CardContent>
           <div className={cn(
             "text-2xl font-bold",
-            isDayPositive ? "text-green-500" : "text-red-500"
+            isDayPositive ? "text-success" : "text-destructive"
           )}>
             {formatCurrency(summary.dayChange)}
           </div>
           <p className={cn(
             "text-xs",
-            isDayPositive ? "text-green-500" : "text-red-500"
+            isDayPositive ? "text-success" : "text-destructive"
           )}>
             {formatPercent(summary.dayChangePercent)} today
           </p>
