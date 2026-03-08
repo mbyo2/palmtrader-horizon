@@ -187,6 +187,9 @@ export class WalletService {
 
       if (updateError) throw updateError;
 
+      // Sync trading account balance
+      await this.syncTradingAccountBalance(userId, newBalance);
+
       // Record transaction
       const { data, error } = await supabase
         .from("transactions")
