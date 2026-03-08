@@ -74,6 +74,9 @@ const QuickTradePanel = ({ symbol, onTrade }: QuickTradePanelProps) => {
             `${type === 'buy' ? 'Bought' : 'Sold'} ${(result.executedShares || shares).toFixed(4)} shares of ${symbol} at $${(result.executedPrice || price).toFixed(2)}`
           );
           await refreshAccounts();
+          queryClient.invalidateQueries({ queryKey: ["portfolio"] });
+          queryClient.invalidateQueries({ queryKey: ["portfolioSummary"] });
+          queryClient.invalidateQueries({ queryKey: ["walletBalances"] });
         } else {
           toast.error(result.error || "Trade execution failed");
         }
