@@ -273,6 +273,10 @@ const Settings = () => {
           </Card>
         </TabsContent>
         
+        <TabsContent value="advanced" className="space-y-6">
+          <AdvancedSecuritySettings />
+        </TabsContent>
+        
         <TabsContent value="billing" className="space-y-6">
           <Card>
             <CardHeader>

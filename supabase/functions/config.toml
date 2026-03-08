@@ -16,3 +16,6 @@ verify_jwt = false
 [functions.metatrader-bridge]
 verify_jwt = false
 
+[functions.trading-api]
+verify_jwt = false
+
