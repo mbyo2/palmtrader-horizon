@@ -21,6 +21,7 @@ const QUICK_AMOUNTS = [100, 500, 1000, 2500, 5000];
 const QuickTradePanel = ({ symbol, onTrade }: QuickTradePanelProps) => {
   const { user } = useAuth();
   const { activeAccount, isDemo, getAvailableBalance, refreshAccounts } = useTradingAccount();
+  const queryClient = useQueryClient();
   const { price, change, changePercent, isLoading } = useRealTimePrice(symbol);
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [customAmount, setCustomAmount] = useState("");
