@@ -539,8 +539,30 @@ export class OrderExecutionEngine {
         .maybeSingle();
 
       if (position) {
+        // Calculate realized P&L
+        const realizedPnl = (price - position.average_price) * shares;
+        
+        // Store realized P&L in the trade record
+        const { data: latestTrade } = await supabase
+          .from("trades")
+          .select("id")
+          .eq("user_id", userId)
+          .eq("symbol", symbol)
+          .eq("type", "sell")
+          .eq("status", "completed")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (latestTrade) {
+          await supabase
+            .from("trades")
+            .update({ realized_pnl: realizedPnl })
+            .eq("id", latestTrade.id);
+        }
+
         const newShares = position.shares - shares;
-        if (newShares <= 0) {
+        if (newShares <= 0.000001) {
           await supabase
             .from("portfolio")
             .delete()
@@ -656,41 +678,101 @@ export class OrderExecutionEngine {
     const currentPrice = await this.getCurrentMarketPrice(order.symbol);
 
     let shouldExecute = false;
+    let executionPrice = currentPrice;
 
     switch (order.order_type) {
       case "limit":
-        shouldExecute = (order.type === "buy" && currentPrice <= order.limit_price) ||
-                       (order.type === "sell" && currentPrice >= order.limit_price);
+        if (order.type === "buy" && currentPrice <= order.limit_price) {
+          shouldExecute = true;
+          executionPrice = Math.min(currentPrice, order.limit_price);
+        } else if (order.type === "sell" && currentPrice >= order.limit_price) {
+          shouldExecute = true;
+          executionPrice = Math.max(currentPrice, order.limit_price);
+        }
         break;
       
       case "stop":
-        shouldExecute = (order.type === "buy" && currentPrice >= order.stop_price) ||
-                       (order.type === "sell" && currentPrice <= order.stop_price);
+        if (order.type === "buy" && currentPrice >= order.stop_price) {
+          shouldExecute = true;
+        } else if (order.type === "sell" && currentPrice <= order.stop_price) {
+          shouldExecute = true;
+        }
         break;
       
       case "stop_limit":
         if ((order.type === "buy" && currentPrice >= order.stop_price) ||
             (order.type === "sell" && currentPrice <= order.stop_price)) {
-          // Convert to limit order
-          await supabase
-            .from("trades")
-            .update({ order_type: "limit" })
-            .eq("id", order.id);
+          // Stop triggered — convert to limit and re-check
+          if ((order.type === "buy" && currentPrice <= order.limit_price) ||
+              (order.type === "sell" && currentPrice >= order.limit_price)) {
+            shouldExecute = true;
+            executionPrice = order.limit_price;
+          } else {
+            await supabase
+              .from("trades")
+              .update({ order_type: "limit" })
+              .eq("id", order.id);
+          }
+        }
+        break;
+
+      case "trailing_stop":
+        if (order.trailing_percent) {
+          const trailPrice = order.type === "sell"
+            ? currentPrice * (1 - order.trailing_percent / 100)
+            : currentPrice * (1 + order.trailing_percent / 100);
+          
+          if (order.type === "sell" && currentPrice <= (order.stop_price || trailPrice)) {
+            shouldExecute = true;
+          } else if (order.type === "buy" && currentPrice >= (order.stop_price || trailPrice)) {
+            shouldExecute = true;
+          } else {
+            // Update trailing stop price if market moved favorably
+            const newStop = order.type === "sell"
+              ? Math.max(order.stop_price || 0, currentPrice * (1 - order.trailing_percent / 100))
+              : Math.min(order.stop_price || Infinity, currentPrice * (1 + order.trailing_percent / 100));
+            
+            if (newStop !== order.stop_price) {
+              await supabase
+                .from("trades")
+                .update({ stop_price: newStop })
+                .eq("id", order.id);
+            }
+          }
         }
         break;
     }
 
     if (shouldExecute) {
+      const totalAmount = order.shares * executionPrice;
+
+      // For buy orders, deduct from wallet
+      if (order.type === "buy") {
+        const walletUpdated = await this.updateWalletBalance(order.user_id, -totalAmount);
+        if (!walletUpdated) {
+          await supabase
+            .from("trades")
+            .update({ status: "failed" })
+            .eq("id", order.id);
+          return;
+        }
+      }
+
       await supabase
         .from("trades")
         .update({ 
           status: "completed",
-          price: currentPrice,
-          total_amount: order.shares * currentPrice
+          price: executionPrice,
+          total_amount: totalAmount
         })
         .eq("id", order.id);
 
-      await this.updatePortfolio(order.user_id, order.symbol, order.type, order.shares, currentPrice);
+      // For sell orders, credit wallet and calculate P&L
+      if (order.type === "sell") {
+        await this.updateWalletBalance(order.user_id, totalAmount);
+      }
+
+      await this.updatePortfolio(order.user_id, order.symbol, order.type, order.shares, executionPrice);
     }
   }
 

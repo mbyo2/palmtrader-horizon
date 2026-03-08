@@ -8,12 +8,15 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Wallet, TrendingUp, TrendingDown, Clock, CheckCircle, XCircle, Shield, Smartphone, Building2, AlertTriangle, RefreshCw } from 'lucide-react';
 import { useWallet } from '@/hooks/useWallet';
 import { useTradingAccount } from '@/hooks/useTradingAccount';
+import { useAuth } from '@/hooks/useAuth';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 const DEMO_QUICK_AMOUNTS = [1000, 5000, 10000, 25000, 50000];
 
 export const WalletManager: React.FC = () => {
+  const { user } = useAuth();
   const { balances, transactions, isLoading, deposit, withdraw, getBalance } = useWallet();
   const { isDemo, activeAccount, refreshAccounts } = useTradingAccount();
   const [depositAmount, setDepositAmount] = useState('');
@@ -53,7 +56,9 @@ export const WalletManager: React.FC = () => {
   };
 
   const handleResetDemo = async () => {
-    // Reset demo balance to 100,000
+    if (!user) return;
+    
+    // Reset wallet balance to 100,000
     const currentBalance = getBalance('USD')?.available || 0;
     const resetAmount = 100000 - currentBalance;
     if (resetAmount > 0) {
@@ -61,8 +66,25 @@ export const WalletManager: React.FC = () => {
     } else if (resetAmount < 0) {
       await withdraw(Math.abs(resetAmount));
     }
+
+    // Clear all portfolio positions
+    const { error: portfolioError } = await supabase
+      .from("portfolio")
+      .delete()
+      .eq("user_id", user.id);
+    
+    if (portfolioError) console.error("Error clearing portfolio:", portfolioError);
+
+    // Clear all trade records
+    const { error: tradesError } = await supabase
+      .from("trades")
+      .delete()
+      .eq("user_id", user.id);
+    
+    if (tradesError) console.error("Error clearing trades:", tradesError);
+
     await refreshAccounts();
-    toast.success("Demo account reset to $100,000");
+    toast.success("Demo account reset to $100,000 — positions and history cleared");
   };
 
   const formatCurrency = (amount: number, currency: string) => {

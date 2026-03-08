@@ -23,6 +23,10 @@ interface TradeRecord {
   status: string;
   order_type: string;
   created_at: string;
+  realized_pnl?: number;
+  limit_price?: number;
+  stop_price?: number;
+  executed_at?: string;
 }
 
 const EnhancedOrderHistory = () => {
@@ -248,6 +252,7 @@ const EnhancedOrderHistory = () => {
                 <TableHead>Shares</TableHead>
                 <TableHead>Price</TableHead>
                 <TableHead>Total</TableHead>
+                <TableHead>P&L</TableHead>
                 <TableHead>Order Type</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Actions</TableHead>
@@ -256,13 +261,13 @@ const EnhancedOrderHistory = () => {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8">
+                  <TableCell colSpan={10} className="text-center py-8">
                     Loading orders...
                   </TableCell>
                 </TableRow>
               ) : filteredTrades.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
                     No orders found
                   </TableCell>
                 </TableRow>
@@ -281,6 +286,15 @@ const EnhancedOrderHistory = () => {
                     <TableCell>{trade.shares.toLocaleString()}</TableCell>
                     <TableCell>${trade.price.toFixed(2)}</TableCell>
                     <TableCell>${trade.total_amount.toFixed(2)}</TableCell>
+                    <TableCell>
+                      {trade.realized_pnl != null ? (
+                        <span className={trade.realized_pnl >= 0 ? 'text-success font-medium' : 'text-destructive font-medium'}>
+                          {trade.realized_pnl >= 0 ? '+' : ''}${trade.realized_pnl.toFixed(2)}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
                     <TableCell className="capitalize">{trade.order_type}</TableCell>
                     <TableCell>
                       <Badge variant={getStatusBadgeVariant(trade.status)}>

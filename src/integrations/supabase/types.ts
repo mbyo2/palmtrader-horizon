@@ -2521,6 +2521,7 @@ export type Database = {
           oco_link_id: string | null
           order_type: string | null
           price: number
+          realized_pnl: number | null
           recurring_schedule: string | null
           risk_level: string | null
           shares: number
@@ -2545,6 +2546,7 @@ export type Database = {
           oco_link_id?: string | null
           order_type?: string | null
           price: number
+          realized_pnl?: number | null
           recurring_schedule?: string | null
           risk_level?: string | null
           shares: number
@@ -2569,6 +2571,7 @@ export type Database = {
           oco_link_id?: string | null
           order_type?: string | null
           price?: number
+          realized_pnl?: number | null
           recurring_schedule?: string | null
           risk_level?: string | null
           shares?: number

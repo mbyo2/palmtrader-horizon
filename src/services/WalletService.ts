@@ -187,6 +187,9 @@ export class WalletService {
 
       if (updateError) throw updateError;
 
+      // Sync trading account balance
+      await this.syncTradingAccountBalance(userId, newBalance);
+
       // Record transaction
       const { data, error } = await supabase
         .from("transactions")
@@ -249,6 +252,9 @@ export class WalletService {
 
       if (updateError) throw updateError;
 
+      // Sync trading account balance
+      await this.syncTradingAccountBalance(userId, newBalance);
+
       // Record transaction
       const { data, error } = await supabase
         .from("transactions")
@@ -272,6 +278,33 @@ export class WalletService {
         success: false, 
         error: error instanceof Error ? error.message : 'Withdrawal failed' 
       };
+    }
+  }
+
+  private static async syncTradingAccountBalance(userId: string, newBalance: number): Promise<void> {
+    try {
+      const { data: activeAccount } = await supabase
+        .from("trading_accounts")
+        .select("id, balance, available_balance")
+        .eq("user_id", userId)
+        .eq("is_active", true)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (activeAccount) {
+        const balanceDiff = newBalance - activeAccount.available_balance;
+        await supabase
+          .from("trading_accounts")
+          .update({
+            available_balance: newBalance,
+            balance: activeAccount.balance + balanceDiff,
+            updated_at: new Date().toISOString()
+          })
+          .eq("id", activeAccount.id);
+      }
+    } catch (error) {
+      devConsole.error("Error syncing trading account balance:", error);
     }
   }
 }
