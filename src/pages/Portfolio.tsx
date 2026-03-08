@@ -157,11 +157,7 @@ const Portfolio = () => {
     return <div className="container py-6">Loading...</div>;
   }
 
-  return (
-    <TradingAccountProvider>
-      <PortfolioContent />
-    </TradingAccountProvider>
-  );
+  return <PortfolioContent />;
 };
 
 export default Portfolio;
