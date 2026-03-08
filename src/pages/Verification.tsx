@@ -221,7 +221,7 @@ const Verification = () => {
                   </>
                 ) : (
                   <>
-                    <XCircle className="h-5 w-5 text-red-500" />
+                    <XCircle className="h-5 w-5 text-destructive" />
                     <Button size="sm" onClick={sendVerificationEmail}>
                       Send Verification Email
                     </Button>
