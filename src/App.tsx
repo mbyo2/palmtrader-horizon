@@ -10,7 +10,7 @@ import Footer from '@/components/Footer';
 import PullToRefresh from './components/Mobile/PullToRefresh';
 import SwipeNavigation from './components/Mobile/SwipeNavigation';
 import { usePullToRefresh } from './hooks/usePullToRefresh';
-import { useIsMobile } from './hooks/use-mobile';
+import { TradingAccountProvider } from '@/hooks/useTradingAccount';
 import Home from '@/pages/Home';
 import Markets from '@/pages/Markets';
 import Portfolio from '@/pages/Portfolio';
