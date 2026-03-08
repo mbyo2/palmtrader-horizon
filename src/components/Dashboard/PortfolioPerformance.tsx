@@ -366,7 +366,7 @@ const PortfolioPerformance = () => {
         </div>
 
         {/* Metrics */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
           <div className="p-4 rounded-lg bg-background/50">
             <div className="flex items-center justify-between">
               <h4 className="text-sm text-muted-foreground">Total Value</h4>
