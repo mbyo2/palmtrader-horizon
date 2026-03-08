@@ -27,6 +27,13 @@ export const TradingAccountProvider: React.FC<{ children: React.ReactNode }> = (
   const [isLoading, setIsLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
 
+  const activeAccountIdRef = React.useRef<string | null>(null);
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    activeAccountIdRef.current = activeAccount?.id || null;
+  }, [activeAccount]);
+
   const refreshAccounts = useCallback(async () => {
     if (!user) {
       setAccounts([]);
@@ -39,23 +46,27 @@ export const TradingAccountProvider: React.FC<{ children: React.ReactNode }> = (
       const data = await TradingAccountService.getUserAccounts();
       setAccounts(data);
       
+      const currentActiveId = activeAccountIdRef.current;
+      
       // If we have an active account, update it with fresh data
-      if (activeAccount) {
-        const updatedActiveAccount = data.find(a => a.id === activeAccount.id);
+      if (currentActiveId) {
+        const updatedActiveAccount = data.find(a => a.id === currentActiveId);
         if (updatedActiveAccount) {
           setActiveAccountState(updatedActiveAccount);
         }
       }
       
       // If no active account but we have accounts, set one
-      if (!activeAccount && data.length > 0) {
+      if (!currentActiveId && data.length > 0) {
         const demoAccount = data.find(a => a.account_type === 'demo');
-        setActiveAccountState(demoAccount || data[0]);
+        const selected = demoAccount || data[0];
+        setActiveAccountState(selected);
+        activeAccountIdRef.current = selected.id;
       }
     } catch (error) {
       console.error("Error refreshing accounts:", error);
     }
-  }, [user, activeAccount]);
+  }, [user]);
 
   const ensureWalletExists = useCallback(async (balance: number) => {
     if (!user) return;
