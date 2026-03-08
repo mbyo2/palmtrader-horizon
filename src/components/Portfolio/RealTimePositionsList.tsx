@@ -1,7 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
 import { useRealTimePortfolio, RealTimePosition } from '@/hooks/useRealTimePortfolio';
-import { TrendingUp, TrendingDown } from 'lucide-react';
+import { useTradingAccount } from '@/hooks/useTradingAccount';
+import { TrendingUp, TrendingDown, Shield } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const formatCurrency = (value: number) => {
@@ -57,6 +59,7 @@ const PositionRow = ({ position }: { position: RealTimePosition }) => {
 
 export const RealTimePositionsList = () => {
   const { positions, isLoading } = useRealTimePortfolio();
+  const { isDemo } = useTradingAccount();
 
   if (isLoading) {
     return (
@@ -98,7 +101,15 @@ export const RealTimePositionsList = () => {
   return (
     <Card className="card-gradient">
       <CardHeader>
-        <CardTitle>Positions ({positions.length})</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle>Positions ({positions.length})</CardTitle>
+          {isDemo && (
+            <Badge variant="secondary" className="text-xs">
+              <Shield className="h-3 w-3 mr-1" />
+              Demo Positions
+            </Badge>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
         {positions.map(position => (

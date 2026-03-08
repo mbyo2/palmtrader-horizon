@@ -21,6 +21,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, LayoutGrid, LineChart } from "lucide-react";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import DemoModeBanner from "@/components/Trading/DemoModeBanner";
+import LiveModeNotice from "@/components/Trading/LiveModeNotice";
 
 const PortfolioContent = () => {
   const { activeAccount, isLoading: isAccountLoading } = useTradingAccount();
@@ -40,8 +42,13 @@ const PortfolioContent = () => {
     );
   }
 
+  const { isDemo } = useTradingAccount();
+
   return (
     <div className="container py-4 sm:py-6 space-y-4 sm:space-y-6 px-3 sm:px-4">
+      {/* Demo/Live Banner */}
+      <DemoModeBanner />
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <h1 className="text-2xl sm:text-3xl font-bold">Portfolio & Trading</h1>
@@ -75,6 +82,7 @@ const PortfolioContent = () => {
 
         {/* Trading Tab */}
         <TabsContent value="trading" className="space-y-4 sm:space-y-6 mt-4">
+          {!isDemo && <LiveModeNotice />}
           <TradingErrorBoundary>
             {/* Stock Selector */}
             <StockSelector symbol={selectedSymbol} onSymbolChange={setSelectedSymbol} />

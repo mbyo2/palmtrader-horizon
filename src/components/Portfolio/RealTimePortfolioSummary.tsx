@@ -1,7 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
 import { useRealTimePortfolio } from '@/hooks/useRealTimePortfolio';
-import { TrendingUp, TrendingDown, DollarSign, PieChart } from 'lucide-react';
+import { useTradingAccount } from '@/hooks/useTradingAccount';
+import { TrendingUp, TrendingDown, DollarSign, PieChart, Shield } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const formatCurrency = (value: number) => {
@@ -18,6 +20,7 @@ const formatPercent = (value: number) => {
 
 export const RealTimePortfolioSummary = () => {
   const { summary, isLoading } = useRealTimePortfolio();
+  const { isDemo } = useTradingAccount();
 
   if (isLoading) {
     return (
@@ -47,12 +50,16 @@ export const RealTimePortfolioSummary = () => {
           <CardTitle className="text-sm font-medium text-muted-foreground">
             Portfolio Value
           </CardTitle>
-          <DollarSign className="h-4 w-4 text-muted-foreground" />
+          <div className="flex items-center gap-1">
+            {isDemo && <Badge variant="secondary" className="text-[10px] h-5"><Shield className="h-3 w-3 mr-0.5" />Demo</Badge>}
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </div>
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{formatCurrency(summary.totalValue)}</div>
           <p className="text-xs text-muted-foreground">
             {summary.positionsCount} position{summary.positionsCount !== 1 ? 's' : ''}
+            {isDemo && ' (virtual)'}
           </p>
         </CardContent>
       </Card>
