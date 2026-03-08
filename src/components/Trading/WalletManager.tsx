@@ -361,7 +361,7 @@ export const WalletManager: React.FC = () => {
           <div className="space-y-4">
             {transactions.length === 0 ? (
               <p className="text-center text-muted-foreground py-4">
-                No transactions yet. {isDemo ? 'Start by adding virtual funds above.' : 'Deposit funds to get started.'}
+                No transactions yet. {isDemo ? 'Add funds above to start trading.' : 'Deposit funds to get started.'}
               </p>
             ) : (
               transactions.slice(0, 10).map(transaction => (
