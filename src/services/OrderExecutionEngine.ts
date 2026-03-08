@@ -263,6 +263,8 @@ export class OrderExecutionEngine {
           available_balance: initialBalance,
           reserved_balance: 0
         });
+        // Also sync to trading account
+        await this.syncTradingAccountBalance(userId, initialBalance);
         return true;
       }
 
@@ -278,10 +280,43 @@ export class OrderExecutionEngine {
         .eq("user_id", userId)
         .eq("currency", "USD");
 
+      if (!updateError) {
+        // Keep trading_accounts in sync with wallets
+        await this.syncTradingAccountBalance(userId, newBalance);
+      }
+
       return !updateError;
     } catch (error) {
       console.error("Error updating wallet:", error);
       return false;
+    }
+  }
+
+  private static async syncTradingAccountBalance(userId: string, newBalance: number): Promise<void> {
+    try {
+      // Update the active trading account balance to match wallet
+      const { data: activeAccount } = await supabase
+        .from("trading_accounts")
+        .select("id, balance, available_balance")
+        .eq("user_id", userId)
+        .eq("is_active", true)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (activeAccount) {
+        const balanceDiff = newBalance - activeAccount.available_balance;
+        await supabase
+          .from("trading_accounts")
+          .update({
+            available_balance: newBalance,
+            balance: activeAccount.balance + balanceDiff,
+            updated_at: new Date().toISOString()
+          })
+          .eq("id", activeAccount.id);
+      }
+    } catch (error) {
+      console.error("Error syncing trading account balance:", error);
     }
   }
 
