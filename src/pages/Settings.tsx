@@ -134,9 +134,39 @@ const Settings = () => {
     }
   };
 
-  const handleSaveNotifications = () => {
-    // In a real app, this would save to the database
-    toast.success('Notification preferences saved');
+  const handleSaveNotifications = async () => {
+    if (!user) return;
+    try {
+      const { data: existing } = await supabase
+        .from('user_preferences')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      const prefs = {
+        price_alerts: priceAlerts,
+        trade_confirmations: tradeConfirmations,
+        market_updates: marketUpdates,
+        updated_at: new Date().toISOString(),
+      };
+
+      if (existing) {
+        const { error } = await supabase
+          .from('user_preferences')
+          .update(prefs)
+          .eq('user_id', user.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('user_preferences')
+          .insert({ user_id: user.id, ...prefs });
+        if (error) throw error;
+      }
+      toast.success('Notification preferences saved');
+    } catch (error) {
+      console.error('Error saving notifications:', error);
+      toast.error('Failed to save notification preferences');
+    }
   };
 
   if (isLoading) {
