@@ -396,57 +396,44 @@ export class OrderExecutionEngine {
     return fallbackPrice;
   }
 
-  private static async checkUserBalance(userId: string, requiredAmount: number): Promise<boolean> {
+  private static async checkUserBalance(userId: string, requiredAmount: number, accountId?: string): Promise<boolean> {
     try {
-      // First check trading accounts (primary source of truth)
+      // Use specific account if provided
+      if (accountId) {
+        const { data } = await supabase
+          .from("trading_accounts")
+          .select("available_balance")
+          .eq("id", accountId)
+          .maybeSingle();
+        if (data) return data.available_balance >= requiredAmount;
+      }
+      
+      // Fallback: check latest active trading account
       const { data: tradingAccount } = await supabase
         .from("trading_accounts")
-        .select("available_balance, account_type")
+        .select("available_balance")
         .eq("user_id", userId)
         .eq("is_active", true)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
 
-      if (tradingAccount && tradingAccount.available_balance >= requiredAmount) {
-        return true;
+      if (tradingAccount) {
+        return tradingAccount.available_balance >= requiredAmount;
       }
 
-      // Fallback to wallets table
-      const { data: wallet, error } = await supabase
+      // Last resort: check wallets table
+      const { data: wallet } = await supabase
         .from("wallets")
         .select("available_balance")
         .eq("user_id", userId)
         .eq("currency", "USD")
         .maybeSingle();
 
-      if (!wallet) {
-        // No wallet - create one synced with trading account
-        const initialBalance = tradingAccount?.available_balance || 100000;
-        await supabase.from("wallets").insert({
-          user_id: userId,
-          currency: "USD",
-          available_balance: initialBalance,
-          reserved_balance: 0
-        });
-        return requiredAmount <= initialBalance;
-      }
-
-      // If wallet balance is much lower than trading account, sync it up
-      if (tradingAccount && wallet.available_balance < tradingAccount.available_balance) {
-        await supabase
-          .from("wallets")
-          .update({ available_balance: tradingAccount.available_balance })
-          .eq("user_id", userId)
-          .eq("currency", "USD");
-        return tradingAccount.available_balance >= requiredAmount;
-      }
-
-      return wallet.available_balance >= requiredAmount;
+      return wallet ? wallet.available_balance >= requiredAmount : false;
     } catch (error) {
       console.error("Balance check error:", error);
-      // In demo mode, allow trading by default
-      return requiredAmount <= 100000;
+      return false;
     }
   }
 
