@@ -104,7 +104,7 @@ const CommunityStatsCard = () => {
       <p className="text-xs sm:text-sm mb-3 sm:mb-4">
         Connect with like-minded investors, share insights, and learn from the community.
       </p>
-      <Button variant="outline" size="sm" className="w-full sm:w-auto">
+      <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => window.location.href = '/auth'}>
         Join Community
       </Button>
     </div>
