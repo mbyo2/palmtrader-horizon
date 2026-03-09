@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 export interface OrderRequest {
   userId: string;
+  accountId?: string;
   symbol: string;
   type: "buy" | "sell";
   shares: number;
@@ -38,15 +39,7 @@ export interface RiskLimits {
 }
 
 export class OrderExecutionEngine {
-  private static readonly DEFAULT_RISK_LIMITS: RiskLimits = {
-    maxOrderValue: 50000,
-    maxDailyTradingVolume: 100000,
-    maxPositionSize: 25000,
-    allowedOrderTypes: ["market", "limit", "stop", "stop_limit", "trailing_stop"],
-    marginRequirement: 0.5,
-    maxPositionConcentration: 0.2, // 20% max per position
-    stopLossRequired: false
-  };
+  // Risk limits are now dynamic based on account balance
 
   static async executeOrder(order: OrderRequest): Promise<OrderResult> {
     console.log('Executing order:', order);
@@ -115,7 +108,7 @@ export class OrderExecutionEngine {
     // Enhanced balance checking
     if (order.type === "buy") {
       const requiredAmount = order.shares * order.price;
-      const hasBalance = await this.checkUserBalance(order.userId, requiredAmount);
+      const hasBalance = await this.checkUserBalance(order.userId, requiredAmount, order.accountId);
       if (!hasBalance) {
         return { valid: false, error: "Insufficient funds" };
       }
@@ -146,43 +139,34 @@ export class OrderExecutionEngine {
     error?: string;
     adjustedShares?: number;
   }> {
-    const limits = this.DEFAULT_RISK_LIMITS;
     const orderValue = order.shares * order.price;
-    
-    // Check max order value
-    if (orderValue > limits.maxOrderValue) {
-      return { 
-        passed: false, 
-        error: `Order value ($${orderValue.toFixed(2)}) exceeds maximum allowed ($${limits.maxOrderValue})` 
-      };
-    }
 
-    // Check position concentration
+    // Check position concentration (max 50% of portfolio per position)
     if (order.type === "buy") {
       const portfolioValue = await this.getPortfolioValue(order.userId);
       const currentPosition = await PortfolioService.getPosition(order.userId, order.symbol);
       const newPositionValue = (currentPosition?.currentValue || 0) + orderValue;
-      const concentration = newPositionValue / (portfolioValue + orderValue);
+      const totalValue = portfolioValue + orderValue;
+      const concentration = totalValue > 0 ? newPositionValue / totalValue : 0;
+      const maxConcentration = 0.5;
 
-      if (concentration > limits.maxPositionConcentration) {
+      if (concentration > maxConcentration) {
         return { 
           passed: false, 
-          error: `Position concentration (${(concentration * 100).toFixed(1)}%) exceeds limit (${(limits.maxPositionConcentration * 100)}%)` 
+          error: `Position concentration (${(concentration * 100).toFixed(1)}%) exceeds limit (${(maxConcentration * 100)}%)` 
         };
       }
-    }
-
-    // Auto stop-loss suggestion
-    if (order.type === "buy" && limits.stopLossRequired && !order.stopPrice) {
-      // Don't reject, but suggest stop-loss
-      console.log("Consider setting a stop-loss for risk management");
     }
 
     return { passed: true };
   }
 
   private static async executeMarketOrder(order: OrderRequest): Promise<OrderResult> {
-    const currentPrice = await this.getCurrentMarketPrice(order.symbol);
+    const currentPrice = await this.getCurrentMarketPrice(order.symbol, order.price);
+    if (currentPrice <= 0) {
+      return { success: false, error: "Unable to fetch current market price" };
+    }
+    
     const slippage = this.calculateSlippage(order.shares, order.symbol, order.isFractional);
     const executedPrice = order.type === "buy" ? 
       currentPrice * (1 + slippage) : 
@@ -191,7 +175,6 @@ export class OrderExecutionEngine {
     // Handle fractional shares execution
     let executedShares = order.shares;
     if (order.isFractional) {
-      // Apply fractional execution logic
       const minExecutable = 0.000001;
       if (executedShares < minExecutable) {
         return { success: false, error: "Order size too small for fractional execution" };
@@ -200,15 +183,15 @@ export class OrderExecutionEngine {
 
     const totalAmount = executedShares * executedPrice;
 
-    // For buy orders, deduct from wallet first
+    // For buy orders, deduct from trading account first
     if (order.type === "buy") {
-      const walletUpdated = await this.updateWalletBalance(order.userId, -totalAmount);
+      const walletUpdated = await this.updateWalletBalance(order.userId, -totalAmount, order.accountId);
       if (!walletUpdated) {
-        return { success: false, error: "Failed to update wallet balance" };
+        return { success: false, error: "Failed to update account balance" };
       }
     }
 
-    // Create the trade record with fractional support
+    // Create the trade record
     const { data, error } = await supabase.from("trades").insert({
       user_id: order.userId,
       symbol: order.symbol,
@@ -222,19 +205,19 @@ export class OrderExecutionEngine {
     }).select("id").single();
 
     if (error) {
-      // Rollback wallet if trade fails
+      // Rollback if trade fails
       if (order.type === "buy") {
-        await this.updateWalletBalance(order.userId, totalAmount);
+        await this.updateWalletBalance(order.userId, totalAmount, order.accountId);
       }
       throw error;
     }
 
-    // For sell orders, add to wallet
+    // For sell orders, credit the account
     if (order.type === "sell") {
-      await this.updateWalletBalance(order.userId, totalAmount);
+      await this.updateWalletBalance(order.userId, totalAmount, order.accountId);
     }
 
-    // Update portfolio with fractional support
+    // Update portfolio
     await this.updatePortfolio(order.userId, order.symbol, order.type, executedShares, executedPrice);
 
     return {
@@ -245,78 +228,86 @@ export class OrderExecutionEngine {
     };
   }
 
-  private static async updateWalletBalance(userId: string, amount: number): Promise<boolean> {
+  private static async updateWalletBalance(userId: string, amount: number, accountId?: string): Promise<boolean> {
     try {
-      const { data: wallet, error: fetchError } = await supabase
+      // Primary: update the specific trading account
+      let tradingAccount: { id: string; balance: number; available_balance: number } | null = null;
+      
+      if (accountId) {
+        const { data } = await supabase
+          .from("trading_accounts")
+          .select("id, balance, available_balance")
+          .eq("id", accountId)
+          .maybeSingle();
+        tradingAccount = data;
+      } else {
+        const { data } = await supabase
+          .from("trading_accounts")
+          .select("id, balance, available_balance")
+          .eq("user_id", userId)
+          .eq("is_active", true)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        tradingAccount = data;
+      }
+
+      if (tradingAccount) {
+        const newAvailable = tradingAccount.available_balance + amount;
+        if (newAvailable < 0) return false;
+        
+        const { error } = await supabase
+          .from("trading_accounts")
+          .update({
+            available_balance: newAvailable,
+            balance: Math.max(0, tradingAccount.balance + amount),
+            updated_at: new Date().toISOString()
+          })
+          .eq("id", tradingAccount.id);
+        
+        if (error) {
+          console.error("Error updating trading account:", error);
+          return false;
+        }
+      }
+
+      // Also keep wallets table in sync
+      const { data: wallet } = await supabase
         .from("wallets")
         .select("available_balance")
         .eq("user_id", userId)
         .eq("currency", "USD")
         .maybeSingle();
 
-      if (fetchError || !wallet) {
-        // Create wallet if it doesn't exist
-        const initialBalance = amount > 0 ? amount : 10000 + amount;
-        await supabase.from("wallets").insert({
-          user_id: userId,
-          currency: "USD",
-          available_balance: initialBalance,
-          reserved_balance: 0
-        });
-        // Also sync to trading account
-        await this.syncTradingAccountBalance(userId, initialBalance);
+      if (!wallet) {
+        const initBalance = tradingAccount?.available_balance ?? 0;
+        if (initBalance > 0) {
+          await supabase.from("wallets").insert({
+            user_id: userId,
+            currency: "USD",
+            available_balance: initBalance,
+            reserved_balance: 0
+          });
+        }
         return true;
       }
 
-      const newBalance = wallet.available_balance + amount;
-      if (newBalance < 0) return false;
-
-      const { error: updateError } = await supabase
-        .from("wallets")
-        .update({ 
-          available_balance: newBalance,
-          updated_at: new Date().toISOString()
-        })
-        .eq("user_id", userId)
-        .eq("currency", "USD");
-
-      if (!updateError) {
-        // Keep trading_accounts in sync with wallets
-        await this.syncTradingAccountBalance(userId, newBalance);
-      }
-
-      return !updateError;
-    } catch (error) {
-      console.error("Error updating wallet:", error);
-      return false;
-    }
-  }
-
-  private static async syncTradingAccountBalance(userId: string, newBalance: number): Promise<void> {
-    try {
-      // Update the active trading account balance to match wallet
-      const { data: activeAccount } = await supabase
-        .from("trading_accounts")
-        .select("id, balance, available_balance")
-        .eq("user_id", userId)
-        .eq("is_active", true)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (activeAccount) {
-        const balanceDiff = newBalance - activeAccount.available_balance;
+      const newWalletBalance = wallet.available_balance + amount;
+      if (newWalletBalance >= 0) {
         await supabase
-          .from("trading_accounts")
+          .from("wallets")
           .update({
-            available_balance: newBalance,
-            balance: activeAccount.balance + balanceDiff,
+            available_balance: newWalletBalance,
             updated_at: new Date().toISOString()
           })
-          .eq("id", activeAccount.id);
+          .eq("user_id", userId)
+          .eq("currency", "USD");
       }
+
+      return true;
     } catch (error) {
-      console.error("Error syncing trading account balance:", error);
+      console.error("Error updating balance:", error);
+      return false;
     }
   }
 
@@ -325,7 +316,7 @@ export class OrderExecutionEngine {
       return { success: false, error: "Invalid trailing percentage" };
     }
 
-    const currentPrice = await this.getCurrentMarketPrice(order.symbol);
+    const currentPrice = await this.getCurrentMarketPrice(order.symbol, order.price);
     const initialStopPrice = order.type === "sell" ? 
       currentPrice * (1 - order.trailingPercent / 100) :
       currentPrice * (1 + order.trailingPercent / 100);
@@ -392,7 +383,7 @@ export class OrderExecutionEngine {
     console.log(`Scheduled trailing stop monitoring for order ${orderId} on ${symbol}`);
   }
 
-  private static async getCurrentMarketPrice(symbol: string): Promise<number> {
+  private static async getCurrentMarketPrice(symbol: string, fallbackPrice = 0): Promise<number> {
     try {
       const priceData = await RealMarketDataService.fetchRealTimePrice(symbol);
       if (priceData && priceData.price > 0) {
@@ -401,70 +392,48 @@ export class OrderExecutionEngine {
     } catch (error) {
       console.error('Error fetching real-time price:', error);
     }
-
-    // Fallback to realistic prices
-    const basePrices: Record<string, number> = {
-      "AAPL": 178.72, "MSFT": 415.50, "GOOGL": 141.80, "AMZN": 178.25,
-      "NVDA": 875.30, "META": 505.75, "TSLA": 175.20, "JPM": 198.40,
-      "V": 280.15, "WMT": 165.30, "NFLX": 625.40, "AMD": 165.20
-    };
-    
-    const basePrice = basePrices[symbol] || 100;
-    const variation = (Math.random() - 0.5) * 0.02; // ±1%
-    return parseFloat((basePrice * (1 + variation)).toFixed(2));
+    // Use the order's price (from live UI feed) as fallback
+    return fallbackPrice;
   }
 
-  private static async checkUserBalance(userId: string, requiredAmount: number): Promise<boolean> {
+  private static async checkUserBalance(userId: string, requiredAmount: number, accountId?: string): Promise<boolean> {
     try {
-      // First check trading accounts (primary source of truth)
+      // Use specific account if provided
+      if (accountId) {
+        const { data } = await supabase
+          .from("trading_accounts")
+          .select("available_balance")
+          .eq("id", accountId)
+          .maybeSingle();
+        if (data) return data.available_balance >= requiredAmount;
+      }
+      
+      // Fallback: check latest active trading account
       const { data: tradingAccount } = await supabase
         .from("trading_accounts")
-        .select("available_balance, account_type")
+        .select("available_balance")
         .eq("user_id", userId)
         .eq("is_active", true)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
 
-      if (tradingAccount && tradingAccount.available_balance >= requiredAmount) {
-        return true;
+      if (tradingAccount) {
+        return tradingAccount.available_balance >= requiredAmount;
       }
 
-      // Fallback to wallets table
-      const { data: wallet, error } = await supabase
+      // Last resort: check wallets table
+      const { data: wallet } = await supabase
         .from("wallets")
         .select("available_balance")
         .eq("user_id", userId)
         .eq("currency", "USD")
         .maybeSingle();
 
-      if (!wallet) {
-        // No wallet - create one synced with trading account
-        const initialBalance = tradingAccount?.available_balance || 100000;
-        await supabase.from("wallets").insert({
-          user_id: userId,
-          currency: "USD",
-          available_balance: initialBalance,
-          reserved_balance: 0
-        });
-        return requiredAmount <= initialBalance;
-      }
-
-      // If wallet balance is much lower than trading account, sync it up
-      if (tradingAccount && wallet.available_balance < tradingAccount.available_balance) {
-        await supabase
-          .from("wallets")
-          .update({ available_balance: tradingAccount.available_balance })
-          .eq("user_id", userId)
-          .eq("currency", "USD");
-        return tradingAccount.available_balance >= requiredAmount;
-      }
-
-      return wallet.available_balance >= requiredAmount;
+      return wallet ? wallet.available_balance >= requiredAmount : false;
     } catch (error) {
       console.error("Balance check error:", error);
-      // In demo mode, allow trading by default
-      return requiredAmount <= 100000;
+      return false;
     }
   }
 
@@ -675,7 +644,8 @@ export class OrderExecutionEngine {
   }
 
   private static async checkAndExecutePendingOrder(order: any): Promise<void> {
-    const currentPrice = await this.getCurrentMarketPrice(order.symbol);
+    const currentPrice = await this.getCurrentMarketPrice(order.symbol, order.price || 0);
+    if (currentPrice <= 0) return; // Cannot process without valid price
 
     let shouldExecute = false;
     let executionPrice = currentPrice;

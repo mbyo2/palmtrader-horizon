@@ -232,12 +232,12 @@ export class TradingAccountService {
   // Get account type display info
   static getAccountTypeInfo(type: TradingAccountType): { color: string; badge: string } {
     const info: Record<TradingAccountType, { color: string; badge: string }> = {
-      demo: { color: 'bg-gray-500', badge: 'Demo' },
-      cent: { color: 'bg-green-500', badge: 'Cent' },
-      standard_stp: { color: 'bg-blue-500', badge: 'Standard' },
-      raw_ecn: { color: 'bg-purple-500', badge: 'Raw ECN' },
-      pro_ecn: { color: 'bg-amber-500', badge: 'Pro ECN' },
-      islamic: { color: 'bg-emerald-500', badge: 'Islamic' }
+      demo: { color: 'bg-muted', badge: 'Demo' },
+      cent: { color: 'bg-success', badge: 'Cent' },
+      standard_stp: { color: 'bg-primary', badge: 'Standard' },
+      raw_ecn: { color: 'bg-accent', badge: 'Raw ECN' },
+      pro_ecn: { color: 'bg-warning', badge: 'Pro ECN' },
+      islamic: { color: 'bg-success', badge: 'Islamic' }
     };
     return info[type] || info.demo;
   }

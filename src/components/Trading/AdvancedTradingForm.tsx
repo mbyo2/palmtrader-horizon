@@ -95,6 +95,7 @@ const AdvancedTradingForm = ({ onOrderSubmit }: AdvancedOrderFormProps) => {
       } else {
         const result = await OrderExecutionEngine.executeOrder({
           userId: user.id,
+          accountId: activeAccount?.id,
           symbol,
           type: side,
           shares: quantity,
@@ -132,7 +133,7 @@ const AdvancedTradingForm = ({ onOrderSubmit }: AdvancedOrderFormProps) => {
             <Settings className="h-5 w-5" />
             Advanced Order
           </CardTitle>
-          <Badge variant={isDemo ? "secondary" : "default"} className={isDemo ? "" : "bg-green-500"}>
+          <Badge variant={isDemo ? "secondary" : "default"} className={isDemo ? "" : "bg-success"}>
             {isDemo ? 'Demo' : 'Live'} • 1:{leverage}
           </Badge>
         </div>
@@ -152,11 +153,11 @@ const AdvancedTradingForm = ({ onOrderSubmit }: AdvancedOrderFormProps) => {
         {/* Buy/Sell Tabs */}
         <Tabs value={side} onValueChange={(v) => setSide(v as "buy" | "sell")} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="buy" className="data-[state=active]:bg-green-500 data-[state=active]:text-white">
+            <TabsTrigger value="buy" className="data-[state=active]:bg-success data-[state=active]:text-success-foreground">
               <TrendingUp className="h-4 w-4 mr-2" />
               Buy / Long
             </TabsTrigger>
-            <TabsTrigger value="sell" className="data-[state=active]:bg-red-500 data-[state=active]:text-white">
+            <TabsTrigger value="sell" className="data-[state=active]:bg-destructive data-[state=active]:text-destructive-foreground">
               <TrendingDown className="h-4 w-4 mr-2" />
               Sell / Short
             </TabsTrigger>
@@ -257,7 +258,7 @@ const AdvancedTradingForm = ({ onOrderSubmit }: AdvancedOrderFormProps) => {
         {useAdvancedOrders && (
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label className="text-green-500">Take Profit</Label>
+              <Label className="text-success">Take Profit</Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
                 <Input
@@ -270,7 +271,7 @@ const AdvancedTradingForm = ({ onOrderSubmit }: AdvancedOrderFormProps) => {
               </div>
             </div>
             <div className="space-y-2">
-              <Label className="text-red-500">Stop Loss</Label>
+              <Label className="text-destructive">Stop Loss</Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
                 <Input
@@ -293,7 +294,7 @@ const AdvancedTradingForm = ({ onOrderSubmit }: AdvancedOrderFormProps) => {
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Margin Required:</span>
-            <span className={`font-medium ${canAfford ? 'text-green-500' : 'text-red-500'}`}>
+            <span className={`font-medium ${canAfford ? 'text-success' : 'text-destructive'}`}>
               ${marginRequired.toFixed(2)}
             </span>
           </div>
