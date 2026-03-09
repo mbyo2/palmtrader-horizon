@@ -40,19 +40,8 @@ const Crypto = () => {
         }
         return [];
       } catch {
-        const basePrices: Record<string, number> = {
-          bitcoin: 87250, ethereum: 1946, solana: 142, ripple: 2.18, cardano: 0.72, polkadot: 6.52
-        };
-        const base = basePrices[selectedCrypto.symbol] || 100;
-        const now = Date.now();
-        let p = base * 0.92;
-        return Array.from({ length: 31 }, (_, i) => {
-          p = p * (1 + (Math.random() - 0.48) * 0.04);
-          return {
-            symbol: selectedCrypto.ticker, timestamp: (now - (30 - i) * 86400000).toString(),
-            price: p, close: p, type: 'crypto' as const
-          };
-        });
+        // Return empty array on API failure - show error state instead of mock data
+        return [];
       }
     },
     staleTime: 5 * 60 * 1000, retry: 1,
