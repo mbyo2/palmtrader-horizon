@@ -1,4 +1,4 @@
-import { Helmet } from "react-helmet";
+import { Helmet } from "react-helmet-async";
 import EnhancedOptionsTrading from "@/components/Trading/EnhancedOptionsTrading";
 import { useProtectedRoute } from "@/hooks/useProtectedRoute";
 

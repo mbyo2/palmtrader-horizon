@@ -1,5 +1,5 @@
 
-import { Helmet } from "react-helmet";
+import { Helmet } from "react-helmet-async";
 import EnhancedBankingInterface from "@/components/Banking/EnhancedBankingInterface";
 
 export default function BankingPage() {

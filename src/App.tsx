@@ -91,9 +91,7 @@ function AppContent() {
           <Route path="/options-trading" element={<OptionsTrading />} />
           <Route path="/trading-accounts" element={<TradingAccounts />} />
           <Route path="/trade/:symbol" element={<MobileTrade />} />
-          <Route path="/verify" element={<Verification />} />
-          <Route path="/support" element={<Help />} />
-          <Route path="/upgrade" element={<Settings />} />
+          {/* Redirects for legacy routes */}
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/terms" element={<Terms />} />
