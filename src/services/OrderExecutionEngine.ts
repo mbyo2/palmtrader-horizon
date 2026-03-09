@@ -383,7 +383,7 @@ export class OrderExecutionEngine {
     console.log(`Scheduled trailing stop monitoring for order ${orderId} on ${symbol}`);
   }
 
-  private static async getCurrentMarketPrice(symbol: string): Promise<number> {
+  private static async getCurrentMarketPrice(symbol: string, fallbackPrice = 0): Promise<number> {
     try {
       const priceData = await RealMarketDataService.fetchRealTimePrice(symbol);
       if (priceData && priceData.price > 0) {
@@ -392,17 +392,8 @@ export class OrderExecutionEngine {
     } catch (error) {
       console.error('Error fetching real-time price:', error);
     }
-
-    // Fallback to realistic prices
-    const basePrices: Record<string, number> = {
-      "AAPL": 178.72, "MSFT": 415.50, "GOOGL": 141.80, "AMZN": 178.25,
-      "NVDA": 875.30, "META": 505.75, "TSLA": 175.20, "JPM": 198.40,
-      "V": 280.15, "WMT": 165.30, "NFLX": 625.40, "AMD": 165.20
-    };
-    
-    const basePrice = basePrices[symbol] || 100;
-    const variation = (Math.random() - 0.5) * 0.02; // ±1%
-    return parseFloat((basePrice * (1 + variation)).toFixed(2));
+    // Use the order's price (from live UI feed) as fallback
+    return fallbackPrice;
   }
 
   private static async checkUserBalance(userId: string, requiredAmount: number): Promise<boolean> {
