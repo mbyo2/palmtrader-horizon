@@ -39,15 +39,7 @@ export interface RiskLimits {
 }
 
 export class OrderExecutionEngine {
-  private static readonly DEFAULT_RISK_LIMITS: RiskLimits = {
-    maxOrderValue: 50000,
-    maxDailyTradingVolume: 100000,
-    maxPositionSize: 25000,
-    allowedOrderTypes: ["market", "limit", "stop", "stop_limit", "trailing_stop"],
-    marginRequirement: 0.5,
-    maxPositionConcentration: 0.2, // 20% max per position
-    stopLossRequired: false
-  };
+  // Risk limits are now dynamic based on account balance
 
   static async executeOrder(order: OrderRequest): Promise<OrderResult> {
     console.log('Executing order:', order);
