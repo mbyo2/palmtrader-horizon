@@ -114,6 +114,8 @@ export class TradingAccountService {
       }
 
       const balance = accountType === 'demo' ? 100000 : initialDeposit;
+      // Default leverage: use 1/10th of max_leverage as a conservative starting point
+      const defaultLeverage = Math.max(1, Math.floor(config.max_leverage / 10));
 
       const { data, error } = await supabase
         .from('trading_accounts')
@@ -124,7 +126,7 @@ export class TradingAccountService {
           currency,
           balance,
           available_balance: balance,
-          leverage: 100,
+          leverage: defaultLeverage,
           max_leverage: config.max_leverage,
           min_deposit: config.min_deposit,
           commission_per_lot: config.commission_per_lot,
