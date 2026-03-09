@@ -153,11 +153,11 @@ const AdvancedTradingForm = ({ onOrderSubmit }: AdvancedOrderFormProps) => {
         {/* Buy/Sell Tabs */}
         <Tabs value={side} onValueChange={(v) => setSide(v as "buy" | "sell")} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="buy" className="data-[state=active]:bg-green-500 data-[state=active]:text-white">
+            <TabsTrigger value="buy" className="data-[state=active]:bg-success data-[state=active]:text-success-foreground">
               <TrendingUp className="h-4 w-4 mr-2" />
               Buy / Long
             </TabsTrigger>
-            <TabsTrigger value="sell" className="data-[state=active]:bg-red-500 data-[state=active]:text-white">
+            <TabsTrigger value="sell" className="data-[state=active]:bg-destructive data-[state=active]:text-destructive-foreground">
               <TrendingDown className="h-4 w-4 mr-2" />
               Sell / Short
             </TabsTrigger>
