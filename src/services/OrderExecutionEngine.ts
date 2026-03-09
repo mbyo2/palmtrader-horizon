@@ -139,36 +139,23 @@ export class OrderExecutionEngine {
     error?: string;
     adjustedShares?: number;
   }> {
-    const limits = this.DEFAULT_RISK_LIMITS;
     const orderValue = order.shares * order.price;
-    
-    // Check max order value
-    if (orderValue > limits.maxOrderValue) {
-      return { 
-        passed: false, 
-        error: `Order value ($${orderValue.toFixed(2)}) exceeds maximum allowed ($${limits.maxOrderValue})` 
-      };
-    }
 
-    // Check position concentration
+    // Check position concentration (max 50% of portfolio per position)
     if (order.type === "buy") {
       const portfolioValue = await this.getPortfolioValue(order.userId);
       const currentPosition = await PortfolioService.getPosition(order.userId, order.symbol);
       const newPositionValue = (currentPosition?.currentValue || 0) + orderValue;
-      const concentration = newPositionValue / (portfolioValue + orderValue);
+      const totalValue = portfolioValue + orderValue;
+      const concentration = totalValue > 0 ? newPositionValue / totalValue : 0;
+      const maxConcentration = 0.5;
 
-      if (concentration > limits.maxPositionConcentration) {
+      if (concentration > maxConcentration) {
         return { 
           passed: false, 
-          error: `Position concentration (${(concentration * 100).toFixed(1)}%) exceeds limit (${(limits.maxPositionConcentration * 100)}%)` 
+          error: `Position concentration (${(concentration * 100).toFixed(1)}%) exceeds limit (${(maxConcentration * 100)}%)` 
         };
       }
-    }
-
-    // Auto stop-loss suggestion
-    if (order.type === "buy" && limits.stopLossRequired && !order.stopPrice) {
-      // Don't reject, but suggest stop-loss
-      console.log("Consider setting a stop-loss for risk management");
     }
 
     return { passed: true };
