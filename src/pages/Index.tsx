@@ -104,7 +104,7 @@ const CommunityStatsCard = () => {
       <p className="text-xs sm:text-sm mb-3 sm:mb-4">
         Connect with like-minded investors, share insights, and learn from the community.
       </p>
-      <Button variant="outline" size="sm" className="w-full sm:w-auto">
+      <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => window.location.href = '/auth'}>
         Join Community
       </Button>
     </div>
@@ -297,6 +297,7 @@ export default function Index() {
                     <Button 
                       size="lg" 
                       variant="outline" 
+                      onClick={() => navigate("/markets")}
                       className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground/10 font-semibold px-8 py-4 h-auto text-lg"
                     >
                       Watch Demo

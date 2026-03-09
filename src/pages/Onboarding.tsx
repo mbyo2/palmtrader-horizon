@@ -136,6 +136,8 @@ const Onboarding = () => {
           phone_number: data.phone_number,
           date_of_birth: data.date_of_birth,
           tax_id: data.tax_id || null,
+          country: data.country || null,
+          address: data.address || null,
           onboarding_completed: true,
           account_status: 'active' as any,
         })

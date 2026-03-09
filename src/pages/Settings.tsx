@@ -73,10 +73,30 @@ const Settings = () => {
   const [phoneNumber, setPhoneNumber] = useState(accountDetails?.phone_number || '');
   const [isSaving, setIsSaving] = useState(false);
   
-  // Notification preferences
+  // Notification preferences - loaded from DB
   const [priceAlerts, setPriceAlerts] = useState(true);
   const [tradeConfirmations, setTradeConfirmations] = useState(true);
   const [marketUpdates, setMarketUpdates] = useState(true);
+  const [notifLoaded, setNotifLoaded] = useState(false);
+
+  // Load notification preferences from DB
+  React.useEffect(() => {
+    if (!user) return;
+    const load = async () => {
+      const { data } = await supabase
+        .from('user_preferences')
+        .select('price_alerts, trade_confirmations, market_updates')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (data) {
+        setPriceAlerts(data.price_alerts ?? true);
+        setTradeConfirmations(data.trade_confirmations ?? true);
+        setMarketUpdates(data.market_updates ?? true);
+      }
+      setNotifLoaded(true);
+    };
+    load();
+  }, [user]);
 
   // Update state when accountDetails changes
   React.useEffect(() => {
@@ -114,9 +134,39 @@ const Settings = () => {
     }
   };
 
-  const handleSaveNotifications = () => {
-    // In a real app, this would save to the database
-    toast.success('Notification preferences saved');
+  const handleSaveNotifications = async () => {
+    if (!user) return;
+    try {
+      const { data: existing } = await supabase
+        .from('user_preferences')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      const prefs = {
+        price_alerts: priceAlerts,
+        trade_confirmations: tradeConfirmations,
+        market_updates: marketUpdates,
+        updated_at: new Date().toISOString(),
+      };
+
+      if (existing) {
+        const { error } = await supabase
+          .from('user_preferences')
+          .update(prefs)
+          .eq('user_id', user.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('user_preferences')
+          .insert({ user_id: user.id, ...prefs });
+        if (error) throw error;
+      }
+      toast.success('Notification preferences saved');
+    } catch (error) {
+      console.error('Error saving notifications:', error);
+      toast.error('Failed to save notification preferences');
+    }
   };
 
   if (isLoading) {
@@ -223,7 +273,7 @@ const Settings = () => {
                     Get notified when your stocks hit target prices
                   </div>
                 </div>
-                <Switch defaultChecked />
+                <Switch checked={priceAlerts} onCheckedChange={setPriceAlerts} />
               </div>
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
@@ -232,7 +282,7 @@ const Settings = () => {
                     Receive confirmations for all your trades
                   </div>
                 </div>
-                <Switch defaultChecked />
+                <Switch checked={tradeConfirmations} onCheckedChange={setTradeConfirmations} />
               </div>
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
@@ -241,7 +291,7 @@ const Settings = () => {
                     Daily market news and updates
                   </div>
                 </div>
-                <Switch defaultChecked />
+                <Switch checked={marketUpdates} onCheckedChange={setMarketUpdates} />
               </div>
               <Button onClick={handleSaveNotifications}>Save Preferences</Button>
             </CardContent>
@@ -266,7 +316,11 @@ const Settings = () => {
                       Add an extra layer of security to your account
                     </div>
                   </div>
-                  <Switch />
+                  <Switch onCheckedChange={(checked) => {
+                    if (checked) {
+                      toast.info('Two-factor authentication setup coming soon. For now, use a strong password.');
+                    }
+                  }} />
                 </div>
               </div>
             </CardContent>
@@ -291,7 +345,7 @@ const Settings = () => {
                 <p className="text-muted-foreground mb-4">
                   You're currently on our free plan with zero trading fees
                 </p>
-                <Button variant="outline">Upgrade to Premium</Button>
+                <Button variant="outline" onClick={() => toast.info('Premium plans coming soon! Stay tuned.')}>Upgrade to Premium</Button>
               </div>
             </CardContent>
           </Card>
