@@ -108,7 +108,7 @@ export class OrderExecutionEngine {
     // Enhanced balance checking
     if (order.type === "buy") {
       const requiredAmount = order.shares * order.price;
-      const hasBalance = await this.checkUserBalance(order.userId, requiredAmount);
+      const hasBalance = await this.checkUserBalance(order.userId, requiredAmount, order.accountId);
       if (!hasBalance) {
         return { valid: false, error: "Insufficient funds" };
       }
