@@ -258,7 +258,7 @@ const AdvancedTradingForm = ({ onOrderSubmit }: AdvancedOrderFormProps) => {
         {useAdvancedOrders && (
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label className="text-green-500">Take Profit</Label>
+              <Label className="text-success">Take Profit</Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
                 <Input
@@ -271,7 +271,7 @@ const AdvancedTradingForm = ({ onOrderSubmit }: AdvancedOrderFormProps) => {
               </div>
             </div>
             <div className="space-y-2">
-              <Label className="text-red-500">Stop Loss</Label>
+              <Label className="text-destructive">Stop Loss</Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
                 <Input
