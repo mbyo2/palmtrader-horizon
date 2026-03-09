@@ -1,5 +1,5 @@
 
-import { Home, TrendingUp, PieChart, CreditCard, Shield, Settings, Building, Star, Bitcoin, Rocket, Globe, User, HelpCircle, Wallet, BarChart3, ChevronDown } from "lucide-react";
+import { Home, TrendingUp, PieChart, CreditCard, Shield, Settings, Building, Star, Bitcoin, Rocket, Globe, User, HelpCircle, Wallet, BarChart3, ChevronDown, Bell } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
