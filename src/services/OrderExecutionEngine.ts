@@ -162,7 +162,11 @@ export class OrderExecutionEngine {
   }
 
   private static async executeMarketOrder(order: OrderRequest): Promise<OrderResult> {
-    const currentPrice = await this.getCurrentMarketPrice(order.symbol);
+    const currentPrice = await this.getCurrentMarketPrice(order.symbol, order.price);
+    if (currentPrice <= 0) {
+      return { success: false, error: "Unable to fetch current market price" };
+    }
+    
     const slippage = this.calculateSlippage(order.shares, order.symbol, order.isFractional);
     const executedPrice = order.type === "buy" ? 
       currentPrice * (1 + slippage) : 
@@ -171,7 +175,6 @@ export class OrderExecutionEngine {
     // Handle fractional shares execution
     let executedShares = order.shares;
     if (order.isFractional) {
-      // Apply fractional execution logic
       const minExecutable = 0.000001;
       if (executedShares < minExecutable) {
         return { success: false, error: "Order size too small for fractional execution" };
@@ -180,15 +183,15 @@ export class OrderExecutionEngine {
 
     const totalAmount = executedShares * executedPrice;
 
-    // For buy orders, deduct from wallet first
+    // For buy orders, deduct from trading account first
     if (order.type === "buy") {
-      const walletUpdated = await this.updateWalletBalance(order.userId, -totalAmount);
+      const walletUpdated = await this.updateWalletBalance(order.userId, -totalAmount, order.accountId);
       if (!walletUpdated) {
-        return { success: false, error: "Failed to update wallet balance" };
+        return { success: false, error: "Failed to update account balance" };
       }
     }
 
-    // Create the trade record with fractional support
+    // Create the trade record
     const { data, error } = await supabase.from("trades").insert({
       user_id: order.userId,
       symbol: order.symbol,
@@ -202,19 +205,19 @@ export class OrderExecutionEngine {
     }).select("id").single();
 
     if (error) {
-      // Rollback wallet if trade fails
+      // Rollback if trade fails
       if (order.type === "buy") {
-        await this.updateWalletBalance(order.userId, totalAmount);
+        await this.updateWalletBalance(order.userId, totalAmount, order.accountId);
       }
       throw error;
     }
 
-    // For sell orders, add to wallet
+    // For sell orders, credit the account
     if (order.type === "sell") {
-      await this.updateWalletBalance(order.userId, totalAmount);
+      await this.updateWalletBalance(order.userId, totalAmount, order.accountId);
     }
 
-    // Update portfolio with fractional support
+    // Update portfolio
     await this.updatePortfolio(order.userId, order.symbol, order.type, executedShares, executedPrice);
 
     return {
