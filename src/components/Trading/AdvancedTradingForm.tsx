@@ -95,6 +95,7 @@ const AdvancedTradingForm = ({ onOrderSubmit }: AdvancedOrderFormProps) => {
       } else {
         const result = await OrderExecutionEngine.executeOrder({
           userId: user.id,
+          accountId: activeAccount?.id,
           symbol,
           type: side,
           shares: quantity,
