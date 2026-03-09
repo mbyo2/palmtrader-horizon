@@ -73,10 +73,30 @@ const Settings = () => {
   const [phoneNumber, setPhoneNumber] = useState(accountDetails?.phone_number || '');
   const [isSaving, setIsSaving] = useState(false);
   
-  // Notification preferences
+  // Notification preferences - loaded from DB
   const [priceAlerts, setPriceAlerts] = useState(true);
   const [tradeConfirmations, setTradeConfirmations] = useState(true);
   const [marketUpdates, setMarketUpdates] = useState(true);
+  const [notifLoaded, setNotifLoaded] = useState(false);
+
+  // Load notification preferences from DB
+  React.useEffect(() => {
+    if (!user) return;
+    const load = async () => {
+      const { data } = await supabase
+        .from('user_preferences')
+        .select('price_alerts, trade_confirmations, market_updates')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (data) {
+        setPriceAlerts(data.price_alerts ?? true);
+        setTradeConfirmations(data.trade_confirmations ?? true);
+        setMarketUpdates(data.market_updates ?? true);
+      }
+      setNotifLoaded(true);
+    };
+    load();
+  }, [user]);
 
   // Update state when accountDetails changes
   React.useEffect(() => {
