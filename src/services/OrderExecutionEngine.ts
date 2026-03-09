@@ -644,7 +644,8 @@ export class OrderExecutionEngine {
   }
 
   private static async checkAndExecutePendingOrder(order: any): Promise<void> {
-    const currentPrice = await this.getCurrentMarketPrice(order.symbol);
+    const currentPrice = await this.getCurrentMarketPrice(order.symbol, order.price || 0);
+    if (currentPrice <= 0) return; // Cannot process without valid price
 
     let shouldExecute = false;
     let executionPrice = currentPrice;

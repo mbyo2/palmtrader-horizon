@@ -60,6 +60,7 @@ const QuickTradePanel = ({ symbol, onTrade }: QuickTradePanelProps) => {
       } else {
         const result = await OrderExecutionEngine.executeOrder({
           userId: user.id,
+          accountId: activeAccount?.id,
           symbol,
           type,
           shares: shares,

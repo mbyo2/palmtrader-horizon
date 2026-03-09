@@ -5,12 +5,12 @@ import { Info, Building2, Smartphone, Globe, Lock } from "lucide-react";
 
 const LiveModeNotice = () => {
   return (
-    <Card className="border-green-500/20">
+    <Card className="border-success/20">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Lock className="h-5 w-5 text-green-500" />
+          <Lock className="h-5 w-5 text-success" />
           Live Trading Setup
-          <Badge className="bg-green-500 text-xs">Coming Soon</Badge>
+          <Badge className="bg-success text-xs">Coming Soon</Badge>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -30,7 +30,7 @@ const LiveModeNotice = () => {
           
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="flex items-center gap-3 p-3 rounded-lg border bg-card">
-              <Smartphone className="h-8 w-8 text-green-500" />
+              <Smartphone className="h-8 w-8 text-success" />
               <div>
                 <p className="font-medium text-sm">Mobile Money</p>
                 <p className="text-xs text-muted-foreground">MTN, Airtel, Zamtel</p>
@@ -46,7 +46,7 @@ const LiveModeNotice = () => {
             </div>
             
             <div className="flex items-center gap-3 p-3 rounded-lg border bg-card">
-              <Globe className="h-8 w-8 text-blue-500" />
+              <Globe className="h-8 w-8 text-primary" />
               <div>
                 <p className="font-medium text-sm">VISA / Mastercard</p>
                 <p className="text-xs text-muted-foreground">Debit & Credit</p>

@@ -294,7 +294,7 @@ const AdvancedTradingForm = ({ onOrderSubmit }: AdvancedOrderFormProps) => {
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Margin Required:</span>
-            <span className={`font-medium ${canAfford ? 'text-green-500' : 'text-red-500'}`}>
+            <span className={`font-medium ${canAfford ? 'text-success' : 'text-destructive'}`}>
               ${marginRequired.toFixed(2)}
             </span>
           </div>
