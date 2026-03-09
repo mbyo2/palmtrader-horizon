@@ -133,7 +133,7 @@ const AdvancedTradingForm = ({ onOrderSubmit }: AdvancedOrderFormProps) => {
             <Settings className="h-5 w-5" />
             Advanced Order
           </CardTitle>
-          <Badge variant={isDemo ? "secondary" : "default"} className={isDemo ? "" : "bg-green-500"}>
+          <Badge variant={isDemo ? "secondary" : "default"} className={isDemo ? "" : "bg-success"}>
             {isDemo ? 'Demo' : 'Live'} • 1:{leverage}
           </Badge>
         </div>
