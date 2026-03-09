@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 export interface OrderRequest {
   userId: string;
+  accountId?: string;
   symbol: string;
   type: "buy" | "sell";
   shares: number;
