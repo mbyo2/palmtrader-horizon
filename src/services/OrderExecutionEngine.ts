@@ -316,7 +316,7 @@ export class OrderExecutionEngine {
       return { success: false, error: "Invalid trailing percentage" };
     }
 
-    const currentPrice = await this.getCurrentMarketPrice(order.symbol);
+    const currentPrice = await this.getCurrentMarketPrice(order.symbol, order.price);
     const initialStopPrice = order.type === "sell" ? 
       currentPrice * (1 - order.trailingPercent / 100) :
       currentPrice * (1 + order.trailingPercent / 100);
