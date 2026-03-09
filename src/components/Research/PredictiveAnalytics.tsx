@@ -35,36 +35,37 @@ interface PredictionData {
   }[];
 }
 
-// Mock service to generate predictions (in a real app, this would come from an API)
+// Note: This uses simulated data for demonstration. In production, connect to a real ML/AI endpoint.
 const getPredictiveData = async (symbol: string): Promise<PredictionData> => {
-  // Simulate API call
   await new Promise(resolve => setTimeout(resolve, 1000));
   
-  const currentPrice = 150 + (Math.random() * 10 - 5);
-  const prediction = Math.random() > 0.6 ? "bullish" : Math.random() > 0.4 ? "bearish" : "neutral";
-  const confidence = Math.random() * 30 + 60; // 60-90%
+  // Use deterministic seed based on symbol for consistent results per symbol
+  const seed = symbol.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+  const seededRandom = (offset: number) => {
+    const x = Math.sin(seed + offset) * 10000;
+    return x - Math.floor(x);
+  };
   
-  // Generate daily predictions for next 7 days
+  const currentPrice = 150 + (seededRandom(1) * 10 - 5);
+  const prediction = seededRandom(2) > 0.6 ? "bullish" : seededRandom(3) > 0.4 ? "bearish" : "neutral";
+  const confidence = seededRandom(4) * 30 + 60;
+  
   const pricePredictions = [];
   let predictedPrice = currentPrice;
-  
   const now = new Date();
   
   for (let i = 1; i <= 7; i++) {
     const date = new Date();
     date.setDate(now.getDate() + i);
     
-    // Random daily movement -3% to +3% with trend bias
     const dailyMovement = prediction === "bullish" 
-      ? (Math.random() * 4 - 1) // -1% to +3%
+      ? (seededRandom(i * 10) * 4 - 1)
       : prediction === "bearish"
-        ? (Math.random() * 4 - 3) // -3% to +1%
-        : (Math.random() * 4 - 2); // -2% to +2%
+        ? (seededRandom(i * 10) * 4 - 3)
+        : (seededRandom(i * 10) * 4 - 2);
     
     predictedPrice = predictedPrice * (1 + (dailyMovement / 100));
-    
-    // Add some volatility to the prediction bands
-    const volatility = Math.random() * 2 + 1; // 1-3%
+    const volatility = seededRandom(i * 20) * 2 + 1;
     
     pricePredictions.push({
       date: date.toLocaleDateString(),
