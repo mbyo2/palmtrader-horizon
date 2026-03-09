@@ -34,6 +34,7 @@ const NavigationLinks = ({ onItemClick }: NavigationLinksProps) => {
     { to: "/transfers", label: "Transfers", icon: CreditCard },
     { to: "/banking", label: "Banking", icon: Building },
     { to: "/watchlist", label: "Watchlist", icon: Star },
+    { to: "/alerts", label: "Alerts", icon: Bell },
     { to: "/ipo", label: "IPO", icon: Rocket },
     { to: "/african-markets", label: "African Markets", icon: Globe },
     { to: "/verification", label: "Verification", icon: Shield },

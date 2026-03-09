@@ -273,7 +273,7 @@ const Settings = () => {
                     Get notified when your stocks hit target prices
                   </div>
                 </div>
-                <Switch defaultChecked />
+                <Switch checked={priceAlerts} onCheckedChange={setPriceAlerts} />
               </div>
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
@@ -282,7 +282,7 @@ const Settings = () => {
                     Receive confirmations for all your trades
                   </div>
                 </div>
-                <Switch defaultChecked />
+                <Switch checked={tradeConfirmations} onCheckedChange={setTradeConfirmations} />
               </div>
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
@@ -291,7 +291,7 @@ const Settings = () => {
                     Daily market news and updates
                   </div>
                 </div>
-                <Switch defaultChecked />
+                <Switch checked={marketUpdates} onCheckedChange={setMarketUpdates} />
               </div>
               <Button onClick={handleSaveNotifications}>Save Preferences</Button>
             </CardContent>
