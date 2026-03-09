@@ -341,7 +341,7 @@ const Settings = () => {
                 <p className="text-muted-foreground mb-4">
                   You're currently on our free plan with zero trading fees
                 </p>
-                <Button variant="outline">Upgrade to Premium</Button>
+                <Button variant="outline" onClick={() => toast.info('Premium plans coming soon! Stay tuned.')}>Upgrade to Premium</Button>
               </div>
             </CardContent>
           </Card>

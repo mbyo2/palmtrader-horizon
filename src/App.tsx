@@ -82,6 +82,7 @@ function AppContent() {
           <Route path="/ipo" element={<IPO />} />
           <Route path="/ipo/:id" element={<IPODetails />} />
           <Route path="/african-markets" element={<AfricanMarkets />} />
+          <Route path="/alerts" element={<Alerts />} />
           <Route path="/banking" element={<Banking />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/kyc" element={<KYC />} />
