@@ -49,6 +49,7 @@ import MobileTrade from '@/pages/MobileTrade';
 import TradingAccounts from '@/pages/TradingAccounts';
 import Exchange from '@/pages/Exchange';
 import Research from '@/pages/Research';
+import Alerts from '@/pages/Alerts';
 import { setupGlobalErrorHandlers } from '@/utils/errorHandling';
 
 const queryClient = new QueryClient({
