@@ -228,78 +228,86 @@ export class OrderExecutionEngine {
     };
   }
 
-  private static async updateWalletBalance(userId: string, amount: number): Promise<boolean> {
+  private static async updateWalletBalance(userId: string, amount: number, accountId?: string): Promise<boolean> {
     try {
-      const { data: wallet, error: fetchError } = await supabase
+      // Primary: update the specific trading account
+      let tradingAccount: { id: string; balance: number; available_balance: number } | null = null;
+      
+      if (accountId) {
+        const { data } = await supabase
+          .from("trading_accounts")
+          .select("id, balance, available_balance")
+          .eq("id", accountId)
+          .maybeSingle();
+        tradingAccount = data;
+      } else {
+        const { data } = await supabase
+          .from("trading_accounts")
+          .select("id, balance, available_balance")
+          .eq("user_id", userId)
+          .eq("is_active", true)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        tradingAccount = data;
+      }
+
+      if (tradingAccount) {
+        const newAvailable = tradingAccount.available_balance + amount;
+        if (newAvailable < 0) return false;
+        
+        const { error } = await supabase
+          .from("trading_accounts")
+          .update({
+            available_balance: newAvailable,
+            balance: Math.max(0, tradingAccount.balance + amount),
+            updated_at: new Date().toISOString()
+          })
+          .eq("id", tradingAccount.id);
+        
+        if (error) {
+          console.error("Error updating trading account:", error);
+          return false;
+        }
+      }
+
+      // Also keep wallets table in sync
+      const { data: wallet } = await supabase
         .from("wallets")
         .select("available_balance")
         .eq("user_id", userId)
         .eq("currency", "USD")
         .maybeSingle();
 
-      if (fetchError || !wallet) {
-        // Create wallet if it doesn't exist
-        const initialBalance = amount > 0 ? amount : 10000 + amount;
-        await supabase.from("wallets").insert({
-          user_id: userId,
-          currency: "USD",
-          available_balance: initialBalance,
-          reserved_balance: 0
-        });
-        // Also sync to trading account
-        await this.syncTradingAccountBalance(userId, initialBalance);
+      if (!wallet) {
+        const initBalance = tradingAccount?.available_balance ?? 0;
+        if (initBalance > 0) {
+          await supabase.from("wallets").insert({
+            user_id: userId,
+            currency: "USD",
+            available_balance: initBalance,
+            reserved_balance: 0
+          });
+        }
         return true;
       }
 
-      const newBalance = wallet.available_balance + amount;
-      if (newBalance < 0) return false;
-
-      const { error: updateError } = await supabase
-        .from("wallets")
-        .update({ 
-          available_balance: newBalance,
-          updated_at: new Date().toISOString()
-        })
-        .eq("user_id", userId)
-        .eq("currency", "USD");
-
-      if (!updateError) {
-        // Keep trading_accounts in sync with wallets
-        await this.syncTradingAccountBalance(userId, newBalance);
-      }
-
-      return !updateError;
-    } catch (error) {
-      console.error("Error updating wallet:", error);
-      return false;
-    }
-  }
-
-  private static async syncTradingAccountBalance(userId: string, newBalance: number): Promise<void> {
-    try {
-      // Update the active trading account balance to match wallet
-      const { data: activeAccount } = await supabase
-        .from("trading_accounts")
-        .select("id, balance, available_balance")
-        .eq("user_id", userId)
-        .eq("is_active", true)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (activeAccount) {
-        const balanceDiff = newBalance - activeAccount.available_balance;
+      const newWalletBalance = wallet.available_balance + amount;
+      if (newWalletBalance >= 0) {
         await supabase
-          .from("trading_accounts")
+          .from("wallets")
           .update({
-            available_balance: newBalance,
-            balance: activeAccount.balance + balanceDiff,
+            available_balance: newWalletBalance,
             updated_at: new Date().toISOString()
           })
-          .eq("id", activeAccount.id);
+          .eq("user_id", userId)
+          .eq("currency", "USD");
       }
+
+      return true;
     } catch (error) {
-      console.error("Error syncing trading account balance:", error);
+      console.error("Error updating balance:", error);
+      return false;
     }
   }
 
