@@ -316,7 +316,11 @@ const Settings = () => {
                       Add an extra layer of security to your account
                     </div>
                   </div>
-                  <Switch />
+                  <Switch onCheckedChange={(checked) => {
+                    if (checked) {
+                      toast.info('Two-factor authentication setup coming soon. For now, use a strong password.');
+                    }
+                  }} />
                 </div>
               </div>
             </CardContent>
