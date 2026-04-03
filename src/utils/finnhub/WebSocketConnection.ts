@@ -26,14 +26,15 @@ export class WebSocketConnection {
       // Get API key from edge function if not provided
       if (this.apiKey === "demo") {
         try {
-          const response = await fetch('/api/finnhub-websocket', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'get_api_key' })
+          const { createClient } = await import('@supabase/supabase-js');
+          const supabaseUrl = "https://hvrcchjbqumlknaboczh.supabase.co";
+          const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2cmNjaGpicXVtbGtuYWJvY3poIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzYyNjUxMDgsImV4cCI6MjA1MTg0MTEwOH0.F4Tyt3Ei2VYQiXoMdlRtLRF8gxMLeBfTVFOL32q3iYQ";
+          const client = createClient(supabaseUrl, supabaseKey);
+          const { data, error } = await client.functions.invoke('finnhub-websocket', {
+            body: { action: 'get_api_key' }
           });
           
-          if (response.ok) {
-            const data = await response.json();
+          if (!error && data?.apiKey) {
             this.apiKey = data.apiKey;
           }
         } catch (fetchError) {
