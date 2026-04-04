@@ -82,10 +82,11 @@ export const useRealtimeStockData = (
         }));
       }
       
-      return [];
+      // Fallback: generate demo chart data so the chart is never empty
+      return generateDemoChartData(symbol, days);
     } catch (err) {
       console.warn('Error fetching historical data:', err);
-      return [];
+      return generateDemoChartData(symbol, 30);
     }
   }, [symbol]);
 
