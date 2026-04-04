@@ -11,6 +11,38 @@ interface StockDataPoint {
   close?: number;
 }
 
+const DEMO_BASE_PRICES: Record<string, number> = {
+  AAPL: 213.88, MSFT: 415.50, GOOGL: 300.88, AMZN: 218.94,
+  NVDA: 183.34, META: 660.57, TSLA: 175.20, JPM: 198.40,
+};
+
+function generateDemoChartData(symbol: string, days: number): StockDataPoint[] {
+  const basePrice = DEMO_BASE_PRICES[symbol] || 150;
+  const points: StockDataPoint[] = [];
+  let price = basePrice * (0.95 + Math.random() * 0.05);
+  const now = Date.now();
+  const interval = (days * 24 * 60 * 60 * 1000) / Math.min(days, 90);
+
+  for (let i = Math.min(days, 90); i > 0; i--) {
+    const change = price * (Math.random() - 0.48) * 0.02;
+    price = Math.max(price * 0.8, price + change);
+    price = parseFloat(price.toFixed(2));
+    const high = parseFloat((price * (1 + Math.random() * 0.01)).toFixed(2));
+    const low = parseFloat((price * (1 - Math.random() * 0.01)).toFixed(2));
+    const open = parseFloat((price + (Math.random() - 0.5) * price * 0.005).toFixed(2));
+
+    points.push({
+      time: new Date(now - i * interval).toISOString(),
+      value: price,
+      open,
+      high,
+      low,
+      close: price,
+    });
+  }
+  return points;
+}
+
 interface RealtimeStockData {
   symbol: string;
   currentPrice: number;
