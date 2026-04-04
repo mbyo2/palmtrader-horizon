@@ -39,14 +39,14 @@ export const useRealtimeStockData = (
   const fetchHistoricalData = useCallback(async (tf: string): Promise<StockDataPoint[]> => {
     try {
       const days = tf === "1D" ? 1 : tf === "1W" ? 7 : tf === "1M" ? 30 : tf === "3M" ? 90 : 365;
-      const fromDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+      const fromTimestamp = Date.now() - days * 24 * 60 * 60 * 1000;
       
-      // Try to get from database first
+      // Try to get from database first (timestamp is numeric ms)
       const { data: dbData, error } = await supabase
         .from('market_data')
         .select('price, timestamp, open, high, low, close')
         .eq('symbol', symbol)
-        .gte('timestamp', fromDate)
+        .gte('timestamp', fromTimestamp)
         .order('timestamp', { ascending: true });
       
       if (!error && dbData && dbData.length > 0) {
