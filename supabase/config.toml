@@ -1,7 +1,7 @@
 project_id = "hvrcchjbqumlknaboczh"
 
 [functions.compliance-alert]
-verify_jwt = false
+verify_jwt = true
 
 [functions.finnhub-websocket]
 verify_jwt = false
