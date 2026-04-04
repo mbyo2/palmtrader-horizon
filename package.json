@@ -13,7 +13,7 @@
   "dependencies": {
     "@axe-core/react": "^4.10.1",
     "@capacitor/android": "^7.0.1",
-    "@capacitor/cli": "^7.0.1",
+    "@capacitor/cli": "^8.3.0",
     "@capacitor/core": "^7.0.1",
     "@capacitor/ios": "^7.0.1",
     "@hookform/resolvers": "^3.9.0",
