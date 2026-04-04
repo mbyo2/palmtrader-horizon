@@ -192,7 +192,12 @@ class RealTimeFinnhubSocket {
 
   private scheduleReconnect(): void {
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      console.warn('Max reconnection attempts reached');
+      console.warn('Max reconnection attempts reached, will retry in 60s');
+      // Reset and try again after a long pause instead of giving up forever
+      setTimeout(() => {
+        this.reconnectAttempts = 0;
+        this.connect();
+      }, 60000);
       return;
     }
 
