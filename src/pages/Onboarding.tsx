@@ -110,17 +110,27 @@ const Onboarding = () => {
 
       if (result?.status === 'dev_mode') {
         toast({
-          title: "KYC Demo Mode",
-          description: "Sumsub is not configured yet. KYC verification will work once SUMSUB_APP_TOKEN is set.",
+          title: "Demo verification activated",
+          description: "Live identity verification is being configured. You've been granted demo access — full features will unlock when verification goes live.",
+        });
+        setKycStatus('pending');
+      } else if (result?.applicantId) {
+        toast({
+          title: "Identity verification started",
+          description: "Please complete the verification steps. This usually takes 1–24 hours.",
         });
         setKycStatus('pending');
       } else {
-        toast({ title: "KYC Started", description: "Please complete the identity verification." });
-        setKycStatus('pending');
+        throw new Error('Unexpected response from verification service');
       }
     } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
       console.error('KYC error:', err);
-      toast({ title: "KYC Error", description: "Failed to start verification. Try again later.", variant: "destructive" });
+      toast({
+        title: "Verification unavailable",
+        description: `${message}. You can continue to demo trading and try again from Settings later.`,
+        variant: "destructive",
+      });
     }
   };
 
