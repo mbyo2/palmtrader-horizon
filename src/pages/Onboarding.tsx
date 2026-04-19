@@ -103,8 +103,11 @@ const Onboarding = () => {
   const handleStartKYC = async () => {
     if (!user) return;
     try {
-      const { data: result, error } = await supabase.functions.invoke('sumsub-kyc', {
-        body: { action: 'create_applicant' },
+      const { data: result, error } = await supabase.functions.invoke('didit-kyc', {
+        body: {
+          action: 'create_session',
+          callback_url: `${window.location.origin}/onboarding`,
+        },
       });
       if (error) throw error;
 
@@ -114,11 +117,12 @@ const Onboarding = () => {
           description: "Live identity verification is being configured. You've been granted demo access — full features will unlock when verification goes live.",
         });
         setKycStatus('pending');
-      } else if (result?.applicantId) {
+      } else if (result?.url) {
         toast({
-          title: "Identity verification started",
-          description: "Please complete the verification steps. This usually takes 1–24 hours.",
+          title: "Opening Didit verification",
+          description: "Complete the verification in the new window. We'll update your status automatically.",
         });
+        window.open(result.url, '_blank', 'noopener,noreferrer');
         setKycStatus('pending');
       } else {
         throw new Error('Unexpected response from verification service');
