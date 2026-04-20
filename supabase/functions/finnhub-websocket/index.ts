@@ -146,13 +146,28 @@ serve(async (req) => {
       }
 
       console.log(`Fetching fresh quote for ${symbol}`);
-      const { data, rateLimited } = await fetchWithRateLimit(
-        `https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(symbol)}&token=${apiKey}`
-      );
-      
+      const url = `https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(symbol)}&token=${apiKey}`;
+      let pending = inflight.get(symbol);
+      if (!pending) {
+        pending = fetchWithRateLimit(url).finally(() => inflight.delete(symbol));
+        inflight.set(symbol, pending);
+      }
+      const { data, rateLimited } = await pending;
+
       if (rateLimited || !data || data.c === 0) {
+        // Prefer stale cache over demo data when available
+        const stale = getStalePrice(symbol);
+        if (stale) {
+          console.log(`Returning stale quote for ${symbol}`);
+          return new Response(
+            JSON.stringify({ ...stale, isStale: true }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
         console.log(`Using demo price for ${symbol}`);
         const demoData = getDemoPrice(symbol);
+        // Cache demo briefly so we don't keep hammering the API for the same symbol
+        setCachedPrice(symbol, demoData);
         return new Response(
           JSON.stringify(demoData),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
