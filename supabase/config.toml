@@ -15,6 +15,9 @@ verify_jwt = false
 [functions.broker-api]
 verify_jwt = false
 
+[functions.alpaca-broker]
+verify_jwt = true
+
 [functions.metatrader-bridge]
 verify_jwt = false
 
