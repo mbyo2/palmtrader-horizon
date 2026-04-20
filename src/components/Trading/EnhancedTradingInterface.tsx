@@ -10,6 +10,8 @@ import StockInfo from "./StockInfo";
 import EnhancedOrderForm from "./EnhancedOrderForm";
 import RealTimePortfolioSummary from "./RealTimePortfolioSummary";
 import KYCStatusCard from "../KYC/KYCStatusCard";
+import AlpacaLivePanel from "./AlpacaLivePanel";
+import { useTradingAccount } from "@/hooks/useTradingAccount";
 
 const EnhancedTradingInterface = () => {
   const {
@@ -24,6 +26,7 @@ const EnhancedTradingInterface = () => {
   } = useEnhancedTrading();
 
   const connectionStatus = getConnectionStatus();
+  const { isDemo } = useTradingAccount();
 
   if (isLoading) {
     return (
@@ -84,6 +87,9 @@ const EnhancedTradingInterface = () => {
           />
         </div>
       </div>
+
+      {/* Live Alpaca panel — shown when on a live (non-demo) account */}
+      {!isDemo && <AlpacaLivePanel />}
     </div>
   );
 };
