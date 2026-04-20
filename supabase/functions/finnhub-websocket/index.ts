@@ -6,16 +6,28 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// In-memory cache with TTL (30 seconds for quotes)
+// In-memory cache with TTL — quotes are cheap to serve stale for a minute.
 const priceCache = new Map<string, { data: any; timestamp: number }>();
-const CACHE_TTL = 30000; // 30 seconds
+const CACHE_TTL = 60000; // 60s fresh window
+const STALE_TTL = 5 * 60 * 1000; // serve stale up to 5 min when rate-limited
 const RATE_LIMIT_DELAY = 1200; // 1.2 seconds between API calls (50/min max)
+
+// De-dupe concurrent requests for the same symbol
+const inflight = new Map<string, Promise<{ data: any; rateLimited: boolean }>>();
 
 let lastApiCall = 0;
 
 function getCachedPrice(symbol: string) {
   const cached = priceCache.get(symbol);
   if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.data;
+  }
+  return null;
+}
+
+function getStalePrice(symbol: string) {
+  const cached = priceCache.get(symbol);
+  if (cached && Date.now() - cached.timestamp < STALE_TTL) {
     return cached.data;
   }
   return null;
