@@ -1458,7 +1458,9 @@ export type Database = {
       }
       orders: {
         Row: {
+          alpaca_order_id: string | null
           average_fill_price: number | null
+          broker: string | null
           created_at: string
           expires_at: string | null
           filled_quantity: number | null
@@ -1476,7 +1478,9 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          alpaca_order_id?: string | null
           average_fill_price?: number | null
+          broker?: string | null
           created_at?: string
           expires_at?: string | null
           filled_quantity?: number | null
@@ -1494,7 +1498,9 @@ export type Database = {
           user_id: string
         }
         Update: {
+          alpaca_order_id?: string | null
           average_fill_price?: number | null
+          broker?: string | null
           created_at?: string
           expires_at?: string | null
           filled_quantity?: number | null
@@ -2516,6 +2522,8 @@ export type Database = {
       }
       trades: {
         Row: {
+          alpaca_order_id: string | null
+          broker: string | null
           commission: number | null
           created_at: string
           executed_at: string | null
@@ -2541,6 +2549,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          alpaca_order_id?: string | null
+          broker?: string | null
           commission?: number | null
           created_at?: string
           executed_at?: string | null
@@ -2566,6 +2576,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          alpaca_order_id?: string | null
+          broker?: string | null
           commission?: number | null
           created_at?: string
           executed_at?: string | null
@@ -2597,6 +2609,9 @@ export type Database = {
           account_name: string | null
           account_number: string
           account_type: Database["public"]["Enums"]["trading_account_type"]
+          alpaca_account_id: string | null
+          alpaca_account_number: string | null
+          alpaca_account_status: string | null
           available_balance: number
           balance: number
           commission_per_lot: number | null
@@ -2623,6 +2638,9 @@ export type Database = {
           account_name?: string | null
           account_number: string
           account_type?: Database["public"]["Enums"]["trading_account_type"]
+          alpaca_account_id?: string | null
+          alpaca_account_number?: string | null
+          alpaca_account_status?: string | null
           available_balance?: number
           balance?: number
           commission_per_lot?: number | null
@@ -2649,6 +2667,9 @@ export type Database = {
           account_name?: string | null
           account_number?: string
           account_type?: Database["public"]["Enums"]["trading_account_type"]
+          alpaca_account_id?: string | null
+          alpaca_account_number?: string | null
+          alpaca_account_status?: string | null
           available_balance?: number
           balance?: number
           commission_per_lot?: number | null
