@@ -52,23 +52,28 @@ function json(data: unknown, status = 200) {
   });
 }
 
-// Broker API market data lives at /v1beta3/marketdata/... ; older docs used /v1/marketdata/...
-// Try in order and remember which one works for this account.
-const PATH_PREFIXES = ["/v1beta3/marketdata", "/v1/marketdata"];
-let workingPrefix: string | null = null;
+// Endpoint candidates. Each has a base URL, path prefix that gets prepended to the
+// callsite suffix, and an auth header builder. We try them until one succeeds, then cache.
+type Endpoint = { name: string; base: string; prefix: string; headers: () => Record<string, string> };
+const ENDPOINTS: Endpoint[] = [
+  { name: "broker-v1beta3", base: BROKER_BASE, prefix: "/v1beta3/marketdata", headers: basicAuthHeaders },
+  { name: "broker-v1",       base: BROKER_BASE, prefix: "/v1/marketdata",      headers: basicAuthHeaders },
+  { name: "trading-v2",      base: TRADING_DATA_BASE, prefix: "/v2",            headers: apcaAuthHeaders },
+];
+let working: Endpoint | null = null;
 
 async function alpaca(suffix: string) {
-  const prefixes = workingPrefix ? [workingPrefix] : PATH_PREFIXES;
+  const candidates = working ? [working] : ENDPOINTS;
   let lastErr: Error | null = null;
-  for (const prefix of prefixes) {
-    const url = `${BROKER_BASE}${prefix}${suffix}`;
-    const res = await fetch(url, { headers: authHeaders() });
+  for (const ep of candidates) {
+    const url = `${ep.base}${ep.prefix}${suffix}`;
+    const res = await fetch(url, { headers: ep.headers() });
     const text = await res.text();
     let body: any = null;
     try { body = text ? JSON.parse(text) : null; } catch { body = { raw: text }; }
-    if (res.ok) { workingPrefix = prefix; return body; }
-    lastErr = new Error(`Alpaca ${res.status} @ ${prefix}${suffix}: ${typeof body === "string" ? body : JSON.stringify(body)}`);
-    if (res.status === 401 || res.status === 403) throw lastErr; // credentials issue, don't retry other paths
+    if (res.ok) { working = ep; return body; }
+    lastErr = new Error(`Alpaca ${res.status} via ${ep.name} ${suffix}: ${typeof body === "string" ? body : JSON.stringify(body)}`);
+    // 401/403 means these creds don't work for this endpoint — try the next one.
   }
   throw lastErr ?? new Error("Alpaca request failed");
 }
