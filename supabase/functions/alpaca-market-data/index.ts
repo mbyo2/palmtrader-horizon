@@ -114,7 +114,7 @@ serve(async (req) => {
       const cached = cacheGet(cacheKey);
       if (cached) return json(cached);
 
-      const snap = await alpaca(`/v1/marketdata/stocks/${encodeURIComponent(symbol)}/snapshot?feed=${FEED}`);
+      const snap = await alpaca(`/stocks/${encodeURIComponent(symbol)}/snapshot?feed=${FEED}`);
       const result = normalizeQuote(symbol, snap);
       cacheSet(cacheKey, result, 5_000);
       return json(result);
