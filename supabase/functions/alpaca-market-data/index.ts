@@ -44,17 +44,25 @@ function json(data: unknown, status = 200) {
   });
 }
 
-async function alpaca(path: string) {
-  const res = await fetch(`${DATA_BASE}${path}`, { headers: authHeaders() });
-  const text = await res.text();
-  let body: any = null;
-  try {
-    body = text ? JSON.parse(text) : null;
-  } catch {
-    body = { raw: text };
+// Broker API market data lives at /v1beta3/marketdata/... ; older docs used /v1/marketdata/...
+// Try in order and remember which one works for this account.
+const PATH_PREFIXES = ["/v1beta3/marketdata", "/v1/marketdata"];
+let workingPrefix: string | null = null;
+
+async function alpaca(suffix: string) {
+  const prefixes = workingPrefix ? [workingPrefix] : PATH_PREFIXES;
+  let lastErr: Error | null = null;
+  for (const prefix of prefixes) {
+    const url = `${BROKER_BASE}${prefix}${suffix}`;
+    const res = await fetch(url, { headers: authHeaders() });
+    const text = await res.text();
+    let body: any = null;
+    try { body = text ? JSON.parse(text) : null; } catch { body = { raw: text }; }
+    if (res.ok) { workingPrefix = prefix; return body; }
+    lastErr = new Error(`Alpaca ${res.status} @ ${prefix}${suffix}: ${typeof body === "string" ? body : JSON.stringify(body)}`);
+    if (res.status === 401 || res.status === 403) throw lastErr; // credentials issue, don't retry other paths
   }
-  if (!res.ok) throw new Error(`Alpaca data ${res.status}: ${typeof body === "string" ? body : JSON.stringify(body)}`);
-  return body;
+  throw lastErr ?? new Error("Alpaca request failed");
 }
 
 function normalizeQuote(symbol: string, snapshot: any) {
