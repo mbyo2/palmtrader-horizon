@@ -174,7 +174,7 @@ serve(async (req) => {
       const limit = Math.min(Number(body.limit ?? 20), 50);
       const params = new URLSearchParams({ limit: String(limit) });
       if (symbols?.length) params.set("symbols", symbols.join(","));
-      const data = await alpaca(`/v1/marketdata/news?${params.toString()}`);
+      const data = await alpaca(`/news?${params.toString()}`);
       return json(data);
     }
 
