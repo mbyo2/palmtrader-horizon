@@ -148,7 +148,7 @@ serve(async (req) => {
       const cached = cacheGet(cacheKey);
       if (cached) return json(cached);
 
-      const data = await alpaca(`/v2/stocks/${encodeURIComponent(symbol)}/bars?${params.toString()}`);
+      const data = await alpaca(`/v1/marketdata/stocks/${encodeURIComponent(symbol)}/bars?${params.toString()}`);
       const bars = (data?.bars ?? []).map((b: any) => ({
         time: new Date(b.t).getTime(),
         open: b.o,
@@ -167,7 +167,7 @@ serve(async (req) => {
       const limit = Math.min(Number(body.limit ?? 20), 50);
       const params = new URLSearchParams({ limit: String(limit) });
       if (symbols?.length) params.set("symbols", symbols.join(","));
-      const data = await alpaca(`/v1beta1/news?${params.toString()}`);
+      const data = await alpaca(`/v1/marketdata/news?${params.toString()}`);
       return json(data);
     }
 
