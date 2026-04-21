@@ -155,7 +155,7 @@ serve(async (req) => {
       const cached = cacheGet(cacheKey);
       if (cached) return json(cached);
 
-      const data = await alpaca(`/v1/marketdata/stocks/${encodeURIComponent(symbol)}/bars?${params.toString()}`);
+      const data = await alpaca(`/stocks/${encodeURIComponent(symbol)}/bars?${params.toString()}`);
       const bars = (data?.bars ?? []).map((b: any) => ({
         time: new Date(b.t).getTime(),
         open: b.o,
