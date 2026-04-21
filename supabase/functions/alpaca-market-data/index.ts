@@ -130,7 +130,7 @@ serve(async (req) => {
       if (cached) return json(cached);
 
       const snaps = await alpaca(
-        `/v1/marketdata/stocks/snapshots?symbols=${encodeURIComponent(symbols.join(","))}&feed=${FEED}`,
+        `/stocks/snapshots?symbols=${encodeURIComponent(symbols.join(","))}&feed=${FEED}`,
       );
       const quotes: Record<string, unknown> = {};
       for (const sym of symbols) {
