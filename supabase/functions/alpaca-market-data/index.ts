@@ -13,16 +13,23 @@ const ALPACA_KEY = Deno.env.get("ALPACA_BROKER_API_KEY") ?? "";
 const ALPACA_SECRET = Deno.env.get("ALPACA_BROKER_API_SECRET") ?? "";
 // Market data API host is fixed; the broker base URL is for trading only.
 // Broker API hosts the market data endpoints under /v1/marketdata/* using Basic auth.
-const DATA_BASE = (Deno.env.get("ALPACA_BROKER_BASE_URL") ?? "https://broker-api.sandbox.alpaca.markets").replace(/\/+$/, "");
-const FEED = "iex"; // sandbox supports iex
+// Two possible credential modes:
+//  - Broker API: Basic auth against broker-api(.sandbox).alpaca.markets, paths /v1beta3/marketdata/...
+//  - Trading API (paper or live): Apca-Api-Key-Id/Apca-Api-Secret-Key headers against
+//    data.alpaca.markets, paths /v2/stocks/...
+// We auto-detect which mode the configured credentials work with and cache the result.
+const BROKER_BASE = (Deno.env.get("ALPACA_BROKER_BASE_URL") ?? "https://broker-api.sandbox.alpaca.markets").replace(/\/+$/, "");
+const TRADING_DATA_BASE = "https://data.alpaca.markets";
+const FEED = "iex";
 
-function authHeaders() {
-  // Broker API credentials use HTTP Basic auth even for /v2/stocks data endpoints
-  // when calling the sandbox data host. Direct Trading API keys would use
-  // Apca-Api-Key-Id / Apca-Api-Secret-Key headers, but those aren't what the user has.
+function basicAuthHeaders() {
   const token = btoa(`${ALPACA_KEY}:${ALPACA_SECRET}`);
+  return { Authorization: `Basic ${token}`, Accept: "application/json" };
+}
+function apcaAuthHeaders() {
   return {
-    Authorization: `Basic ${token}`,
+    "APCA-API-KEY-ID": ALPACA_KEY,
+    "APCA-API-SECRET-KEY": ALPACA_SECRET,
     Accept: "application/json",
   };
 }
@@ -45,17 +52,30 @@ function json(data: unknown, status = 200) {
   });
 }
 
-async function alpaca(path: string) {
-  const res = await fetch(`${DATA_BASE}${path}`, { headers: authHeaders() });
-  const text = await res.text();
-  let body: any = null;
-  try {
-    body = text ? JSON.parse(text) : null;
-  } catch {
-    body = { raw: text };
+// Endpoint candidates. Each has a base URL, path prefix that gets prepended to the
+// callsite suffix, and an auth header builder. We try them until one succeeds, then cache.
+type Endpoint = { name: string; base: string; prefix: string; headers: () => Record<string, string> };
+const ENDPOINTS: Endpoint[] = [
+  { name: "broker-v1beta3", base: BROKER_BASE, prefix: "/v1beta3/marketdata", headers: basicAuthHeaders },
+  { name: "broker-v1",       base: BROKER_BASE, prefix: "/v1/marketdata",      headers: basicAuthHeaders },
+  { name: "trading-v2",      base: TRADING_DATA_BASE, prefix: "/v2",            headers: apcaAuthHeaders },
+];
+let working: Endpoint | null = null;
+
+async function alpaca(suffix: string) {
+  const candidates = working ? [working] : ENDPOINTS;
+  let lastErr: Error | null = null;
+  for (const ep of candidates) {
+    const url = `${ep.base}${ep.prefix}${suffix}`;
+    const res = await fetch(url, { headers: ep.headers() });
+    const text = await res.text();
+    let body: any = null;
+    try { body = text ? JSON.parse(text) : null; } catch { body = { raw: text }; }
+    if (res.ok) { working = ep; return body; }
+    lastErr = new Error(`Alpaca ${res.status} via ${ep.name} ${suffix}: ${typeof body === "string" ? body : JSON.stringify(body)}`);
+    // 401/403 means these creds don't work for this endpoint — try the next one.
   }
-  if (!res.ok) throw new Error(`Alpaca data ${res.status}: ${typeof body === "string" ? body : JSON.stringify(body)}`);
-  return body;
+  throw lastErr ?? new Error("Alpaca request failed");
 }
 
 function normalizeQuote(symbol: string, snapshot: any) {
@@ -107,7 +127,7 @@ serve(async (req) => {
       const cached = cacheGet(cacheKey);
       if (cached) return json(cached);
 
-      const snap = await alpaca(`/v1/marketdata/stocks/${encodeURIComponent(symbol)}/snapshot?feed=${FEED}`);
+      const snap = await alpaca(`/stocks/${encodeURIComponent(symbol)}/snapshot?feed=${FEED}`);
       const result = normalizeQuote(symbol, snap);
       cacheSet(cacheKey, result, 5_000);
       return json(result);
@@ -123,7 +143,7 @@ serve(async (req) => {
       if (cached) return json(cached);
 
       const snaps = await alpaca(
-        `/v1/marketdata/stocks/snapshots?symbols=${encodeURIComponent(symbols.join(","))}&feed=${FEED}`,
+        `/stocks/snapshots?symbols=${encodeURIComponent(symbols.join(","))}&feed=${FEED}`,
       );
       const quotes: Record<string, unknown> = {};
       for (const sym of symbols) {
@@ -148,7 +168,7 @@ serve(async (req) => {
       const cached = cacheGet(cacheKey);
       if (cached) return json(cached);
 
-      const data = await alpaca(`/v1/marketdata/stocks/${encodeURIComponent(symbol)}/bars?${params.toString()}`);
+      const data = await alpaca(`/stocks/${encodeURIComponent(symbol)}/bars?${params.toString()}`);
       const bars = (data?.bars ?? []).map((b: any) => ({
         time: new Date(b.t).getTime(),
         open: b.o,
@@ -167,7 +187,7 @@ serve(async (req) => {
       const limit = Math.min(Number(body.limit ?? 20), 50);
       const params = new URLSearchParams({ limit: String(limit) });
       if (symbols?.length) params.set("symbols", symbols.join(","));
-      const data = await alpaca(`/v1/marketdata/news?${params.toString()}`);
+      const data = await alpaca(`/news?${params.toString()}`);
       return json(data);
     }
 
