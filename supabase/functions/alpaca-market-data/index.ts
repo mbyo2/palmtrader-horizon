@@ -182,6 +182,27 @@ serve(async (req) => {
       return json(out);
     }
 
+    if (action === "diagnose") {
+      const results: any[] = [];
+      for (const ep of ENDPOINTS) {
+        const url = `${ep.base}${ep.prefix}/stocks/AAPL/snapshot?feed=${FEED}`;
+        try {
+          const res = await fetch(url, { headers: ep.headers() });
+          const text = await res.text();
+          results.push({ endpoint: ep.name, url, status: res.status, body: text.slice(0, 300) });
+        } catch (e) {
+          results.push({ endpoint: ep.name, url, error: (e as Error).message });
+        }
+      }
+      return json({
+        keyPrefix: ALPACA_KEY.slice(0, 4),
+        keyLength: ALPACA_KEY.length,
+        secretLength: ALPACA_SECRET.length,
+        brokerBase: BROKER_BASE,
+        results,
+      });
+    }
+
     if (action === "get_news") {
       const symbols: string[] | undefined = body.symbols;
       const limit = Math.min(Number(body.limit ?? 20), 50);
