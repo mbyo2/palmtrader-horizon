@@ -12,7 +12,8 @@ const corsHeaders = {
 const ALPACA_KEY = Deno.env.get("ALPACA_BROKER_API_KEY") ?? "";
 const ALPACA_SECRET = Deno.env.get("ALPACA_BROKER_API_SECRET") ?? "";
 // Market data API host is fixed; the broker base URL is for trading only.
-const DATA_BASE = "https://data.sandbox.alpaca.markets";
+// Broker API hosts the market data endpoints under /v1/marketdata/* using Basic auth.
+const DATA_BASE = (Deno.env.get("ALPACA_BROKER_BASE_URL") ?? "https://broker-api.sandbox.alpaca.markets").replace(/\/+$/, "");
 const FEED = "iex"; // sandbox supports iex
 
 function authHeaders() {
