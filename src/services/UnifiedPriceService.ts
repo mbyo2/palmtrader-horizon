@@ -7,6 +7,8 @@ interface PriceData {
   change: number;
   changePercent: number;
   timestamp: number;
+  source?: 'alpaca' | 'finnhub' | 'demo' | 'cached';
+  isDemo?: boolean;
 }
 
 type PriceCallback = (data: PriceData) => void;
