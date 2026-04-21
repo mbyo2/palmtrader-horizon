@@ -16,9 +16,12 @@ const DATA_BASE = "https://data.sandbox.alpaca.markets";
 const FEED = "iex"; // sandbox supports iex
 
 function authHeaders() {
+  // Broker API credentials use HTTP Basic auth even for /v2/stocks data endpoints
+  // when calling the sandbox data host. Direct Trading API keys would use
+  // Apca-Api-Key-Id / Apca-Api-Secret-Key headers, but those aren't what the user has.
+  const token = btoa(`${ALPACA_KEY}:${ALPACA_SECRET}`);
   return {
-    "Apca-Api-Key-Id": ALPACA_KEY,
-    "Apca-Api-Secret-Key": ALPACA_SECRET,
+    Authorization: `Basic ${token}`,
     Accept: "application/json",
   };
 }
