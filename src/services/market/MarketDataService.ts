@@ -1,5 +1,5 @@
-
 import { MockMarketDataService } from '../MockMarketDataService';
+import { supabase } from "@/integrations/supabase/client";
 
 export interface MarketData {
   symbol: string;
@@ -14,221 +14,212 @@ export interface MarketData {
   close?: number;
   type?: string;
   isDemo?: boolean;
+  source?: 'alpaca' | 'finnhub' | 'cached' | 'demo';
+}
+
+async function tryAlpaca(symbol: string): Promise<MarketData | null> {
+  try {
+    const { data, error } = await supabase.functions.invoke('alpaca-market-data', {
+      body: { action: 'get_quote', symbol },
+    });
+    if (error || !data || data.error || !data.price) return null;
+    return {
+      symbol: data.symbol,
+      price: data.price,
+      change: data.change,
+      changePercent: data.changePercent,
+      volume: data.volume,
+      timestamp: data.timestamp,
+      open: data.open,
+      high: data.high,
+      low: data.low,
+      close: data.price,
+      type: 'realtime',
+      isDemo: false,
+      source: 'alpaca',
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function tryFinnhub(symbol: string): Promise<MarketData | null> {
+  try {
+    const { data, error } = await supabase.functions.invoke('finnhub-websocket', {
+      body: { action: 'get_quote', symbol },
+    });
+    if (error || !data) return null;
+    const price = data.price ?? data.c;
+    if (!price) return null;
+    return {
+      symbol: data.symbol || symbol,
+      price,
+      change: data.change ?? data.d ?? 0,
+      changePercent: data.changePercent ?? data.dp ?? 0,
+      volume: data.volume ?? 0,
+      timestamp: data.timestamp ?? Date.now(),
+      open: data.open ?? data.o ?? price,
+      high: data.high ?? data.h ?? price,
+      low: data.low ?? data.l ?? price,
+      close: price,
+      type: data.isDemo ? 'demo' : 'realtime',
+      isDemo: !!data.isDemo,
+      source: data.isDemo ? 'demo' : 'finnhub',
+    };
+  } catch {
+    return null;
+  }
 }
 
 export class MarketDataService {
   static async fetchLatestPrice(symbol: string): Promise<MarketData> {
-    try {
-      const { supabase } = await import("@/integrations/supabase/client");
-      
-      const { data, error } = await supabase.functions.invoke('finnhub-websocket', {
-        body: { action: 'get_quote', symbol }
-      });
+    // 1) Alpaca first (paid-tier semantics, sandbox IEX feed)
+    const alpaca = await tryAlpaca(symbol);
+    if (alpaca) {
+      supabase.from('market_data').upsert({
+        symbol: alpaca.symbol,
+        price: alpaca.price,
+        open: alpaca.open,
+        high: alpaca.high,
+        low: alpaca.low,
+        close: alpaca.close,
+        timestamp: alpaca.timestamp,
+        type: 'realtime',
+      }).then(() => {});
+      return alpaca;
+    }
 
-      // Handle the response format from the edge function
-      if (!error && data && (data.price || data.c)) {
-        const price = data.price ?? data.c;
-        const marketData: MarketData = {
-          symbol: data.symbol || symbol,
-          price: price,
-          change: data.change ?? data.d ?? 0,
-          changePercent: data.changePercent ?? data.dp ?? 0,
-          volume: data.volume ?? data.v ?? 0,
-          timestamp: data.timestamp ?? Date.now(),
-          open: data.open ?? data.o ?? price,
-          high: data.high ?? data.h ?? price,
-          low: data.low ?? data.l ?? price,
-          close: price,
-          type: data.isDemo ? 'demo' : 'realtime',
-          isDemo: data.isDemo || false
-        };
+    // 2) Finnhub fallback
+    const fh = await tryFinnhub(symbol);
+    if (fh && !fh.isDemo) return fh;
 
-        // Cache in database (fire and forget) - only for real data
-        if (!data.isDemo) {
-          supabase.from('market_data').upsert({
-            symbol: marketData.symbol,
-            price: marketData.price,
-            open: marketData.open,
-            high: marketData.high,
-            low: marketData.low,
-            close: marketData.close,
-            timestamp: marketData.timestamp,
-            type: 'realtime'
-          });
-        }
+    // 3) Last-known cached row from DB
+    const { data: cachedData } = await supabase
+      .from('market_data')
+      .select('*')
+      .eq('symbol', symbol)
+      .order('timestamp', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-        return marketData;
-      }
-
-      // Fallback to cached data if API fails
-      const { data: cachedData } = await supabase
-        .from('market_data')
-        .select('*')
-        .eq('symbol', symbol)
-        .order('timestamp', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (cachedData) {
-        return {
-          symbol: cachedData.symbol,
-          price: cachedData.price,
-          change: 0,
-          changePercent: 0,
-          volume: 0,
-          timestamp: cachedData.timestamp,
-          open: cachedData.open,
-          high: cachedData.high,
-          low: cachedData.low,
-          close: cachedData.close,
-          type: 'cached',
-          isDemo: false
-        };
-      }
-
-      // Final fallback to mock data
-      const mockData = MockMarketDataService.getPrice(symbol);
+    if (cachedData) {
       return {
-        ...mockData,
-        type: 'demo'
-      };
-    } catch (error) {
-      console.error(`Error fetching price for ${symbol}:`, error);
-      // Return mock data on error
-      const mockData = MockMarketDataService.getPrice(symbol);
-      return {
-        ...mockData,
-        type: 'demo'
+        symbol: cachedData.symbol,
+        price: cachedData.price,
+        change: 0,
+        changePercent: 0,
+        volume: 0,
+        timestamp: cachedData.timestamp,
+        open: cachedData.open,
+        high: cachedData.high,
+        low: cachedData.low,
+        close: cachedData.close,
+        type: 'cached',
+        isDemo: false,
+        source: 'cached',
       };
     }
+
+    // 4) Demo (clearly flagged)
+    if (fh) return fh; // finnhub demo
+    const mock = MockMarketDataService.getPrice(symbol);
+    return { ...mock, type: 'demo', isDemo: true, source: 'demo' };
   }
 
   static async fetchHistoricalData(symbol: string, days: number): Promise<MarketData[]> {
+    // Try Alpaca bars first
     try {
-      const { supabase } = await import("@/integrations/supabase/client");
-      
-      // Try Alpha Vantage for historical data
-      const { data, error } = await supabase.functions.invoke('alpha-vantage', {
-        body: {
-          function: 'TIME_SERIES_DAILY',
-          symbol: symbol,
-          outputsize: days > 100 ? 'full' : 'compact'
-        }
+      const start = new Date(Date.now() - days * 86400000).toISOString();
+      const { data, error } = await supabase.functions.invoke('alpaca-market-data', {
+        body: { action: 'get_bars', symbol, timeframe: '1Day', limit: days, start },
       });
-
-      if (!error && data && data['Time Series (Daily)']) {
-        const timeSeries = data['Time Series (Daily)'];
-        const historicalData: MarketData[] = [];
-        
-        const entries = Object.entries(timeSeries)
-          .sort(([a], [b]) => new Date(b).getTime() - new Date(a).getTime())
-          .slice(0, days);
-
-        for (const [date, values] of entries) {
-          const dateObj = new Date(date);
-          const closePrice = parseFloat((values as any)['4. close']);
-          historicalData.push({
-            symbol,
-            price: closePrice,
-            timestamp: dateObj.getTime(),
-            open: parseFloat((values as any)['1. open']),
-            high: parseFloat((values as any)['2. high']),
-            low: parseFloat((values as any)['3. low']),
-            close: closePrice,
-            volume: parseInt((values as any)['5. volume']),
-            type: 'historical',
-            isDemo: false
-          });
-        }
-
-        // Cache in database (batch, fire-and-forget)
-        if (historicalData.length > 0) {
-          supabase.from('market_data').upsert(
-            historicalData.map(item => ({
-              symbol: item.symbol,
-              price: item.price,
-              open: item.open,
-              high: item.high,
-              low: item.low,
-              close: item.close,
-              timestamp: item.timestamp,
-              type: 'daily'
-            }))
-          ).then(() => {});
-        }
-
-        return historicalData.reverse(); // Return in ascending order
-      }
-
-      // Check for rate limit message or any error response
-      if (data?.Information || data?.Note || error) {
-        // Fall through to cached/mock data
-      }
-
-      // Fallback to cached data
-      const { data: cachedData } = await supabase
-        .from('market_data')
-        .select('*')
-        .eq('symbol', symbol)
-        .eq('type', 'daily')
-        .order('timestamp', { ascending: true })
-        .limit(days);
-
-      if (cachedData && cachedData.length > 0) {
-        return cachedData.map(item => ({
-          symbol: item.symbol,
-          price: item.price,
-          timestamp: item.timestamp,
-          open: item.open,
-          high: item.high,
-          low: item.low,
-          close: item.close,
-          volume: 0,
-          type: 'cached',
-          isDemo: false
+      if (!error && data?.bars?.length) {
+        const bars: MarketData[] = data.bars.map((b: any) => ({
+          symbol,
+          price: b.close,
+          timestamp: b.time,
+          open: b.open,
+          high: b.high,
+          low: b.low,
+          close: b.close,
+          volume: b.volume,
+          type: 'historical',
+          isDemo: false,
+          source: 'alpaca',
         }));
+        supabase.from('market_data').upsert(
+          bars.map((item) => ({
+            symbol: item.symbol,
+            price: item.price,
+            open: item.open,
+            high: item.high,
+            low: item.low,
+            close: item.close,
+            timestamp: item.timestamp,
+            type: 'daily',
+          })),
+        ).then(() => {});
+        return bars;
       }
-
-      // Final fallback to mock data
-      return MockMarketDataService.getHistoricalData(symbol, days);
-    } catch (error) {
-      console.error(`Error fetching historical data for ${symbol}:`, error);
-      // Return mock data on error
-      return MockMarketDataService.getHistoricalData(symbol, days);
+    } catch (e) {
+      console.warn('Alpaca bars failed, falling back', e);
     }
+
+    // Fallback to cached
+    const { data: cachedData } = await supabase
+      .from('market_data')
+      .select('*')
+      .eq('symbol', symbol)
+      .eq('type', 'daily')
+      .order('timestamp', { ascending: true })
+      .limit(days);
+
+    if (cachedData && cachedData.length > 0) {
+      return cachedData.map((item) => ({
+        symbol: item.symbol,
+        price: item.price,
+        timestamp: item.timestamp,
+        open: item.open,
+        high: item.high,
+        low: item.low,
+        close: item.close,
+        volume: 0,
+        type: 'cached',
+        isDemo: false,
+        source: 'cached',
+      }));
+    }
+
+    return MockMarketDataService.getHistoricalData(symbol, days);
   }
 
-  static async fetchMultipleLatestPrices(symbols: string[]): Promise<Array<{ symbol: string; price: number; change?: number; volume?: number; isDemo?: boolean }>> {
+  static async fetchMultipleLatestPrices(symbols: string[]): Promise<Array<{ symbol: string; price: number; change?: number; volume?: number; isDemo?: boolean; source?: string }>> {
+    if (symbols.length === 0) return [];
+    // Batch via Alpaca snapshots
     try {
-      const results = await Promise.allSettled(
-        symbols.map(symbol => this.fetchLatestPrice(symbol))
-      );
-
-      return results
-        .filter(result => result.status === 'fulfilled' && result.value !== null)
-        .map(result => {
-          const data = (result as PromiseFulfilledResult<MarketData>).value;
-          return {
-            symbol: data.symbol,
-            price: data.price,
-            change: data.change,
-            volume: data.volume,
-            isDemo: data.isDemo
-          };
-        });
-    } catch (error) {
-      console.error('Error fetching multiple prices:', error);
-      // Return mock data for all symbols
-      return symbols.map(symbol => {
-        const mock = MockMarketDataService.getPrice(symbol);
-        return {
-          symbol: mock.symbol,
-          price: mock.price,
-          change: mock.change,
-          volume: mock.volume,
-          isDemo: true
-        };
+      const { data, error } = await supabase.functions.invoke('alpaca-market-data', {
+        body: { action: 'get_quotes', symbols },
       });
+      if (!error && data?.quotes) {
+        const out = Object.values(data.quotes) as Array<{ symbol: string; price: number; change?: number; volume?: number }>;
+        const got = new Set(out.map((q) => q.symbol));
+        const missing = symbols.filter((s) => !got.has(s));
+        const fallback = await Promise.all(missing.map((s) => this.fetchLatestPrice(s)));
+        return [
+          ...out.map((q) => ({ ...q, isDemo: false, source: 'alpaca' })),
+          ...fallback.map((q) => ({ symbol: q.symbol, price: q.price, change: q.change, volume: q.volume, isDemo: q.isDemo, source: q.source })),
+        ];
+      }
+    } catch (e) {
+      console.warn('Alpaca batch quotes failed', e);
     }
+    // Per-symbol fallback
+    const results = await Promise.allSettled(symbols.map((s) => this.fetchLatestPrice(s)));
+    return results
+      .filter((r) => r.status === 'fulfilled')
+      .map((r) => {
+        const d = (r as PromiseFulfilledResult<MarketData>).value;
+        return { symbol: d.symbol, price: d.price, change: d.change, volume: d.volume, isDemo: d.isDemo, source: d.source };
+      });
   }
 }

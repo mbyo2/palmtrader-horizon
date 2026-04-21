@@ -18,6 +18,9 @@ verify_jwt = false
 [functions.alpaca-broker]
 verify_jwt = true
 
+[functions.alpaca-market-data]
+verify_jwt = false
+
 [functions.metatrader-bridge]
 verify_jwt = false
 
