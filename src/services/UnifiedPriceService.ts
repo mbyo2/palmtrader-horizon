@@ -7,6 +7,8 @@ interface PriceData {
   change: number;
   changePercent: number;
   timestamp: number;
+  source?: 'alpaca' | 'finnhub' | 'demo' | 'cached';
+  isDemo?: boolean;
 }
 
 type PriceCallback = (data: PriceData) => void;
@@ -143,24 +145,46 @@ class UnifiedPriceService {
   }
 
   private async fetchInitialPrice(symbol: string): Promise<PriceData | null> {
+    // 1) Alpaca first
+    try {
+      const { data, error } = await supabase.functions.invoke('alpaca-market-data', {
+        body: { action: 'get_quote', symbol },
+      });
+      if (!error && data && data.price > 0 && !data.error) {
+        const priceData: PriceData = {
+          symbol: data.symbol || symbol,
+          price: data.price,
+          change: data.change || 0,
+          changePercent: data.changePercent || 0,
+          timestamp: data.timestamp || Date.now(),
+          source: 'alpaca',
+          isDemo: false,
+        };
+        this.priceCache.set(symbol, priceData);
+        return priceData;
+      }
+    } catch {
+      // fall through to Finnhub
+    }
+
+    // 2) Finnhub fallback
     try {
       const { data, error } = await supabase.functions.invoke('finnhub-websocket', {
-        body: { action: 'get_quote', symbol }
+        body: { action: 'get_quote', symbol },
       });
-
       if (!error && data && data.price && data.price > 0) {
         const priceData: PriceData = {
           symbol: data.symbol || symbol,
           price: data.price,
           change: data.change || 0,
           changePercent: data.changePercent || 0,
-          timestamp: data.timestamp || Date.now()
+          timestamp: data.timestamp || Date.now(),
+          source: data.isDemo ? 'demo' : 'finnhub',
+          isDemo: !!data.isDemo,
         };
-
         this.priceCache.set(symbol, priceData);
         return priceData;
       }
-      
       return null;
     } catch (error) {
       console.warn(`Failed to fetch initial price for ${symbol}`);
