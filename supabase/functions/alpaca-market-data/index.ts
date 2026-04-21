@@ -13,13 +13,12 @@ const ALPACA_KEY = Deno.env.get("ALPACA_BROKER_API_KEY") ?? "";
 const ALPACA_SECRET = Deno.env.get("ALPACA_BROKER_API_SECRET") ?? "";
 // Market data API host is fixed; the broker base URL is for trading only.
 // Broker API hosts the market data endpoints under /v1/marketdata/* using Basic auth.
-const DATA_BASE = (Deno.env.get("ALPACA_BROKER_BASE_URL") ?? "https://broker-api.sandbox.alpaca.markets").replace(/\/+$/, "");
+// Alpaca Broker API hosts market data at /v1beta3/... on the broker host using Basic auth.
+// Reference: https://docs.alpaca.markets/reference/stockssnapshots-1
+const BROKER_BASE = (Deno.env.get("ALPACA_BROKER_BASE_URL") ?? "https://broker-api.sandbox.alpaca.markets").replace(/\/+$/, "");
 const FEED = "iex"; // sandbox supports iex
 
 function authHeaders() {
-  // Broker API credentials use HTTP Basic auth even for /v2/stocks data endpoints
-  // when calling the sandbox data host. Direct Trading API keys would use
-  // Apca-Api-Key-Id / Apca-Api-Secret-Key headers, but those aren't what the user has.
   const token = btoa(`${ALPACA_KEY}:${ALPACA_SECRET}`);
   return {
     Authorization: `Basic ${token}`,
