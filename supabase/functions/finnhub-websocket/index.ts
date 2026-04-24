@@ -101,7 +101,7 @@ async function fetchWithRateLimit(url: string): Promise<{ data: any; rateLimited
     const data = await response.json();
     return { data, rateLimited: false };
   } catch (error) {
-    console.log('Finnhub fetch error, using demo data:', error.message);
+    console.log('Finnhub fetch error, using demo data:', error instanceof Error ? error.message : String(error));
     return { data: null, rateLimited: true };
   }
 }
@@ -266,7 +266,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Finnhub API error:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error instanceof Error ? error.message : String(error) }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
