@@ -21,6 +21,11 @@ const MARKET_DATA_BASE = IS_SANDBOX
 
 let oauthToken: { token: string; expires: number } | null = null;
 
+function basicAuthHeader() {
+  const token = btoa(`${ALPACA_KEY}:${ALPACA_SECRET}`);
+  return `Basic ${token}`;
+}
+
 async function getAccessToken() {
   if (oauthToken && oauthToken.expires > Date.now() + 30_000) return oauthToken.token;
   const body = new URLSearchParams({
@@ -47,45 +52,92 @@ async function getAccessToken() {
 }
 
 async function alpacaFetch(path: string, init: RequestInit = {}) {
-  const accessToken = await getAccessToken();
-  const res = await fetch(`${ALPACA_BASE}${path}`, {
-    ...init,
+  const attempts: Array<{ name: string; headers: Record<string, string> }> = [];
+  try {
+    const accessToken = await getAccessToken();
+    attempts.push({
+      name: 'bearer',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+    });
+  } catch {
+    oauthToken = null;
+  }
+  attempts.push({
+    name: 'basic',
     headers: {
-      'Authorization': `Bearer ${accessToken}`,
+      'Authorization': basicAuthHeader(),
       'Accept': 'application/json',
       'Content-Type': 'application/json',
-      ...(init.headers ?? {}),
     },
   });
-  const text = await res.text();
-  let body: any = null;
-  try { body = text ? JSON.parse(text) : null; } catch { body = { raw: text }; }
-  if (!res.ok) {
+
+  let lastError: Error | null = null;
+  for (const attempt of attempts) {
+    const res = await fetch(`${ALPACA_BASE}${path}`, {
+      ...init,
+      headers: {
+        ...attempt.headers,
+        ...(init.headers ?? {}),
+      },
+    });
+    const text = await res.text();
+    let body: any = null;
+    try { body = text ? JSON.parse(text) : null; } catch { body = { raw: text }; }
+    if (res.ok) return body;
     if (res.status === 401 || res.status === 403) oauthToken = null;
-    throw new Error(`Alpaca ${res.status}: ${typeof body === 'string' ? body : JSON.stringify(body)}`);
+    lastError = new Error(`Alpaca ${res.status} via ${attempt.name}: ${typeof body === 'string' ? body : JSON.stringify(body)}`);
   }
-  return body;
+
+  throw lastError ?? new Error('Alpaca request failed');
 }
 
 async function alpacaMarketDataFetch(path: string, init: RequestInit = {}) {
-  const accessToken = await getAccessToken();
-  const res = await fetch(`${MARKET_DATA_BASE}${path}`, {
-    ...init,
+  const attempts: Array<{ name: string; headers: Record<string, string> }> = [];
+  try {
+    const accessToken = await getAccessToken();
+    attempts.push({
+      name: 'bearer',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+    });
+  } catch {
+    oauthToken = null;
+  }
+  attempts.push({
+    name: 'apca',
     headers: {
-      'Authorization': `Bearer ${accessToken}`,
+      'APCA-API-KEY-ID': ALPACA_KEY,
+      'APCA-API-SECRET-KEY': ALPACA_SECRET,
       'Accept': 'application/json',
       'Content-Type': 'application/json',
-      ...(init.headers ?? {}),
     },
   });
-  const text = await res.text();
-  let body: any = null;
-  try { body = text ? JSON.parse(text) : null; } catch { body = { raw: text }; }
-  if (!res.ok) {
+
+  let lastError: Error | null = null;
+  for (const attempt of attempts) {
+    const res = await fetch(`${MARKET_DATA_BASE}${path}`, {
+      ...init,
+      headers: {
+        ...attempt.headers,
+        ...(init.headers ?? {}),
+      },
+    });
+    const text = await res.text();
+    let body: any = null;
+    try { body = text ? JSON.parse(text) : null; } catch { body = { raw: text }; }
+    if (res.ok) return body;
     if (res.status === 401 || res.status === 403) oauthToken = null;
-    throw new Error(`Alpaca market data ${res.status}: ${typeof body === 'string' ? body : JSON.stringify(body)}`);
+    lastError = new Error(`Alpaca market data ${res.status} via ${attempt.name}: ${typeof body === 'string' ? body : JSON.stringify(body)}`);
   }
-  return body;
+
+  throw lastError ?? new Error('Alpaca market data request failed');
 }
 
 function jsonResponse(data: unknown, status = 200) {
