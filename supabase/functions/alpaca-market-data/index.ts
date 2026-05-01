@@ -24,8 +24,10 @@ const FEED = "iex";
 
 // ---------- OAuth2 token cache ----------
 let oauthToken: { token: string; expires: number } | null = null;
+let oauthUnavailable = false;
 
 async function getOAuthToken(): Promise<string> {
+  if (oauthUnavailable) throw new Error("OAuth client_credentials unavailable for current Alpaca credentials");
   if (oauthToken && oauthToken.expires > Date.now() + 30_000) return oauthToken.token;
   const body = new URLSearchParams({
     grant_type: "client_credentials",
@@ -38,9 +40,13 @@ async function getOAuthToken(): Promise<string> {
     body: body.toString(),
   });
   const text = await res.text();
-  if (!res.ok) throw new Error(`OAuth token request failed ${res.status}: ${text.slice(0, 300)}`);
+  if (!res.ok) {
+    if (text.includes('invalid_client')) oauthUnavailable = true;
+    throw new Error(`OAuth token request failed ${res.status}: ${text.slice(0, 300)}`);
+  }
   const data = JSON.parse(text);
   const ttl = Number(data.expires_in ?? 900) * 1000;
+  oauthUnavailable = false;
   oauthToken = { token: data.access_token, expires: Date.now() + ttl };
   return oauthToken.token;
 }
@@ -252,6 +258,7 @@ serve(async (req) => {
         brokerBase: BROKER_BASE,
         marketDataBase: MARKET_DATA_BASE,
         authBase: OAUTH_TOKEN_URL,
+        oauthUnavailable,
         oauth: tokenInfo,
         results,
       });
