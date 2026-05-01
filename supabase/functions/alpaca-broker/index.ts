@@ -11,30 +11,137 @@ const corsHeaders = {
 const ALPACA_KEY = Deno.env.get('ALPACA_BROKER_API_KEY') ?? '';
 const ALPACA_SECRET = Deno.env.get('ALPACA_BROKER_API_SECRET') ?? '';
 const ALPACA_BASE = (Deno.env.get('ALPACA_BROKER_BASE_URL') ?? 'https://broker-api.sandbox.alpaca.markets').replace(/\/+$/, '');
+const IS_SANDBOX = ALPACA_BASE.includes('sandbox');
+const OAUTH_TOKEN_URL = IS_SANDBOX
+  ? 'https://authx.sandbox.alpaca.markets/v1/oauth2/token'
+  : 'https://authx.alpaca.markets/v1/oauth2/token';
+const MARKET_DATA_BASE = IS_SANDBOX
+  ? 'https://data.sandbox.alpaca.markets'
+  : 'https://data.alpaca.markets';
+
+let oauthToken: { token: string; expires: number } | null = null;
+let oauthUnavailable = false;
 
 function basicAuthHeader() {
-  // Alpaca Broker API uses HTTP Basic auth: base64(KEY:SECRET)
   const token = btoa(`${ALPACA_KEY}:${ALPACA_SECRET}`);
   return `Basic ${token}`;
 }
 
+async function getAccessToken() {
+  if (oauthUnavailable) throw new Error('OAuth client_credentials unavailable for current Alpaca credentials');
+  if (oauthToken && oauthToken.expires > Date.now() + 30_000) return oauthToken.token;
+  const body = new URLSearchParams({
+    grant_type: 'client_credentials',
+    client_id: ALPACA_KEY,
+    client_secret: ALPACA_SECRET,
+  });
+  const res = await fetch(OAUTH_TOKEN_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Accept': 'application/json',
+    },
+    body: body.toString(),
+  });
+  const text = await res.text();
+  let payload: any = null;
+  try { payload = text ? JSON.parse(text) : null; } catch { payload = { raw: text }; }
+  if (!res.ok || !payload?.access_token) {
+    if (text.includes('invalid_client')) oauthUnavailable = true;
+    throw new Error(`Alpaca token ${res.status}: ${typeof payload === 'string' ? payload : JSON.stringify(payload)}`);
+  }
+  oauthUnavailable = false;
+  oauthToken = { token: payload.access_token, expires: Date.now() + Number(payload.expires_in ?? 900) * 1000 };
+  return oauthToken.token;
+}
+
 async function alpacaFetch(path: string, init: RequestInit = {}) {
-  const res = await fetch(`${ALPACA_BASE}${path}`, {
-    ...init,
+  const attempts: Array<{ name: string; headers: Record<string, string> }> = [];
+  try {
+    const accessToken = await getAccessToken();
+    attempts.push({
+      name: 'bearer',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+    });
+  } catch {
+    oauthToken = null;
+  }
+  attempts.push({
+    name: 'basic',
     headers: {
       'Authorization': basicAuthHeader(),
       'Accept': 'application/json',
       'Content-Type': 'application/json',
-      ...(init.headers ?? {}),
     },
   });
-  const text = await res.text();
-  let body: any = null;
-  try { body = text ? JSON.parse(text) : null; } catch { body = { raw: text }; }
-  if (!res.ok) {
-    throw new Error(`Alpaca ${res.status}: ${typeof body === 'string' ? body : JSON.stringify(body)}`);
+
+  let lastError: Error | null = null;
+  for (const attempt of attempts) {
+    const res = await fetch(`${ALPACA_BASE}${path}`, {
+      ...init,
+      headers: {
+        ...attempt.headers,
+        ...(init.headers ?? {}),
+      },
+    });
+    const text = await res.text();
+    let body: any = null;
+    try { body = text ? JSON.parse(text) : null; } catch { body = { raw: text }; }
+    if (res.ok) return body;
+    if (res.status === 401 || res.status === 403) oauthToken = null;
+    lastError = new Error(`Alpaca ${res.status} via ${attempt.name}: ${typeof body === 'string' ? body : JSON.stringify(body)}`);
   }
-  return body;
+
+  throw lastError ?? new Error('Alpaca request failed');
+}
+
+async function alpacaMarketDataFetch(path: string, init: RequestInit = {}) {
+  const attempts: Array<{ name: string; headers: Record<string, string> }> = [];
+  try {
+    const accessToken = await getAccessToken();
+    attempts.push({
+      name: 'bearer',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+    });
+  } catch {
+    oauthToken = null;
+  }
+  attempts.push({
+    name: 'apca',
+    headers: {
+      'APCA-API-KEY-ID': ALPACA_KEY,
+      'APCA-API-SECRET-KEY': ALPACA_SECRET,
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+    },
+  });
+
+  let lastError: Error | null = null;
+  for (const attempt of attempts) {
+    const res = await fetch(`${MARKET_DATA_BASE}${path}`, {
+      ...init,
+      headers: {
+        ...attempt.headers,
+        ...(init.headers ?? {}),
+      },
+    });
+    const text = await res.text();
+    let body: any = null;
+    try { body = text ? JSON.parse(text) : null; } catch { body = { raw: text }; }
+    if (res.ok) return body;
+    if (res.status === 401 || res.status === 403) oauthToken = null;
+    lastError = new Error(`Alpaca market data ${res.status} via ${attempt.name}: ${typeof body === 'string' ? body : JSON.stringify(body)}`);
+  }
+
+  throw lastError ?? new Error('Alpaca market data request failed');
 }
 
 function jsonResponse(data: unknown, status = 200) {
@@ -223,8 +330,8 @@ Deno.serve(async (req) => {
       case 'get_quote': {
         const { symbol } = body;
         if (!symbol) return jsonResponse({ error: 'symbol required' }, 400);
-        const data = await alpacaFetch(
-          `/v1/marketdata/stocks/${encodeURIComponent(symbol)}/quotes/latest`,
+        const data = await alpacaMarketDataFetch(
+          `/v2/stocks/${encodeURIComponent(symbol)}/quotes/latest?feed=iex`,
         );
         return jsonResponse({ ok: true, quote: data });
       }
