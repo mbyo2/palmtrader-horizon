@@ -13,8 +13,13 @@ const corsHeaders = {
 const ALPACA_KEY = Deno.env.get("ALPACA_BROKER_API_KEY") ?? "";
 const ALPACA_SECRET = Deno.env.get("ALPACA_BROKER_API_SECRET") ?? "";
 const BROKER_BASE = (Deno.env.get("ALPACA_BROKER_BASE_URL") ?? "https://broker-api.sandbox.alpaca.markets").replace(/\/+$/, "");
-const TRADING_DATA_BASE = "https://data.alpaca.markets";
-const OAUTH_TOKEN_URL = "https://authx.alpaca.markets/v1/oauth2/token";
+const IS_SANDBOX = BROKER_BASE.includes("sandbox");
+const MARKET_DATA_BASE = IS_SANDBOX
+  ? "https://data.sandbox.alpaca.markets"
+  : "https://data.alpaca.markets";
+const OAUTH_TOKEN_URL = IS_SANDBOX
+  ? "https://authx.sandbox.alpaca.markets/v1/oauth2/token"
+  : "https://authx.alpaca.markets/v1/oauth2/token";
 const FEED = "iex";
 
 // ---------- OAuth2 token cache ----------
@@ -83,14 +88,16 @@ type Endpoint = {
   headers: () => Promise<Record<string, string>> | Record<string, string>;
 };
 const ENDPOINTS: Endpoint[] = [
-  // OAuth Bearer first — required for new "Client Secret" credentials (CK... prefix)
+  // Documented Broker API market data flow: sandbox/live token endpoint + sandbox/live data host.
+  { name: "oauth-market-data-v2", base: MARKET_DATA_BASE, prefix: "/v2", headers: bearerAuthHeaders },
+  // Older broker-hosted paths kept as fallback for legacy tenants.
   { name: "oauth-broker-v1beta3", base: BROKER_BASE, prefix: "/v1beta3/marketdata", headers: bearerAuthHeaders },
   { name: "oauth-broker-v1",      base: BROKER_BASE, prefix: "/v1/marketdata",      headers: bearerAuthHeaders },
   // Legacy Basic auth (Broker API)
   { name: "basic-broker-v1beta3", base: BROKER_BASE, prefix: "/v1beta3/marketdata", headers: basicAuthHeaders },
   { name: "basic-broker-v1",      base: BROKER_BASE, prefix: "/v1/marketdata",      headers: basicAuthHeaders },
-  // Trading Data API (paper/live trading API keys)
-  { name: "trading-v2",           base: TRADING_DATA_BASE, prefix: "/v2",            headers: apcaAuthHeaders },
+  // Legacy key-header fallback against the correct sandbox/live data host.
+  { name: "legacy-market-data-v2", base: MARKET_DATA_BASE, prefix: "/v2", headers: apcaAuthHeaders },
 ];
 let working: Endpoint | null = null;
 
@@ -243,6 +250,8 @@ serve(async (req) => {
         keyLength: ALPACA_KEY.length,
         secretLength: ALPACA_SECRET.length,
         brokerBase: BROKER_BASE,
+        marketDataBase: MARKET_DATA_BASE,
+        authBase: OAUTH_TOKEN_URL,
         oauth: tokenInfo,
         results,
       });
