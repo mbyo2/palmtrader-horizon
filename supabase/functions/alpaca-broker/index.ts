@@ -20,6 +20,7 @@ const MARKET_DATA_BASE = IS_SANDBOX
   : 'https://data.alpaca.markets';
 
 let oauthToken: { token: string; expires: number } | null = null;
+let oauthUnavailable = false;
 
 function basicAuthHeader() {
   const token = btoa(`${ALPACA_KEY}:${ALPACA_SECRET}`);
@@ -27,6 +28,7 @@ function basicAuthHeader() {
 }
 
 async function getAccessToken() {
+  if (oauthUnavailable) throw new Error('OAuth client_credentials unavailable for current Alpaca credentials');
   if (oauthToken && oauthToken.expires > Date.now() + 30_000) return oauthToken.token;
   const body = new URLSearchParams({
     grant_type: 'client_credentials',
@@ -45,8 +47,10 @@ async function getAccessToken() {
   let payload: any = null;
   try { payload = text ? JSON.parse(text) : null; } catch { payload = { raw: text }; }
   if (!res.ok || !payload?.access_token) {
+    if (text.includes('invalid_client')) oauthUnavailable = true;
     throw new Error(`Alpaca token ${res.status}: ${typeof payload === 'string' ? payload : JSON.stringify(payload)}`);
   }
+  oauthUnavailable = false;
   oauthToken = { token: payload.access_token, expires: Date.now() + Number(payload.expires_in ?? 900) * 1000 };
   return oauthToken.token;
 }
