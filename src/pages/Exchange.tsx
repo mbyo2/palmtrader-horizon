@@ -8,6 +8,7 @@ import { EarnStaking } from '@/components/Exchange/EarnStaking';
 import { FuturesTrading } from '@/components/Exchange/FuturesTrading';
 import { Launchpad } from '@/components/Exchange/Launchpad';
 import CopyTradingSystem from '@/components/Social/CopyTradingSystem';
+import CryptoOnchainPanel from '@/components/Exchange/CryptoOnchainPanel';
 import { 
   Wallet, 
   Users, 
@@ -16,7 +17,8 @@ import {
   Percent, 
   Rocket,
   BarChart3,
-  Copy
+  Copy,
+  Bitcoin
 } from 'lucide-react';
 
 const Exchange = () => {
@@ -24,6 +26,7 @@ const Exchange = () => {
 
   const tabs = [
     { id: 'wallet', label: 'Wallet', icon: Wallet },
+    { id: 'onchain', label: 'On-chain', icon: Bitcoin },
     { id: 'spot', label: 'Spot', icon: TrendingUp },
     { id: 'p2p', label: 'P2P', icon: Users },
     { id: 'convert', label: 'Convert', icon: ArrowDownUp },
@@ -54,6 +57,10 @@ const Exchange = () => {
         <div className="mt-6 space-y-6">
           <TabsContent value="wallet">
             <WalletOverview />
+          </TabsContent>
+
+          <TabsContent value="onchain">
+            <CryptoOnchainPanel />
           </TabsContent>
 
           <TabsContent value="spot">
