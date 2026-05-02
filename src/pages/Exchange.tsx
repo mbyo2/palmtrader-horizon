@@ -8,6 +8,7 @@ import { EarnStaking } from '@/components/Exchange/EarnStaking';
 import { FuturesTrading } from '@/components/Exchange/FuturesTrading';
 import { Launchpad } from '@/components/Exchange/Launchpad';
 import CopyTradingSystem from '@/components/Social/CopyTradingSystem';
+import CryptoOnchainPanel from '@/components/Exchange/CryptoOnchainPanel';
 import { 
   Wallet, 
   Users, 
@@ -16,7 +17,8 @@ import {
   Percent, 
   Rocket,
   BarChart3,
-  Copy
+  Copy,
+  Bitcoin
 } from 'lucide-react';
 
 const Exchange = () => {
