@@ -59,6 +59,10 @@ const Exchange = () => {
             <WalletOverview />
           </TabsContent>
 
+          <TabsContent value="onchain">
+            <CryptoOnchainPanel />
+          </TabsContent>
+
           <TabsContent value="spot">
             <SpotTrading />
           </TabsContent>
