@@ -591,6 +591,105 @@ export type Database = {
         }
         Relationships: []
       }
+      crypto_addresses: {
+        Row: {
+          address: string
+          created_at: string
+          currency: string
+          derivation_path: string
+          id: string
+          network: string
+          user_id: string
+        }
+        Insert: {
+          address: string
+          created_at?: string
+          currency: string
+          derivation_path: string
+          id?: string
+          network: string
+          user_id: string
+        }
+        Update: {
+          address?: string
+          created_at?: string
+          currency?: string
+          derivation_path?: string
+          id?: string
+          network?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      crypto_deposits: {
+        Row: {
+          address: string
+          amount: number
+          confirmations: number
+          created_at: string
+          credited_at: string | null
+          currency: string
+          id: string
+          network: string
+          status: string
+          tx_hash: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address: string
+          amount: number
+          confirmations?: number
+          created_at?: string
+          credited_at?: string | null
+          currency: string
+          id?: string
+          network: string
+          status?: string
+          tx_hash: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string
+          amount?: number
+          confirmations?: number
+          created_at?: string
+          credited_at?: string | null
+          currency?: string
+          id?: string
+          network?: string
+          status?: string
+          tx_hash?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      crypto_wallet_seeds: {
+        Row: {
+          auth_tag: string
+          created_at: string
+          encrypted_seed: string
+          iv: string
+          user_id: string
+        }
+        Insert: {
+          auth_tag: string
+          created_at?: string
+          encrypted_seed: string
+          iv: string
+          user_id: string
+        }
+        Update: {
+          auth_tag?: string
+          created_at?: string
+          encrypted_seed?: string
+          iv?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       crypto_wallets: {
         Row: {
           available_balance: number
@@ -621,6 +720,57 @@ export type Database = {
           updated_at?: string
           user_id?: string
           wallet_type?: Database["public"]["Enums"]["wallet_type"]
+        }
+        Relationships: []
+      }
+      crypto_withdrawals: {
+        Row: {
+          amount: number
+          broadcast_at: string | null
+          created_at: string
+          currency: string
+          failure_reason: string | null
+          fee: number
+          id: string
+          network: string
+          requested_at: string
+          status: string
+          to_address: string
+          tx_hash: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          broadcast_at?: string | null
+          created_at?: string
+          currency: string
+          failure_reason?: string | null
+          fee?: number
+          id?: string
+          network: string
+          requested_at?: string
+          status?: string
+          to_address: string
+          tx_hash?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          broadcast_at?: string | null
+          created_at?: string
+          currency?: string
+          failure_reason?: string | null
+          fee?: number
+          id?: string
+          network?: string
+          requested_at?: string
+          status?: string
+          to_address?: string
+          tx_hash?: string | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
