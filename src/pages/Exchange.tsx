@@ -26,6 +26,7 @@ const Exchange = () => {
 
   const tabs = [
     { id: 'wallet', label: 'Wallet', icon: Wallet },
+    { id: 'onchain', label: 'On-chain', icon: Bitcoin },
     { id: 'spot', label: 'Spot', icon: TrendingUp },
     { id: 'p2p', label: 'P2P', icon: Users },
     { id: 'convert', label: 'Convert', icon: ArrowDownUp },
