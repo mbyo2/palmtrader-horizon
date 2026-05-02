@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.trading-api]
 verify_jwt = false
+
+[functions.crypto-wallet]
+verify_jwt = true
