@@ -2,6 +2,7 @@
 // Uses BIP39/BIP32 derivation with AES-256-GCM seed encryption.
 // All chain queries use free public RPC endpoints — no paid keys required.
 
+import { Buffer } from "node:buffer";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import * as bip39 from "npm:bip39@3.1.0";
 import { HDKey } from "npm:@scure/bip32@1.4.0";
