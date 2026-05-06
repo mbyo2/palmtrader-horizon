@@ -8,6 +8,8 @@ import StockSelector from "./StockSelector";
 import StockInfo from "./StockInfo";
 import OrderForm from "./OrderForm";
 import RealTimeChart from "./RealTimeChart";
+import DemoPaperTradingPanel from "./DemoPaperTradingPanel";
+import { useTradingAccount } from "@/hooks/useTradingAccount";
 import { WalletBalanceDisplay } from "./WalletBalanceDisplay";
 import { ConnectionStatusIndicator } from "./ConnectionStatusIndicator";
 import { useTrading } from "@/hooks/useTrading";
