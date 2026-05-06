@@ -22,6 +22,7 @@ import { toast } from "sonner";
 
 const TradingInterface = () => {
   const { user } = useAuth();
+  const { isDemo } = useTradingAccount();
   const [livePrice, setLivePrice] = useState<number | null>(null);
   const [quickTradeAmount, setQuickTradeAmount] = useState<number>(100);
   
