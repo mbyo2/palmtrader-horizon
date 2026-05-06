@@ -2,6 +2,7 @@ import { useProtectedRoute } from "@/hooks/useProtectedRoute";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RealTimePortfolioSummary } from "@/components/Portfolio/RealTimePortfolioSummary";
 import { RealTimePositionsList } from "@/components/Portfolio/RealTimePositionsList";
+import DemoPortfolio from "@/components/Portfolio/DemoPortfolio";
 import EnhancedOrderHistory from "@/components/Trading/EnhancedOrderHistory";
 import RecurringInvestments from "@/components/Trading/RecurringInvestments";
 import WalletManager from "@/components/Trading/WalletManager";
@@ -131,8 +132,14 @@ const PortfolioContent = () => {
 
         {/* Portfolio Tab */}
         <TabsContent value="portfolio" className="space-y-6 sm:space-y-8 mt-4">
-          <RealTimePortfolioSummary />
-          <RealTimePositionsList />
+          {isDemo ? (
+            <DemoPortfolio />
+          ) : (
+            <>
+              <RealTimePortfolioSummary />
+              <RealTimePositionsList />
+            </>
+          )}
         </TabsContent>
 
         {/* Accounts Tab */}
