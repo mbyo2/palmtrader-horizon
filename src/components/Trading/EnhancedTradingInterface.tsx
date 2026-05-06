@@ -89,6 +89,9 @@ const EnhancedTradingInterface = () => {
         </div>
       </div>
 
+      {/* Demo (Alpaca paper) panel for demo accounts */}
+      {isDemo && <DemoPaperTradingPanel />}
+
       {/* Live Alpaca panel — shown when on a live (non-demo) account */}
       {!isDemo && <AlpacaLivePanel />}
     </div>
