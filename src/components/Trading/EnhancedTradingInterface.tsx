@@ -11,6 +11,7 @@ import EnhancedOrderForm from "./EnhancedOrderForm";
 import RealTimePortfolioSummary from "./RealTimePortfolioSummary";
 import KYCStatusCard from "../KYC/KYCStatusCard";
 import AlpacaLivePanel from "./AlpacaLivePanel";
+import DemoPaperTradingPanel from "./DemoPaperTradingPanel";
 import { useTradingAccount } from "@/hooks/useTradingAccount";
 
 const EnhancedTradingInterface = () => {
