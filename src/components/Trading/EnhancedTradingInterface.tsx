@@ -11,6 +11,7 @@ import EnhancedOrderForm from "./EnhancedOrderForm";
 import RealTimePortfolioSummary from "./RealTimePortfolioSummary";
 import KYCStatusCard from "../KYC/KYCStatusCard";
 import AlpacaLivePanel from "./AlpacaLivePanel";
+import DemoPaperTradingPanel from "./DemoPaperTradingPanel";
 import { useTradingAccount } from "@/hooks/useTradingAccount";
 
 const EnhancedTradingInterface = () => {
@@ -87,6 +88,9 @@ const EnhancedTradingInterface = () => {
           />
         </div>
       </div>
+
+      {/* Demo (Alpaca paper) panel for demo accounts */}
+      {isDemo && <DemoPaperTradingPanel />}
 
       {/* Live Alpaca panel — shown when on a live (non-demo) account */}
       {!isDemo && <AlpacaLivePanel />}

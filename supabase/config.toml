@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.crypto-wallet]
 verify_jwt = true
+
+[functions.alpaca-paper]
+verify_jwt = true

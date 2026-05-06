@@ -8,6 +8,8 @@ import StockSelector from "./StockSelector";
 import StockInfo from "./StockInfo";
 import OrderForm from "./OrderForm";
 import RealTimeChart from "./RealTimeChart";
+import DemoPaperTradingPanel from "./DemoPaperTradingPanel";
+import { useTradingAccount } from "@/hooks/useTradingAccount";
 import { WalletBalanceDisplay } from "./WalletBalanceDisplay";
 import { ConnectionStatusIndicator } from "./ConnectionStatusIndicator";
 import { useTrading } from "@/hooks/useTrading";
@@ -20,6 +22,7 @@ import { toast } from "sonner";
 
 const TradingInterface = () => {
   const { user } = useAuth();
+  const { isDemo } = useTradingAccount();
   const [livePrice, setLivePrice] = useState<number | null>(null);
   const [quickTradeAmount, setQuickTradeAmount] = useState<number>(100);
   
@@ -69,6 +72,7 @@ const TradingInterface = () => {
   return (
     <TradingErrorBoundary>
       <div className="space-y-4">
+        {isDemo && <DemoPaperTradingPanel />}
         {/* Header bar */}
         <div className="flex items-center justify-between flex-wrap gap-2">
           <WalletBalanceDisplay />

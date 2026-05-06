@@ -72,13 +72,14 @@ export const useEnhancedTrading = () => {
     // Allow demo trading for new users - don't block on KYC
     // Just apply lower limits for unverified users
 
-    // Check trading limits
+    // Check trading limits (skip if KYC status not yet loaded)
+    const dailyLimit = kycStatus?.tradingLimits?.dailyLimit;
     const orderValue = orderRequest.quantity * (orderRequest.limitPrice || 0);
-    if (orderValue > kycStatus.tradingLimits.dailyLimit) {
+    if (dailyLimit && orderValue > dailyLimit) {
       return {
         success: false,
         status: 'rejected',
-        error: `Order exceeds daily trading limit of $${kycStatus.tradingLimits.dailyLimit.toLocaleString()}`,
+        error: `Order exceeds daily trading limit of $${dailyLimit.toLocaleString()}`,
         timestamp: Date.now()
       };
     }
