@@ -55,6 +55,7 @@ const DemoPortfolio = () => {
   const [period, setPeriod] = useState<Period>("1M");
   const [history, setHistory] = useState<{ timestamp: number[]; equity: number[]; profit_loss: number[] } | null>(null);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [chartView, setChartView] = useState<"equity" | "pl">("equity");
 
   const load = async () => {
     setLoading(true);
