@@ -4,9 +4,19 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlpacaPaperService } from "@/services/AlpacaPaperService";
-import { TrendingUp, TrendingDown, RefreshCw, Wallet, PieChart, Activity } from "lucide-react";
+import { TrendingUp, TrendingDown, RefreshCw, Wallet, PieChart, Activity, LineChart as LineIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  ReferenceLine,
+} from "recharts";
 
 interface PaperAccount {
   cash: string;
@@ -30,6 +40,8 @@ interface PaperPosition {
   unrealized_intraday_plpc: string;
 }
 
+type Period = "1D" | "1W" | "1M";
+
 const fmt = (v?: string | number) =>
   v != null ? `$${Number(v).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—";
 
@@ -38,18 +50,39 @@ const pct = (v?: string | number) => (v != null ? `${Number(v) >= 0 ? "+" : ""}$
 const DemoPortfolio = () => {
   const [account, setAccount] = useState<PaperAccount | null>(null);
   const [positions, setPositions] = useState<PaperPosition[]>([]);
+  const [realized, setRealized] = useState<{ total: number; bySymbol: Record<string, number> }>({ total: 0, bySymbol: {} });
   const [loading, setLoading] = useState(true);
+  const [period, setPeriod] = useState<Period>("1M");
+  const [history, setHistory] = useState<{ timestamp: number[]; equity: number[]; profit_loss: number[] } | null>(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   const load = async () => {
     setLoading(true);
     try {
-      const [acc, pos] = await Promise.all([AlpacaPaperService.getAccount(), AlpacaPaperService.getPositions()]);
+      const [acc, pos, rp] = await Promise.all([
+        AlpacaPaperService.getAccount(),
+        AlpacaPaperService.getPositions(),
+        AlpacaPaperService.getRealizedPL().catch(() => ({ realized_total: 0, realized_by_symbol: {} } as any)),
+      ]);
       setAccount(acc.account);
       setPositions((pos.positions ?? []) as PaperPosition[]);
+      setRealized({ total: Number(rp.realized_total ?? 0), bySymbol: rp.realized_by_symbol ?? {} });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to load demo portfolio");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadHistory = async (p: Period) => {
+    setHistoryLoading(true);
+    try {
+      const res = await AlpacaPaperService.getPortfolioHistory(p);
+      setHistory(res.history);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to load performance history");
+    } finally {
+      setHistoryLoading(false);
     }
   };
 
@@ -59,6 +92,10 @@ const DemoPortfolio = () => {
     return () => clearInterval(i);
   }, []);
 
+  useEffect(() => {
+    loadHistory(period);
+  }, [period]);
+
   const summary = useMemo(() => {
     if (!account) return null;
     const equity = Number(account.equity);
@@ -66,10 +103,33 @@ const DemoPortfolio = () => {
     const dayChange = equity - lastEquity;
     const dayChangePct = lastEquity > 0 ? (dayChange / lastEquity) * 100 : 0;
     const totalCost = positions.reduce((sum, p) => sum + Number(p.cost_basis), 0);
-    const totalPL = positions.reduce((sum, p) => sum + Number(p.unrealized_pl), 0);
-    const totalPLPct = totalCost > 0 ? (totalPL / totalCost) * 100 : 0;
-    return { equity, dayChange, dayChangePct, totalCost, totalPL, totalPLPct };
-  }, [account, positions]);
+    const unrealized = positions.reduce((sum, p) => sum + Number(p.unrealized_pl), 0);
+    const unrealizedPct = totalCost > 0 ? (unrealized / totalCost) * 100 : 0;
+    const totalPL = unrealized + realized.total;
+    return { equity, dayChange, dayChangePct, totalCost, unrealized, unrealizedPct, realized: realized.total, totalPL };
+  }, [account, positions, realized]);
+
+  const chartData = useMemo(() => {
+    if (!history?.timestamp?.length) return [];
+    return history.timestamp.map((ts, i) => ({
+      ts: ts * 1000,
+      label:
+        period === "1D"
+          ? new Date(ts * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+          : new Date(ts * 1000).toLocaleDateString([], { month: "short", day: "numeric" }),
+      equity: Number(history.equity[i] ?? 0),
+      pl: Number(history.profit_loss[i] ?? 0),
+    })).filter((d) => d.equity > 0);
+  }, [history, period]);
+
+  const chartStats = useMemo(() => {
+    if (chartData.length < 2) return null;
+    const start = chartData[0].equity;
+    const end = chartData[chartData.length - 1].equity;
+    const change = end - start;
+    const changePct = start > 0 ? (change / start) * 100 : 0;
+    return { start, end, change, changePct };
+  }, [chartData]);
 
   if (loading && !account) {
     return (
@@ -111,12 +171,97 @@ const DemoPortfolio = () => {
             <Stat
               label="Total P&L"
               value={`${(summary?.totalPL ?? 0) >= 0 ? "+" : ""}${fmt(Math.abs(summary?.totalPL ?? 0))}`}
-              sub={`${(summary?.totalPLPct ?? 0) >= 0 ? "+" : ""}${(summary?.totalPLPct ?? 0).toFixed(2)}%`}
+              sub="Realized + Unrealized"
               positive={(summary?.totalPL ?? 0) >= 0}
               icon={<Activity className="h-4 w-4" />}
             />
             <Stat label="Cash" value={fmt(account?.cash)} sub={`Buying power: ${fmt(account?.buying_power)}`} />
           </div>
+
+          {/* P&L breakdown */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 pt-4 border-t">
+            <Stat
+              label="Unrealized P&L"
+              value={`${(summary?.unrealized ?? 0) >= 0 ? "+" : ""}${fmt(Math.abs(summary?.unrealized ?? 0))}`}
+              sub={`${(summary?.unrealizedPct ?? 0) >= 0 ? "+" : ""}${(summary?.unrealizedPct ?? 0).toFixed(2)}% on cost`}
+              positive={(summary?.unrealized ?? 0) >= 0}
+            />
+            <Stat
+              label="Realized P&L"
+              value={`${(summary?.realized ?? 0) >= 0 ? "+" : ""}${fmt(Math.abs(summary?.realized ?? 0))}`}
+              sub="From closed positions (FIFO)"
+              positive={(summary?.realized ?? 0) >= 0}
+            />
+            <Stat
+              label="Cost Basis"
+              value={fmt(summary?.totalCost)}
+              sub={`${positions.length} open position${positions.length === 1 ? "" : "s"}`}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Performance chart */}
+      <Card>
+        <CardHeader>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <LineIcon className="h-5 w-5 text-primary" />
+                Performance
+              </CardTitle>
+              <CardDescription>
+                {chartStats
+                  ? `${chartStats.change >= 0 ? "+" : ""}${fmt(Math.abs(chartStats.change))} (${chartStats.changePct >= 0 ? "+" : ""}${chartStats.changePct.toFixed(2)}%) over ${period}`
+                  : "Equity history from Alpaca paper account"}
+              </CardDescription>
+            </div>
+            <div className="flex gap-1">
+              {(["1D", "1W", "1M"] as Period[]).map((p) => (
+                <Button key={p} size="sm" variant={p === period ? "default" : "outline"} onClick={() => setPeriod(p)}>
+                  {p}
+                </Button>
+              ))}
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {historyLoading && !chartData.length ? (
+            <Skeleton className="h-64 w-full" />
+          ) : chartData.length < 2 ? (
+            <div className="h-64 flex items-center justify-center text-sm text-muted-foreground">
+              No equity history yet for this period
+            </div>
+          ) : (
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="label" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" minTickGap={30} />
+                  <YAxis
+                    domain={["auto", "auto"]}
+                    tick={{ fontSize: 11 }}
+                    stroke="hsl(var(--muted-foreground))"
+                    tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
+                  />
+                  <Tooltip
+                    contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}
+                    formatter={(v: number) => fmt(v)}
+                    labelFormatter={(l) => l}
+                  />
+                  {chartStats && <ReferenceLine y={chartStats.start} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" />}
+                  <Line
+                    type="monotone"
+                    dataKey="equity"
+                    name="Equity"
+                    stroke={(chartStats?.change ?? 0) >= 0 ? "hsl(var(--success, 142 76% 36%))" : "hsl(var(--destructive))"}
+                    strokeWidth={2}
+                    dot={false}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -133,7 +278,6 @@ const DemoPortfolio = () => {
             </p>
           ) : (
             <div className="space-y-2">
-              {/* Header */}
               <div className="hidden md:grid grid-cols-12 gap-2 px-3 py-2 text-xs text-muted-foreground border-b">
                 <div className="col-span-2">Symbol</div>
                 <div className="col-span-2 text-right">Quantity</div>
@@ -145,12 +289,20 @@ const DemoPortfolio = () => {
               {positions.map((p) => {
                 const pl = Number(p.unrealized_pl);
                 const positive = pl >= 0;
+                const realizedForSym = realized.bySymbol[p.symbol];
                 return (
                   <div
                     key={p.symbol}
                     className="grid grid-cols-2 md:grid-cols-12 gap-2 px-3 py-3 rounded-md border items-center hover:bg-muted/50 transition-colors"
                   >
-                    <div className="md:col-span-2 font-semibold">{p.symbol}</div>
+                    <div className="md:col-span-2 font-semibold">
+                      {p.symbol}
+                      {realizedForSym != null && Math.abs(realizedForSym) > 0.01 && (
+                        <div className={cn("text-xs font-normal", realizedForSym >= 0 ? "text-green-500" : "text-red-500")}>
+                          Realized: {realizedForSym >= 0 ? "+" : ""}{fmt(Math.abs(realizedForSym))}
+                        </div>
+                      )}
+                    </div>
                     <div className="md:col-span-2 text-right text-sm">{Number(p.qty).toFixed(Number(p.qty) % 1 ? 4 : 0)}</div>
                     <div className="md:col-span-2 text-right text-sm text-muted-foreground">{fmt(p.avg_entry_price)}</div>
                     <div className="md:col-span-2 text-right text-sm">{fmt(p.current_price)}</div>
