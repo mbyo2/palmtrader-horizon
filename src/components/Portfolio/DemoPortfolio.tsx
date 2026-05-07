@@ -47,6 +47,39 @@ const fmt = (v?: string | number) =>
 
 const pct = (v?: string | number) => (v != null ? `${Number(v) >= 0 ? "+" : ""}${(Number(v) * 100).toFixed(2)}%` : "—");
 
+const PREF_KEY = "demoPortfolio.chart";
+
+function readPref<T extends string>(param: "view" | "range", allowed: readonly T[], fallback: T): T {
+  if (typeof window === "undefined") return fallback;
+  try {
+    const url = new URL(window.location.href);
+    const fromUrl = url.searchParams.get(param);
+    if (fromUrl && (allowed as readonly string[]).includes(fromUrl)) return fromUrl as T;
+    const raw = window.localStorage.getItem(PREF_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as Record<string, string>;
+      const v = parsed?.[param];
+      if (v && (allowed as readonly string[]).includes(v)) return v as T;
+    }
+  } catch {
+    // ignore
+  }
+  return fallback;
+}
+
+function writePref(prefs: { view: string; range: string }) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(PREF_KEY, JSON.stringify(prefs));
+    const url = new URL(window.location.href);
+    url.searchParams.set("view", prefs.view);
+    url.searchParams.set("range", prefs.range);
+    window.history.replaceState({}, "", url.toString());
+  } catch {
+    // ignore
+  }
+}
+
 const DemoPortfolio = () => {
   const [account, setAccount] = useState<PaperAccount | null>(null);
   const [positions, setPositions] = useState<PaperPosition[]>([]);
