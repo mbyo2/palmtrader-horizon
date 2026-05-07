@@ -47,15 +47,53 @@ const fmt = (v?: string | number) =>
 
 const pct = (v?: string | number) => (v != null ? `${Number(v) >= 0 ? "+" : ""}${(Number(v) * 100).toFixed(2)}%` : "—");
 
+const PREF_KEY = "demoPortfolio.chart";
+
+function readPref<T extends string>(param: "view" | "range", allowed: readonly T[], fallback: T): T {
+  if (typeof window === "undefined") return fallback;
+  try {
+    const url = new URL(window.location.href);
+    const fromUrl = url.searchParams.get(param);
+    if (fromUrl && (allowed as readonly string[]).includes(fromUrl)) return fromUrl as T;
+    const raw = window.localStorage.getItem(PREF_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as Record<string, string>;
+      const v = parsed?.[param];
+      if (v && (allowed as readonly string[]).includes(v)) return v as T;
+    }
+  } catch {
+    // ignore
+  }
+  return fallback;
+}
+
+function writePref(prefs: { view: string; range: string }) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(PREF_KEY, JSON.stringify(prefs));
+    const url = new URL(window.location.href);
+    url.searchParams.set("view", prefs.view);
+    url.searchParams.set("range", prefs.range);
+    window.history.replaceState({}, "", url.toString());
+  } catch {
+    // ignore
+  }
+}
+
 const DemoPortfolio = () => {
   const [account, setAccount] = useState<PaperAccount | null>(null);
   const [positions, setPositions] = useState<PaperPosition[]>([]);
   const [realized, setRealized] = useState<{ total: number; bySymbol: Record<string, number> }>({ total: 0, bySymbol: {} });
   const [loading, setLoading] = useState(true);
-  const [period, setPeriod] = useState<Period>("1M");
+  const [period, setPeriod] = useState<Period>(() => readPref<Period>("range", ["1D", "1W", "1M"], "1M"));
   const [history, setHistory] = useState<{ timestamp: number[]; equity: number[]; profit_loss: number[] } | null>(null);
   const [historyLoading, setHistoryLoading] = useState(false);
-  const [chartView, setChartView] = useState<"equity" | "pl">("equity");
+  const [chartView, setChartView] = useState<"equity" | "pl">(() => readPref<"equity" | "pl">("view", ["equity", "pl"], "equity"));
+
+  // Persist preferences to URL + localStorage
+  useEffect(() => {
+    writePref({ view: chartView, range: period });
+  }, [chartView, period]);
 
   const load = async () => {
     setLoading(true);
