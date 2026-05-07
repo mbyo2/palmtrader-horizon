@@ -166,6 +166,55 @@ Deno.serve(async (req) => {
         return jsonResponse({ ok: true, clock });
       }
 
+      case 'get_portfolio_history': {
+        const period = String(body.period ?? '1M'); // 1D, 1W, 1M, 3M, 1A
+        const timeframe = String(body.timeframe ?? (period === '1D' ? '5Min' : period === '1W' ? '1H' : '1D'));
+        const qs = new URLSearchParams({ period, timeframe, extended_hours: 'true' });
+        const history = await paperFetch(`/v2/account/portfolio/history?${qs.toString()}`);
+        return jsonResponse({ ok: true, history });
+      }
+
+      case 'get_realized_pl': {
+        // Compute realized P&L (FIFO) from this user's mirrored paper trades
+        const { data: trades } = await adminClient
+          .from('trades')
+          .select('symbol, type, shares, price, created_at, status')
+          .eq('user_id', userId)
+          .eq('broker', 'alpaca_paper')
+          .in('status', ['completed', 'filled'])
+          .order('created_at', { ascending: true });
+
+        const lots: Record<string, Array<{ qty: number; price: number }>> = {};
+        const realizedBySymbol: Record<string, number> = {};
+        let realizedTotal = 0;
+
+        for (const t of (trades ?? []) as any[]) {
+          const sym = t.symbol;
+          const qty = Number(t.shares);
+          const price = Number(t.price);
+          if (!Number.isFinite(qty) || qty <= 0 || !Number.isFinite(price)) continue;
+          if (!lots[sym]) lots[sym] = [];
+
+          if (t.type === 'buy') {
+            lots[sym].push({ qty, price });
+          } else if (t.type === 'sell') {
+            let remaining = qty;
+            while (remaining > 0 && lots[sym].length > 0) {
+              const lot = lots[sym][0];
+              const used = Math.min(lot.qty, remaining);
+              const pnl = (price - lot.price) * used;
+              realizedBySymbol[sym] = (realizedBySymbol[sym] ?? 0) + pnl;
+              realizedTotal += pnl;
+              lot.qty -= used;
+              remaining -= used;
+              if (lot.qty <= 0) lots[sym].shift();
+            }
+          }
+        }
+
+        return jsonResponse({ ok: true, realized_total: realizedTotal, realized_by_symbol: realizedBySymbol });
+      }
+
       default:
         return jsonResponse({ error: `Unknown action: ${action}` }, 400);
     }
