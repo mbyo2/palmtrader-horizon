@@ -27,4 +27,11 @@ export const AlpacaPaperService = {
   cancelOrder: (order_id: string) => call("cancel_order", { order_id }),
   getQuote: (symbol: string) => call<{ ok: boolean; quote: any }>("get_quote", { symbol }),
   getClock: () => call<{ ok: boolean; clock: { is_open: boolean; next_open: string; next_close: string } }>("get_clock"),
+  getPortfolioHistory: (period: "1D" | "1W" | "1M" | "3M" | "1A" = "1M", timeframe?: string) =>
+    call<{ ok: boolean; history: { timestamp: number[]; equity: number[]; profit_loss: number[]; profit_loss_pct: number[]; base_value: number; timeframe: string } }>(
+      "get_portfolio_history",
+      timeframe ? { period, timeframe } : { period }
+    ),
+  getRealizedPL: () =>
+    call<{ ok: boolean; realized_total: number; realized_by_symbol: Record<string, number> }>("get_realized_pl"),
 };
