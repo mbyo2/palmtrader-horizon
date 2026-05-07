@@ -52,10 +52,15 @@ const DemoPortfolio = () => {
   const [positions, setPositions] = useState<PaperPosition[]>([]);
   const [realized, setRealized] = useState<{ total: number; bySymbol: Record<string, number> }>({ total: 0, bySymbol: {} });
   const [loading, setLoading] = useState(true);
-  const [period, setPeriod] = useState<Period>("1M");
+  const [period, setPeriod] = useState<Period>(() => readPref<Period>("range", ["1D", "1W", "1M"], "1M"));
   const [history, setHistory] = useState<{ timestamp: number[]; equity: number[]; profit_loss: number[] } | null>(null);
   const [historyLoading, setHistoryLoading] = useState(false);
-  const [chartView, setChartView] = useState<"equity" | "pl">("equity");
+  const [chartView, setChartView] = useState<"equity" | "pl">(() => readPref<"equity" | "pl">("view", ["equity", "pl"], "equity"));
+
+  // Persist preferences to URL + localStorage
+  useEffect(() => {
+    writePref({ view: chartView, range: period });
+  }, [chartView, period]);
 
   const load = async () => {
     setLoading(true);
