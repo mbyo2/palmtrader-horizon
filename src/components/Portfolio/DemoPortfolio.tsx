@@ -214,15 +214,35 @@ const DemoPortfolio = () => {
               <CardDescription>
                 {chartStats
                   ? `${chartStats.change >= 0 ? "+" : ""}${fmt(Math.abs(chartStats.change))} (${chartStats.changePct >= 0 ? "+" : ""}${chartStats.changePct.toFixed(2)}%) over ${period}`
-                  : "Equity history from Alpaca paper account"}
+                  : `${chartView === "equity" ? "Equity" : "Profit/Loss"} history from Alpaca paper account`}
               </CardDescription>
             </div>
-            <div className="flex gap-1">
-              {(["1D", "1W", "1M"] as Period[]).map((p) => (
-                <Button key={p} size="sm" variant={p === period ? "default" : "outline"} onClick={() => setPeriod(p)}>
-                  {p}
+            <div className="flex flex-wrap gap-2">
+              <div className="flex gap-1 rounded-md border p-0.5">
+                <Button
+                  size="sm"
+                  variant={chartView === "equity" ? "default" : "ghost"}
+                  className="h-7 px-2 text-xs"
+                  onClick={() => setChartView("equity")}
+                >
+                  Equity
                 </Button>
-              ))}
+                <Button
+                  size="sm"
+                  variant={chartView === "pl" ? "default" : "ghost"}
+                  className="h-7 px-2 text-xs"
+                  onClick={() => setChartView("pl")}
+                >
+                  P&L
+                </Button>
+              </div>
+              <div className="flex gap-1">
+                {(["1D", "1W", "1M"] as Period[]).map((p) => (
+                  <Button key={p} size="sm" variant={p === period ? "default" : "outline"} onClick={() => setPeriod(p)}>
+                    {p}
+                  </Button>
+                ))}
+              </div>
             </div>
           </div>
         </CardHeader>
@@ -231,7 +251,7 @@ const DemoPortfolio = () => {
             <Skeleton className="h-64 w-full" />
           ) : chartData.length < 2 ? (
             <div className="h-64 flex items-center justify-center text-sm text-muted-foreground">
-              No equity history yet for this period
+              No {chartView === "equity" ? "equity" : "P&L"} history yet for this period
             </div>
           ) : (
             <div className="h-64">
@@ -243,18 +263,27 @@ const DemoPortfolio = () => {
                     domain={["auto", "auto"]}
                     tick={{ fontSize: 11 }}
                     stroke="hsl(var(--muted-foreground))"
-                    tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
+                    tickFormatter={(v) =>
+                      chartView === "equity"
+                        ? `$${(v / 1000).toFixed(0)}k`
+                        : `${v >= 0 ? "+" : "-"}$${Math.abs(v) >= 1000 ? `${(Math.abs(v) / 1000).toFixed(1)}k` : Math.abs(v).toFixed(0)}`
+                    }
                   />
                   <Tooltip
                     contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}
-                    formatter={(v: number) => fmt(v)}
+                    formatter={(v: number) => (chartView === "pl" && v < 0 ? `-${fmt(Math.abs(v))}` : fmt(v))}
                     labelFormatter={(l) => l}
                   />
-                  {chartStats && <ReferenceLine y={chartStats.start} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" />}
+                  {chartView === "equity" && chartStats && (
+                    <ReferenceLine y={chartStats.start} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" />
+                  )}
+                  {chartView === "pl" && (
+                    <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" />
+                  )}
                   <Line
                     type="monotone"
-                    dataKey="equity"
-                    name="Equity"
+                    dataKey={chartView === "equity" ? "equity" : "pl"}
+                    name={chartView === "equity" ? "Equity" : "P&L"}
                     stroke={(chartStats?.change ?? 0) >= 0 ? "hsl(var(--success, 142 76% 36%))" : "hsl(var(--destructive))"}
                     strokeWidth={2}
                     dot={false}
