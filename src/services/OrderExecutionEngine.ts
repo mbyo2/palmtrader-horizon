@@ -141,20 +141,24 @@ export class OrderExecutionEngine {
   }> {
     const orderValue = order.shares * order.price;
 
-    // Check position concentration (max 50% of portfolio per position)
+    // Check position concentration (max 95% of portfolio per position)
+    // Skip for first/early positions where portfolio is empty
     if (order.type === "buy") {
       const portfolioValue = await this.getPortfolioValue(order.userId);
-      const currentPosition = await PortfolioService.getPosition(order.userId, order.symbol);
-      const newPositionValue = (currentPosition?.currentValue || 0) + orderValue;
-      const totalValue = portfolioValue + orderValue;
-      const concentration = totalValue > 0 ? newPositionValue / totalValue : 0;
-      const maxConcentration = 0.5;
+      // Only enforce concentration once portfolio has meaningful value
+      if (portfolioValue > 1000) {
+        const currentPosition = await PortfolioService.getPosition(order.userId, order.symbol);
+        const newPositionValue = (currentPosition?.currentValue || 0) + orderValue;
+        const totalValue = portfolioValue + orderValue;
+        const concentration = totalValue > 0 ? newPositionValue / totalValue : 0;
+        const maxConcentration = 0.95;
 
-      if (concentration > maxConcentration) {
-        return { 
-          passed: false, 
-          error: `Position concentration (${(concentration * 100).toFixed(1)}%) exceeds limit (${(maxConcentration * 100)}%)` 
-        };
+        if (concentration > maxConcentration) {
+          return {
+            passed: false,
+            error: `Position concentration (${(concentration * 100).toFixed(1)}%) exceeds limit (${(maxConcentration * 100)}%)`
+          };
+        }
       }
     }
 
