@@ -36,6 +36,7 @@ const AdvancedTradingForm = ({ onOrderSubmit }: AdvancedOrderFormProps) => {
   const [stopLoss, setStopLoss] = useState<string>("");
   const [useAdvancedOrders, setUseAdvancedOrders] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [confirmSell, setConfirmSell] = useState(false);
 
   const { price: currentPrice, isLoading: isPriceLoading } = useRealTimePrice(symbol);
   const availableBalance = getAvailableBalance();
