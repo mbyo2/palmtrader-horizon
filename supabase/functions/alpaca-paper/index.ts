@@ -106,18 +106,22 @@ Deno.serve(async (req) => {
       }
 
       case 'place_order': {
-        const { symbol, qty, side, type = 'market', time_in_force = 'day', limit_price, stop_price } = body;
-        if (!symbol || !qty || !side) {
-          return jsonResponse({ error: 'symbol, qty and side are required' }, 400);
+        const { symbol, qty, notional, side, type = 'market', time_in_force = 'day', limit_price, stop_price } = body;
+        if (!symbol || !side || (qty == null && notional == null)) {
+          return jsonResponse({ error: 'symbol, side and (qty or notional) are required' }, 400);
         }
 
         const payload: Record<string, unknown> = {
           symbol: String(symbol).toUpperCase(),
-          qty: String(qty),
           side,
           type,
           time_in_force,
         };
+        if (notional != null) {
+          payload.notional = String(notional);
+        } else {
+          payload.qty = String(qty);
+        }
         if (limit_price != null) payload.limit_price = String(limit_price);
         if (stop_price != null) payload.stop_price = String(stop_price);
 
@@ -127,20 +131,23 @@ Deno.serve(async (req) => {
         });
 
         const filledPrice = Number(order.filled_avg_price ?? limit_price ?? 0);
-        const filledQty = Number(order.filled_qty ?? qty);
+        const filledQty = Number(order.filled_qty ?? qty ?? (notional && filledPrice ? Number(notional) / filledPrice : 0));
+        const recordedShares = filledQty || (qty != null ? Number(qty) : 0);
+        const recordedPrice = filledPrice || Number(limit_price ?? 0);
 
         // Mirror into trades for UI history
         await adminClient.from('trades').insert({
           user_id: userId,
           symbol: payload.symbol,
           type: side,
-          shares: Number(qty),
-          price: filledPrice || Number(limit_price ?? 0),
-          total_amount: (filledPrice || Number(limit_price ?? 0)) * Number(qty),
+          shares: recordedShares,
+          price: recordedPrice,
+          total_amount: notional != null ? Number(notional) : recordedShares * recordedPrice,
           status: order.status === 'filled' ? 'completed' : (order.status ?? 'pending'),
           order_type: type,
           broker: 'alpaca_paper',
           alpaca_order_id: order.id,
+          is_fractional: notional != null || (recordedShares % 1 !== 0),
         } as any);
 
         return jsonResponse({ ok: true, order });

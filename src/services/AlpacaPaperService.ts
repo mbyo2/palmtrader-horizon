@@ -2,7 +2,8 @@ import { supabase } from "@/integrations/supabase/client";
 
 export interface PaperOrderInput {
   symbol: string;
-  qty: number;
+  qty?: number;
+  notional?: number;
   side: "buy" | "sell";
   type?: "market" | "limit" | "stop" | "stop_limit";
   time_in_force?: "day" | "gtc" | "ioc" | "fok";

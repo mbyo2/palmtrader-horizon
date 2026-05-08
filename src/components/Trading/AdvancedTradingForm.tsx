@@ -13,6 +13,7 @@ import { useTradingAccount } from "@/hooks/useTradingAccount";
 import { useRealTimePrice } from "@/hooks/useRealTimePrice";
 import { useAuth } from "@/hooks/useAuth";
 import { OrderExecutionEngine } from "@/services/OrderExecutionEngine";
+import { AlpacaPaperService } from "@/services/AlpacaPaperService";
 import StockSelector from "./StockSelector";
 import { toast } from "sonner";
 
@@ -92,6 +93,18 @@ const AdvancedTradingForm = ({ onOrderSubmit }: AdvancedOrderFormProps) => {
           accountId: activeAccount.id
         };
         await onOrderSubmit(order);
+      } else if (isDemo) {
+        // Route demo through Alpaca paper
+        const res = await AlpacaPaperService.placeOrder({
+          symbol,
+          qty: quantity,
+          side,
+          type: orderType,
+          time_in_force: timeInForce,
+          limit_price: limitPrice ? parseFloat(limitPrice) : undefined,
+          stop_price: stopPrice ? parseFloat(stopPrice) : undefined,
+        });
+        toast.success(`${side === 'buy' ? 'Buy' : 'Sell'} ${quantity} ${symbol} — ${res.order.status}`);
       } else {
         const result = await OrderExecutionEngine.executeOrder({
           userId: user.id,
@@ -118,7 +131,8 @@ const AdvancedTradingForm = ({ onOrderSubmit }: AdvancedOrderFormProps) => {
         }
       }
     } catch (error) {
-      toast.error("Failed to place order");
+      const msg = error instanceof Error ? error.message : "Failed to place order";
+      toast.error(msg);
       console.error("Order error:", error);
     } finally {
       setIsSubmitting(false);
