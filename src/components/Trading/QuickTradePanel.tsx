@@ -11,6 +11,7 @@ import { OrderExecutionEngine } from "@/services/OrderExecutionEngine";
 import { AlpacaPaperService } from "@/services/AlpacaPaperService";
 import { TrendingUp, TrendingDown, Zap, AlertTriangle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import SellConfirmDialog from "./SellConfirmDialog";
 
 interface QuickTradePanelProps {
   symbol: string;
