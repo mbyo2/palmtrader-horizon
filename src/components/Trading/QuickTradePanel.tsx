@@ -28,6 +28,7 @@ const QuickTradePanel = ({ symbol, onTrade }: QuickTradePanelProps) => {
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [customAmount, setCustomAmount] = useState("");
   const [isExecuting, setIsExecuting] = useState(false);
+  const [confirmSell, setConfirmSell] = useState(false);
 
   const tradeAmount = selectedAmount || parseFloat(customAmount) || 0;
   const availableBalance = getAvailableBalance();
