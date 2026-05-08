@@ -229,7 +229,7 @@ const QuickTradePanel = ({ symbol, onTrade }: QuickTradePanelProps) => {
             size="lg"
             variant="destructive"
             disabled={!tradeAmount || isExecuting || !price}
-            onClick={() => handleQuickTrade('sell')}
+            onClick={() => setConfirmSell(true)}
           >
             {isExecuting ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -240,6 +240,21 @@ const QuickTradePanel = ({ symbol, onTrade }: QuickTradePanelProps) => {
           </Button>
         </div>
       </CardContent>
+
+      <SellConfirmDialog
+        open={confirmSell}
+        onOpenChange={setConfirmSell}
+        symbol={symbol}
+        side="sell"
+        notional={tradeAmount}
+        price={price}
+        isDemo={isDemo}
+        isSubmitting={isExecuting}
+        onConfirm={async () => {
+          setConfirmSell(false);
+          await handleQuickTrade('sell');
+        }}
+      />
     </Card>
   );
 };
