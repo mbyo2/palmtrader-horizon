@@ -58,6 +58,21 @@ const QuickTradePanel = ({ symbol, onTrade }: QuickTradePanelProps) => {
     try {
       if (onTrade) {
         await onTrade(type, tradeAmount);
+      } else if (isDemo) {
+        // Route demo orders through Alpaca paper trading using notional ($) amounts
+        const res = await AlpacaPaperService.placeOrder({
+          symbol,
+          notional: Number(tradeAmount.toFixed(2)),
+          side: type,
+          type: "market",
+          time_in_force: "day",
+        });
+        toast.success(
+          `${type === 'buy' ? 'Bought' : 'Sold'} $${tradeAmount.toLocaleString()} of ${symbol} (${res.order.status})`
+        );
+        queryClient.invalidateQueries({ queryKey: ["paperAccount"] });
+        queryClient.invalidateQueries({ queryKey: ["paperPositions"] });
+        queryClient.invalidateQueries({ queryKey: ["portfolio"] });
       } else {
         const result = await OrderExecutionEngine.executeOrder({
           userId: user.id,
@@ -83,7 +98,8 @@ const QuickTradePanel = ({ symbol, onTrade }: QuickTradePanelProps) => {
         }
       }
     } catch (error) {
-      toast.error("Trade execution failed");
+      const msg = error instanceof Error ? error.message : "Trade execution failed";
+      toast.error(msg);
       console.error("Trade error:", error);
     } finally {
       setIsExecuting(false);
