@@ -341,7 +341,10 @@ const AdvancedTradingForm = ({ onOrderSubmit }: AdvancedOrderFormProps) => {
 
         {/* Submit Button */}
         <Button
-          onClick={handleSubmit}
+          onClick={() => {
+            if (side === 'sell') setConfirmSell(true);
+            else handleSubmit();
+          }}
           disabled={isSubmitting || (!canAfford && side === 'buy')}
           className={`w-full ${side === 'buy' ? 'bg-success hover:bg-success/90 text-success-foreground' : 'bg-destructive hover:bg-destructive/90 text-destructive-foreground'}`}
         >
@@ -349,6 +352,21 @@ const AdvancedTradingForm = ({ onOrderSubmit }: AdvancedOrderFormProps) => {
           {side === 'buy' ? 'Buy' : 'Sell'} {symbol}
         </Button>
       </CardContent>
+
+      <SellConfirmDialog
+        open={confirmSell}
+        onOpenChange={setConfirmSell}
+        symbol={symbol}
+        side="sell"
+        qty={quantity}
+        price={orderPrice || currentPrice}
+        isDemo={isDemo}
+        isSubmitting={isSubmitting}
+        onConfirm={async () => {
+          setConfirmSell(false);
+          await handleSubmit();
+        }}
+      />
     </Card>
   );
 };
