@@ -8,6 +8,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useRealTimePrice } from "@/hooks/useRealTimePrice";
 import { useAuth } from "@/hooks/useAuth";
 import { OrderExecutionEngine } from "@/services/OrderExecutionEngine";
+import { AlpacaPaperService } from "@/services/AlpacaPaperService";
 import { TrendingUp, TrendingDown, Zap, AlertTriangle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
