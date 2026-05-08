@@ -16,6 +16,7 @@ import { OrderExecutionEngine } from "@/services/OrderExecutionEngine";
 import { AlpacaPaperService } from "@/services/AlpacaPaperService";
 import StockSelector from "./StockSelector";
 import { toast } from "sonner";
+import SellConfirmDialog from "./SellConfirmDialog";
 
 interface AdvancedOrderFormProps {
   onOrderSubmit?: (order: any) => Promise<void>;
