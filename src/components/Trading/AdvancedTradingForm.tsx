@@ -13,6 +13,7 @@ import { useTradingAccount } from "@/hooks/useTradingAccount";
 import { useRealTimePrice } from "@/hooks/useRealTimePrice";
 import { useAuth } from "@/hooks/useAuth";
 import { OrderExecutionEngine } from "@/services/OrderExecutionEngine";
+import { AlpacaPaperService } from "@/services/AlpacaPaperService";
 import StockSelector from "./StockSelector";
 import { toast } from "sonner";
 
