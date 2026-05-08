@@ -16,6 +16,7 @@ import { OrderExecutionEngine } from "@/services/OrderExecutionEngine";
 import { AlpacaPaperService } from "@/services/AlpacaPaperService";
 import StockSelector from "./StockSelector";
 import { toast } from "sonner";
+import SellConfirmDialog from "./SellConfirmDialog";
 
 interface AdvancedOrderFormProps {
   onOrderSubmit?: (order: any) => Promise<void>;
@@ -35,6 +36,7 @@ const AdvancedTradingForm = ({ onOrderSubmit }: AdvancedOrderFormProps) => {
   const [stopLoss, setStopLoss] = useState<string>("");
   const [useAdvancedOrders, setUseAdvancedOrders] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [confirmSell, setConfirmSell] = useState(false);
 
   const { price: currentPrice, isLoading: isPriceLoading } = useRealTimePrice(symbol);
   const availableBalance = getAvailableBalance();
@@ -339,7 +341,10 @@ const AdvancedTradingForm = ({ onOrderSubmit }: AdvancedOrderFormProps) => {
 
         {/* Submit Button */}
         <Button
-          onClick={handleSubmit}
+          onClick={() => {
+            if (side === 'sell') setConfirmSell(true);
+            else handleSubmit();
+          }}
           disabled={isSubmitting || (!canAfford && side === 'buy')}
           className={`w-full ${side === 'buy' ? 'bg-success hover:bg-success/90 text-success-foreground' : 'bg-destructive hover:bg-destructive/90 text-destructive-foreground'}`}
         >
@@ -347,6 +352,21 @@ const AdvancedTradingForm = ({ onOrderSubmit }: AdvancedOrderFormProps) => {
           {side === 'buy' ? 'Buy' : 'Sell'} {symbol}
         </Button>
       </CardContent>
+
+      <SellConfirmDialog
+        open={confirmSell}
+        onOpenChange={setConfirmSell}
+        symbol={symbol}
+        side="sell"
+        qty={quantity}
+        price={orderPrice || currentPrice}
+        isDemo={isDemo}
+        isSubmitting={isSubmitting}
+        onConfirm={async () => {
+          setConfirmSell(false);
+          await handleSubmit();
+        }}
+      />
     </Card>
   );
 };

@@ -11,6 +11,7 @@ import { OrderExecutionEngine } from "@/services/OrderExecutionEngine";
 import { AlpacaPaperService } from "@/services/AlpacaPaperService";
 import { TrendingUp, TrendingDown, Zap, AlertTriangle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import SellConfirmDialog from "./SellConfirmDialog";
 
 interface QuickTradePanelProps {
   symbol: string;
@@ -27,6 +28,7 @@ const QuickTradePanel = ({ symbol, onTrade }: QuickTradePanelProps) => {
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [customAmount, setCustomAmount] = useState("");
   const [isExecuting, setIsExecuting] = useState(false);
+  const [confirmSell, setConfirmSell] = useState(false);
 
   const tradeAmount = selectedAmount || parseFloat(customAmount) || 0;
   const availableBalance = getAvailableBalance();
@@ -227,7 +229,7 @@ const QuickTradePanel = ({ symbol, onTrade }: QuickTradePanelProps) => {
             size="lg"
             variant="destructive"
             disabled={!tradeAmount || isExecuting || !price}
-            onClick={() => handleQuickTrade('sell')}
+            onClick={() => setConfirmSell(true)}
           >
             {isExecuting ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -238,6 +240,21 @@ const QuickTradePanel = ({ symbol, onTrade }: QuickTradePanelProps) => {
           </Button>
         </div>
       </CardContent>
+
+      <SellConfirmDialog
+        open={confirmSell}
+        onOpenChange={setConfirmSell}
+        symbol={symbol}
+        side="sell"
+        notional={tradeAmount}
+        price={price}
+        isDemo={isDemo}
+        isSubmitting={isExecuting}
+        onConfirm={async () => {
+          setConfirmSell(false);
+          await handleQuickTrade('sell');
+        }}
+      />
     </Card>
   );
 };
