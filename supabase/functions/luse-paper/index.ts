@@ -6,7 +6,7 @@
 //   - CSD fee: K10 flat
 // Trading hours: LuSE 10:00–15:00 CAT, Mon–Fri. Demo allows after-hours with a flag.
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
