@@ -33,6 +33,7 @@ const PortfolioContent = () => {
   const { price: currentSymbolPrice } = useRealTimePrice(selectedSymbol);
   const [showAccountSelector, setShowAccountSelector] = useState(false);
   const [tradingView, setTradingView] = useState<'quick' | 'advanced'>('quick');
+  const [market, setMarket] = useState<'us' | 'zm'>('zm');
 
   if (isAccountLoading) {
     return (
