@@ -32,3 +32,6 @@ verify_jwt = true
 
 [functions.alpaca-paper]
 verify_jwt = true
+
+[functions.luse-paper]
+verify_jwt = true
