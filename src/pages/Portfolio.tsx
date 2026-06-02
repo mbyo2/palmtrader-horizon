@@ -14,6 +14,7 @@ import AdvancedTradingForm from "@/components/Trading/AdvancedTradingForm";
 import PositionSizer from "@/components/Trading/PositionSizer";
 import RiskMetricsPanel from "@/components/Trading/RiskMetricsPanel";
 import AccountTypeSelector from "@/components/Trading/AccountTypeSelector";
+import ZambianPortfolio from "@/components/Portfolio/ZambianPortfolio";
 import TradingAccountsList from "@/components/Trading/TradingAccountsList";
 import RealTimeChart from "@/components/Trading/RealTimeChart";
 import StockSelector from "@/components/Trading/StockSelector";
