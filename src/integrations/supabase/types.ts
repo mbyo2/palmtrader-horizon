@@ -1316,6 +1316,183 @@ export type Database = {
         }
         Relationships: []
       }
+      luse_demo_accounts: {
+        Row: {
+          cash_balance: number
+          created_at: string
+          reserved_balance: number
+          starting_balance: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cash_balance?: number
+          created_at?: string
+          reserved_balance?: number
+          starting_balance?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cash_balance?: number
+          created_at?: string
+          reserved_balance?: number
+          starting_balance?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      luse_demo_positions: {
+        Row: {
+          average_price: number
+          created_at: string
+          id: string
+          realized_pnl: number
+          shares: number
+          symbol: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          average_price?: number
+          created_at?: string
+          id?: string
+          realized_pnl?: number
+          shares?: number
+          symbol: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          average_price?: number
+          created_at?: string
+          id?: string
+          realized_pnl?: number
+          shares?: number
+          symbol?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      luse_demo_trades: {
+        Row: {
+          brokerage_fee: number
+          csd_fee: number
+          executed_at: string
+          gross_amount: number
+          id: string
+          net_amount: number
+          price: number
+          realized_pnl: number
+          sec_levy: number
+          settlement_date: string
+          shares: number
+          side: string
+          status: string
+          symbol: string
+          total_fees: number
+          trade_date: string
+          user_id: string
+          vat: number
+        }
+        Insert: {
+          brokerage_fee?: number
+          csd_fee?: number
+          executed_at?: string
+          gross_amount: number
+          id?: string
+          net_amount: number
+          price: number
+          realized_pnl?: number
+          sec_levy?: number
+          settlement_date: string
+          shares: number
+          side: string
+          status?: string
+          symbol: string
+          total_fees?: number
+          trade_date?: string
+          user_id: string
+          vat?: number
+        }
+        Update: {
+          brokerage_fee?: number
+          csd_fee?: number
+          executed_at?: string
+          gross_amount?: number
+          id?: string
+          net_amount?: number
+          price?: number
+          realized_pnl?: number
+          sec_levy?: number
+          settlement_date?: string
+          shares?: number
+          side?: string
+          status?: string
+          symbol?: string
+          total_fees?: number
+          trade_date?: string
+          user_id?: string
+          vat?: number
+        }
+        Relationships: []
+      }
+      luse_listings: {
+        Row: {
+          company_name: string
+          created_at: string
+          currency: string
+          day_change_pct: number | null
+          id: string
+          is_active: boolean
+          last_price: number
+          lot_size: number
+          market_cap: number | null
+          previous_close: number
+          sector: string | null
+          shares_outstanding: number | null
+          symbol: string
+          tick_size: number
+          updated_at: string
+        }
+        Insert: {
+          company_name: string
+          created_at?: string
+          currency?: string
+          day_change_pct?: number | null
+          id?: string
+          is_active?: boolean
+          last_price: number
+          lot_size?: number
+          market_cap?: number | null
+          previous_close: number
+          sector?: string | null
+          shares_outstanding?: number | null
+          symbol: string
+          tick_size?: number
+          updated_at?: string
+        }
+        Update: {
+          company_name?: string
+          created_at?: string
+          currency?: string
+          day_change_pct?: number | null
+          id?: string
+          is_active?: boolean
+          last_price?: number
+          lot_size?: number
+          market_cap?: number | null
+          previous_close?: number
+          sector?: string | null
+          shares_outstanding?: number | null
+          symbol?: string
+          tick_size?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       market_data: {
         Row: {
           close: number | null
@@ -3212,6 +3389,7 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      reset_luse_demo: { Args: { p_user_id: string }; Returns: undefined }
       update_wallet_balance: {
         Args: {
           p_amount: number
