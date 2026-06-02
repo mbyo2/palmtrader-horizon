@@ -14,6 +14,7 @@ import AdvancedTradingForm from "@/components/Trading/AdvancedTradingForm";
 import PositionSizer from "@/components/Trading/PositionSizer";
 import RiskMetricsPanel from "@/components/Trading/RiskMetricsPanel";
 import AccountTypeSelector from "@/components/Trading/AccountTypeSelector";
+import ZambianPortfolio from "@/components/Portfolio/ZambianPortfolio";
 import TradingAccountsList from "@/components/Trading/TradingAccountsList";
 import RealTimeChart from "@/components/Trading/RealTimeChart";
 import StockSelector from "@/components/Trading/StockSelector";
@@ -32,6 +33,7 @@ const PortfolioContent = () => {
   const { price: currentSymbolPrice } = useRealTimePrice(selectedSymbol);
   const [showAccountSelector, setShowAccountSelector] = useState(false);
   const [tradingView, setTradingView] = useState<'quick' | 'advanced'>('quick');
+  const [market, setMarket] = useState<'us' | 'zm'>('zm');
 
   if (isAccountLoading) {
     return (
@@ -132,7 +134,28 @@ const PortfolioContent = () => {
 
         {/* Portfolio Tab */}
         <TabsContent value="portfolio" className="space-y-6 sm:space-y-8 mt-4">
-          {isDemo ? (
+          <div className="flex items-center gap-2">
+            <Button
+              variant={market === 'zm' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setMarket('zm')}
+            >
+              🇿🇲 Zambia (LuSE)
+            </Button>
+            <Button
+              variant={market === 'us' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setMarket('us')}
+            >
+              🇺🇸 US (Alpaca)
+            </Button>
+          </div>
+
+          {market === 'zm' ? (
+            <TradingErrorBoundary>
+              <ZambianPortfolio />
+            </TradingErrorBoundary>
+          ) : isDemo ? (
             <DemoPortfolio />
           ) : (
             <>
