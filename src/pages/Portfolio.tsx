@@ -134,7 +134,28 @@ const PortfolioContent = () => {
 
         {/* Portfolio Tab */}
         <TabsContent value="portfolio" className="space-y-6 sm:space-y-8 mt-4">
-          {isDemo ? (
+          <div className="flex items-center gap-2">
+            <Button
+              variant={market === 'zm' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setMarket('zm')}
+            >
+              🇿🇲 Zambia (LuSE)
+            </Button>
+            <Button
+              variant={market === 'us' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setMarket('us')}
+            >
+              🇺🇸 US (Alpaca)
+            </Button>
+          </div>
+
+          {market === 'zm' ? (
+            <TradingErrorBoundary>
+              <ZambianPortfolio />
+            </TradingErrorBoundary>
+          ) : isDemo ? (
             <DemoPortfolio />
           ) : (
             <>
