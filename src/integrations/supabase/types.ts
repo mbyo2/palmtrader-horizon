@@ -3389,6 +3389,16 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      reconcile_luse_positions: {
+        Args: { p_user_id: string }
+        Returns: {
+          average_price: number
+          realized_pnl: number
+          shares: number
+          symbol: string
+        }[]
+      }
+      refresh_luse_prices: { Args: never; Returns: undefined }
       reset_luse_demo: { Args: { p_user_id: string }; Returns: undefined }
       update_wallet_balance: {
         Args: {
