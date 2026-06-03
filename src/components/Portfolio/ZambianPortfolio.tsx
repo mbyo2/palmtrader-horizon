@@ -104,6 +104,25 @@ const ZambianPortfolio = () => {
       });
       return;
     }
+    if (side === "buy" && account && estGross > account.cash_balance) {
+      toast({
+        title: "Insufficient cash",
+        description: `Need ${formatZMW(estGross)}, you have ${formatZMW(account.cash_balance)}.`,
+        variant: "destructive",
+      });
+      return;
+    }
+    if (side === "sell") {
+      const held = positions.find((p) => p.symbol === selectedListing.symbol);
+      if (!held || Number(held.shares) < sharesNum) {
+        toast({
+          title: "Not enough shares",
+          description: `You hold ${held ? Number(held.shares) : 0} ${selectedListing.symbol}.`,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
     setSubmitting(true);
     try {
       const res = await LusePaperService.placeOrder({
@@ -114,13 +133,27 @@ const ZambianPortfolio = () => {
       });
       toast({
         title: `${side === "buy" ? "Bought" : "Sold"} ${sharesNum} ${selectedListing.symbol}`,
-        description: `${side === "buy" ? "Cost" : "Proceeds"}: ${formatZMW(res.trade.net_amount)} · Fees ${formatZMW(res.trade.total_fees)}`,
+        description: `${side === "buy" ? "Cost" : "Proceeds"}: ${formatZMW(res.trade.net_amount)} · Fees ${formatZMW(res.trade.total_fees)} · Settles ${res.trade.settlement_date}`,
       });
       await refresh();
     } catch (e: any) {
-      toast({ title: "Order failed", description: e.message, variant: "destructive" });
+      toast({
+        title: "Order failed",
+        description: e?.message ?? "Unable to place order. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleReconcile = async () => {
+    try {
+      await LusePaperService.reconcile();
+      await refresh();
+      toast({ title: "Portfolio reconciled", description: "Rebuilt positions from trade history." });
+    } catch (e: any) {
+      toast({ title: "Reconcile failed", description: e.message, variant: "destructive" });
     }
   };
 
