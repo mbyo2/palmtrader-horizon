@@ -301,9 +301,14 @@ const ZambianPortfolio = () => {
               <CardTitle>Holdings</CardTitle>
               <CardDescription>Persistent LuSE demo positions</CardDescription>
             </div>
-            <Button variant="outline" size="sm" onClick={() => setConfirmReset(true)}>
-              <RotateCcw className="h-4 w-4 mr-2" /> Reset demo
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={handleReconcile}>
+                <RefreshCw className="h-4 w-4 mr-2" /> Reconcile
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setConfirmReset(true)}>
+                <RotateCcw className="h-4 w-4 mr-2" /> Reset demo
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             {positions.length === 0 ? (
