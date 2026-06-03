@@ -16,8 +16,9 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, TrendingUp, TrendingDown, RotateCcw, Clock, AlertTriangle } from "lucide-react";
+import { Loader2, TrendingUp, TrendingDown, RotateCcw, Clock, AlertTriangle, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import {
   LusePaperService, formatZMW,
   type LuseAccount, type LuseListing, type LusePosition, type LuseTrade,
