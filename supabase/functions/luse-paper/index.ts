@@ -194,6 +194,12 @@ Deno.serve(async (req) => {
         return json({ ok: true });
       }
 
+      case "reconcile": {
+        const { data, error } = await admin.rpc("reconcile_luse_positions", { p_user_id: userId });
+        if (error) throw error;
+        return json({ ok: true, positions: data });
+      }
+
       case "place_order": {
         const symbol = String(body.symbol ?? "").toUpperCase();
         const side = String(body.side ?? "").toLowerCase();

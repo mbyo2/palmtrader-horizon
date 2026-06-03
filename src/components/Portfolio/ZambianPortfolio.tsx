@@ -16,8 +16,9 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, TrendingUp, TrendingDown, RotateCcw, Clock, AlertTriangle } from "lucide-react";
+import { Loader2, TrendingUp, TrendingDown, RotateCcw, Clock, AlertTriangle, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import {
   LusePaperService, formatZMW,
   type LuseAccount, type LuseListing, type LusePosition, type LuseTrade,
@@ -64,6 +65,35 @@ const ZambianPortfolio = () => {
 
   useEffect(() => { refresh(); }, [refresh]);
 
+  // Reconcile positions from trade history on mount (source of truth)
+  useEffect(() => {
+    LusePaperService.reconcile().then(() => refresh()).catch(() => {});
+  }, [refresh]);
+
+  // Realtime: instant refresh on any change to my LuSE account/positions/trades/listings
+  useEffect(() => {
+    let cancelled = false;
+    const debounced = () => { if (!cancelled) refresh(); };
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    try {
+      channel = supabase
+        .channel("luse-portfolio")
+        .on("postgres_changes", { event: "*", schema: "public", table: "luse_demo_accounts" }, debounced)
+        .on("postgres_changes", { event: "*", schema: "public", table: "luse_demo_positions" }, debounced)
+        .on("postgres_changes", { event: "*", schema: "public", table: "luse_demo_trades" }, debounced)
+        .on("postgres_changes", { event: "*", schema: "public", table: "luse_listings" }, debounced)
+        .subscribe();
+    } catch (e) {
+      console.warn("LuSE realtime subscription failed", e);
+    }
+    return () => {
+      cancelled = true;
+      if (channel) {
+        try { supabase.removeChannel(channel); } catch { /* noop */ }
+      }
+    };
+  }, [refresh]);
+
   const handleSubmit = async () => {
     if (!selectedListing) return;
     if (sharesNum <= 0 || sharesNum % selectedListing.lot_size !== 0) {
@@ -73,6 +103,25 @@ const ZambianPortfolio = () => {
         variant: "destructive",
       });
       return;
+    }
+    if (side === "buy" && account && estGross > account.cash_balance) {
+      toast({
+        title: "Insufficient cash",
+        description: `Need ${formatZMW(estGross)}, you have ${formatZMW(account.cash_balance)}.`,
+        variant: "destructive",
+      });
+      return;
+    }
+    if (side === "sell") {
+      const held = positions.find((p) => p.symbol === selectedListing.symbol);
+      if (!held || Number(held.shares) < sharesNum) {
+        toast({
+          title: "Not enough shares",
+          description: `You hold ${held ? Number(held.shares) : 0} ${selectedListing.symbol}.`,
+          variant: "destructive",
+        });
+        return;
+      }
     }
     setSubmitting(true);
     try {
@@ -84,13 +133,27 @@ const ZambianPortfolio = () => {
       });
       toast({
         title: `${side === "buy" ? "Bought" : "Sold"} ${sharesNum} ${selectedListing.symbol}`,
-        description: `${side === "buy" ? "Cost" : "Proceeds"}: ${formatZMW(res.trade.net_amount)} · Fees ${formatZMW(res.trade.total_fees)}`,
+        description: `${side === "buy" ? "Cost" : "Proceeds"}: ${formatZMW(res.trade.net_amount)} · Fees ${formatZMW(res.trade.total_fees)} · Settles ${res.trade.settlement_date}`,
       });
       await refresh();
     } catch (e: any) {
-      toast({ title: "Order failed", description: e.message, variant: "destructive" });
+      toast({
+        title: "Order failed",
+        description: e?.message ?? "Unable to place order. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleReconcile = async () => {
+    try {
+      await LusePaperService.reconcile();
+      await refresh();
+      toast({ title: "Portfolio reconciled", description: "Rebuilt positions from trade history." });
+    } catch (e: any) {
+      toast({ title: "Reconcile failed", description: e.message, variant: "destructive" });
     }
   };
 
@@ -130,7 +193,8 @@ const ZambianPortfolio = () => {
         <Alert variant="default" className="border-warning/40">
           <Clock className="h-4 w-4" />
           <AlertDescription>
-            {marketOpen.reason}. Demo orders are still accepted but flagged as after-hours.
+            <strong>Market closed</strong> — {marketOpen.reason}. LuSE trades 10:00–15:00 CAT, Mon–Fri.
+            Demo orders are still accepted at the last close price and flagged as after-hours.
           </AlertDescription>
         </Alert>
       )}
@@ -237,9 +301,14 @@ const ZambianPortfolio = () => {
               <CardTitle>Holdings</CardTitle>
               <CardDescription>Persistent LuSE demo positions</CardDescription>
             </div>
-            <Button variant="outline" size="sm" onClick={() => setConfirmReset(true)}>
-              <RotateCcw className="h-4 w-4 mr-2" /> Reset demo
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={handleReconcile}>
+                <RefreshCw className="h-4 w-4 mr-2" /> Reconcile
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setConfirmReset(true)}>
+                <RotateCcw className="h-4 w-4 mr-2" /> Reset demo
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             {positions.length === 0 ? (
