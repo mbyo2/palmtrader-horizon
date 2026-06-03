@@ -193,7 +193,8 @@ const ZambianPortfolio = () => {
         <Alert variant="default" className="border-warning/40">
           <Clock className="h-4 w-4" />
           <AlertDescription>
-            {marketOpen.reason}. Demo orders are still accepted but flagged as after-hours.
+            <strong>Market closed</strong> — {marketOpen.reason}. LuSE trades 10:00–15:00 CAT, Mon–Fri.
+            Demo orders are still accepted at the last close price and flagged as after-hours.
           </AlertDescription>
         </Alert>
       )}
