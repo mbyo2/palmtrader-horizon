@@ -85,6 +85,7 @@ export const LusePaperService = {
   placeOrder: (input: PlaceOrderInput) =>
     call<{ ok: boolean; trade: LuseTrade; fees: any; new_cash: number }>("place_order", input as any),
   resetDemo: () => call<{ ok: boolean }>("reset_demo"),
+  reconcile: () => call<{ ok: boolean; positions: any[] }>("reconcile"),
 };
 
 export const formatZMW = (n: number) =>
