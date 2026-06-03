@@ -65,6 +65,35 @@ const ZambianPortfolio = () => {
 
   useEffect(() => { refresh(); }, [refresh]);
 
+  // Reconcile positions from trade history on mount (source of truth)
+  useEffect(() => {
+    LusePaperService.reconcile().then(() => refresh()).catch(() => {});
+  }, [refresh]);
+
+  // Realtime: instant refresh on any change to my LuSE account/positions/trades/listings
+  useEffect(() => {
+    let cancelled = false;
+    const debounced = () => { if (!cancelled) refresh(); };
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    try {
+      channel = supabase
+        .channel("luse-portfolio")
+        .on("postgres_changes", { event: "*", schema: "public", table: "luse_demo_accounts" }, debounced)
+        .on("postgres_changes", { event: "*", schema: "public", table: "luse_demo_positions" }, debounced)
+        .on("postgres_changes", { event: "*", schema: "public", table: "luse_demo_trades" }, debounced)
+        .on("postgres_changes", { event: "*", schema: "public", table: "luse_listings" }, debounced)
+        .subscribe();
+    } catch (e) {
+      console.warn("LuSE realtime subscription failed", e);
+    }
+    return () => {
+      cancelled = true;
+      if (channel) {
+        try { supabase.removeChannel(channel); } catch { /* noop */ }
+      }
+    };
+  }, [refresh]);
+
   const handleSubmit = async () => {
     if (!selectedListing) return;
     if (sharesNum <= 0 || sharesNum % selectedListing.lot_size !== 0) {
