@@ -25,7 +25,7 @@ const QuickTradePanel = ({ symbol, onTrade }: QuickTradePanelProps) => {
   const { activeAccount, isDemo, getAvailableBalance, refreshAccounts } = useTradingAccount();
   const queryClient = useQueryClient();
   const { price, change, changePercent, isLoading } = useRealTimePrice(symbol);
-  const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
+  const [selectedAmount, setSelectedAmount] = useState<number | null>(100);
   const [customAmount, setCustomAmount] = useState("");
   const [isExecuting, setIsExecuting] = useState(false);
   const [confirmSell, setConfirmSell] = useState(false);
@@ -105,10 +105,17 @@ const QuickTradePanel = ({ symbol, onTrade }: QuickTradePanelProps) => {
       console.error("Trade error:", error);
     } finally {
       setIsExecuting(false);
-      setSelectedAmount(null);
-      setCustomAmount("");
+      // Keep selected amount so the user can place another trade quickly
     }
   };
+
+  const disabledReason = !user
+    ? "Sign in to trade"
+    : !price
+    ? "Waiting for live price…"
+    : !tradeAmount
+    ? "Select or enter an amount"
+    : null;
 
   return (
     <Card>
@@ -215,7 +222,7 @@ const QuickTradePanel = ({ symbol, onTrade }: QuickTradePanelProps) => {
           <Button
             size="lg"
             className="bg-success hover:bg-success/90 text-success-foreground"
-            disabled={!tradeAmount || !canAfford || isExecuting || !price}
+            disabled={isExecuting || !!disabledReason || (isDemo === false && !canAfford)}
             onClick={() => handleQuickTrade('buy')}
           >
             {isExecuting ? (
@@ -228,7 +235,7 @@ const QuickTradePanel = ({ symbol, onTrade }: QuickTradePanelProps) => {
           <Button
             size="lg"
             variant="destructive"
-            disabled={!tradeAmount || isExecuting || !price}
+            disabled={isExecuting || !!disabledReason}
             onClick={() => setConfirmSell(true)}
           >
             {isExecuting ? (
@@ -239,6 +246,14 @@ const QuickTradePanel = ({ symbol, onTrade }: QuickTradePanelProps) => {
             Sell
           </Button>
         </div>
+        {disabledReason && (
+          <p className="text-xs text-muted-foreground text-center">{disabledReason}</p>
+        )}
+        {!disabledReason && !canAfford && (
+          <p className="text-xs text-destructive text-center">
+            Buy disabled — insufficient cash for ${tradeAmount.toLocaleString()}.
+          </p>
+        )}
       </CardContent>
 
       <SellConfirmDialog
