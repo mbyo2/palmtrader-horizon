@@ -222,7 +222,7 @@ const QuickTradePanel = ({ symbol, onTrade }: QuickTradePanelProps) => {
           <Button
             size="lg"
             className="bg-success hover:bg-success/90 text-success-foreground"
-            disabled={!tradeAmount || !canAfford || isExecuting || !price}
+            disabled={isExecuting || !!disabledReason || (isDemo === false && !canAfford)}
             onClick={() => handleQuickTrade('buy')}
           >
             {isExecuting ? (
@@ -235,7 +235,7 @@ const QuickTradePanel = ({ symbol, onTrade }: QuickTradePanelProps) => {
           <Button
             size="lg"
             variant="destructive"
-            disabled={!tradeAmount || isExecuting || !price}
+            disabled={isExecuting || !!disabledReason}
             onClick={() => setConfirmSell(true)}
           >
             {isExecuting ? (
@@ -246,6 +246,14 @@ const QuickTradePanel = ({ symbol, onTrade }: QuickTradePanelProps) => {
             Sell
           </Button>
         </div>
+        {disabledReason && (
+          <p className="text-xs text-muted-foreground text-center">{disabledReason}</p>
+        )}
+        {!disabledReason && !canAfford && (
+          <p className="text-xs text-destructive text-center">
+            Buy disabled — insufficient cash for ${tradeAmount.toLocaleString()}.
+          </p>
+        )}
       </CardContent>
 
       <SellConfirmDialog
