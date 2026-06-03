@@ -105,10 +105,17 @@ const QuickTradePanel = ({ symbol, onTrade }: QuickTradePanelProps) => {
       console.error("Trade error:", error);
     } finally {
       setIsExecuting(false);
-      setSelectedAmount(null);
-      setCustomAmount("");
+      // Keep selected amount so the user can place another trade quickly
     }
   };
+
+  const disabledReason = !user
+    ? "Sign in to trade"
+    : !price
+    ? "Waiting for live price…"
+    : !tradeAmount
+    ? "Select or enter an amount"
+    : null;
 
   return (
     <Card>
