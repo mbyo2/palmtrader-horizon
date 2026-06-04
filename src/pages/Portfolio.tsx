@@ -33,7 +33,7 @@ const PortfolioContent = () => {
   const { price: currentSymbolPrice } = useRealTimePrice(selectedSymbol);
   const [showAccountSelector, setShowAccountSelector] = useState(false);
   const [tradingView, setTradingView] = useState<'quick' | 'advanced'>('quick');
-  const [market, setMarket] = useState<'us' | 'zm'>('zm');
+  const [market, setMarket] = useState<'us' | 'zm'>('us');
 
   if (isAccountLoading) {
     return (
@@ -140,14 +140,14 @@ const PortfolioContent = () => {
               size="sm"
               onClick={() => setMarket('zm')}
             >
-              🇿🇲 Zambia (LuSE)
+              🇿🇲 Zambia
             </Button>
             <Button
               variant={market === 'us' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setMarket('us')}
             >
-              🇺🇸 US (Alpaca)
+              🇺🇸 United States
             </Button>
           </div>
 
