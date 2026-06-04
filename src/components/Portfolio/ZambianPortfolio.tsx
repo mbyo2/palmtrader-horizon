@@ -184,8 +184,8 @@ const ZambianPortfolio = () => {
       {/* Compliance / market banner */}
       <Alert>
         <AlertTriangle className="h-4 w-4" />
-        <AlertDescription className="text-sm">
-          Lusaka Securities Exchange (LuSE) demo • ZMW • T+3 settlement • 1.5% brokerage, 0.025% SEC levy, 16% VAT, K10 CSD fee • Lot size 100
+          <AlertDescription className="text-sm">
+            Zambia demo • ZMW • T+3 settlement • 1.5% brokerage, 0.025% SEC levy, 16% VAT, K10 CSD fee • Lot size 100
         </AlertDescription>
       </Alert>
 
@@ -193,7 +193,7 @@ const ZambianPortfolio = () => {
         <Alert variant="default" className="border-warning/40">
           <Clock className="h-4 w-4" />
           <AlertDescription>
-            <strong>Market closed</strong> — {marketOpen.reason}. LuSE trades 10:00–15:00 CAT, Mon–Fri.
+            <strong>Market closed</strong> — {marketOpen.reason}. Zambia trades 10:00–15:00 CAT, Mon–Fri.
             Demo orders are still accepted at the last close price and flagged as after-hours.
           </AlertDescription>
         </Alert>
@@ -216,7 +216,7 @@ const ZambianPortfolio = () => {
         {/* Trade panel */}
         <Card className="lg:col-span-1">
           <CardHeader>
-            <CardTitle>Trade LuSE</CardTitle>
+            <CardTitle>Trade Zambia</CardTitle>
             <CardDescription>Place a demo order on the Zambian market</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -299,7 +299,7 @@ const ZambianPortfolio = () => {
           <CardHeader className="flex flex-row items-center justify-between space-y-0">
             <div>
               <CardTitle>Holdings</CardTitle>
-              <CardDescription>Persistent LuSE demo positions</CardDescription>
+              <CardDescription>Persistent Zambia demo positions</CardDescription>
             </div>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={handleReconcile}>
@@ -313,7 +313,7 @@ const ZambianPortfolio = () => {
           <CardContent>
             {positions.length === 0 ? (
               <p className="text-sm text-muted-foreground py-8 text-center">
-                No holdings yet — buy some LuSE shares to get started.
+                No holdings yet — buy some Zambian shares to get started.
               </p>
             ) : (
               <div className="overflow-x-auto">
@@ -408,8 +408,8 @@ const ZambianPortfolio = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Reset Zambian demo?</AlertDialogTitle>
             <AlertDialogDescription>
-              This clears all LuSE demo positions and trade history, then restores K500,000 in cash.
-              Your US Alpaca demo is unaffected.
+              This clears all Zambia demo positions and trade history, then restores K500,000 in cash.
+              Your United States demo is unaffected.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
