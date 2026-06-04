@@ -12,6 +12,9 @@ import { Loader2, AlertTriangle, TrendingUp, TrendingDown, Settings } from "luci
 import { useTradingAccount } from "@/hooks/useTradingAccount";
 import { useRealTimePrice } from "@/hooks/useRealTimePrice";
 import { useAuth } from "@/hooks/useAuth";
+import { useQueryClient } from "@tanstack/react-query";
+import { useUsdDemoBrokerAccount, USD_DEMO_ACCOUNT_QUERY_KEY } from "@/hooks/useUsdDemoBrokerAccount";
+import { notifyUsdDemoPortfolioUpdated } from "@/lib/usdDemoPortfolioEvents";
 import { OrderExecutionEngine } from "@/services/OrderExecutionEngine";
 import { AlpacaPaperService } from "@/services/AlpacaPaperService";
 import StockSelector from "./StockSelector";
@@ -25,6 +28,7 @@ interface AdvancedOrderFormProps {
 const AdvancedTradingForm = ({ onOrderSubmit }: AdvancedOrderFormProps) => {
   const { user } = useAuth();
   const { activeAccount, isDemo, getAvailableBalance, refreshAccounts } = useTradingAccount();
+  const queryClient = useQueryClient();
   const [symbol, setSymbol] = useState("AAPL");
   const [side, setSide] = useState<"buy" | "sell">("buy");
   const [orderType, setOrderType] = useState<"market" | "limit" | "stop" | "stop_limit">("market");
@@ -39,7 +43,8 @@ const AdvancedTradingForm = ({ onOrderSubmit }: AdvancedOrderFormProps) => {
   const [confirmSell, setConfirmSell] = useState(false);
 
   const { price: currentPrice, isLoading: isPriceLoading } = useRealTimePrice(symbol);
-  const availableBalance = getAvailableBalance();
+  const { cash: demoBrokerCash, refetch: refetchDemoBrokerAccount } = useUsdDemoBrokerAccount(isDemo);
+  const availableBalance = isDemo ? demoBrokerCash : getAvailableBalance();
   const leverage = activeAccount?.leverage || 1;
 
   // Calculate order value and margin
@@ -107,6 +112,13 @@ const AdvancedTradingForm = ({ onOrderSubmit }: AdvancedOrderFormProps) => {
           stop_price: stopPrice ? parseFloat(stopPrice) : undefined,
         });
         toast.success(`${side === 'buy' ? 'Buy' : 'Sell'} ${quantity} ${symbol} — ${res.order.status}`);
+        await refetchDemoBrokerAccount();
+        queryClient.invalidateQueries({ queryKey: USD_DEMO_ACCOUNT_QUERY_KEY });
+        queryClient.invalidateQueries({ queryKey: ["paperPositions"] });
+        queryClient.invalidateQueries({ queryKey: ["paperOrders"] });
+        queryClient.invalidateQueries({ queryKey: ["portfolio"] });
+        queryClient.invalidateQueries({ queryKey: ["portfolioSummary"] });
+        notifyUsdDemoPortfolioUpdated();
       } else {
         const result = await OrderExecutionEngine.executeOrder({
           userId: user.id,
