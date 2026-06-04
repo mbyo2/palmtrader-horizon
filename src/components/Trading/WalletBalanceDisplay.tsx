@@ -1,5 +1,7 @@
 import { useWallet } from '@/hooks/useWallet';
 import { useAuth } from '@/hooks/useAuth';
+import { useTradingAccount } from '@/hooks/useTradingAccount';
+import { useUsdDemoBrokerAccount } from '@/hooks/useUsdDemoBrokerAccount';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Wallet, RefreshCw } from 'lucide-react';
@@ -16,15 +18,17 @@ const formatCurrency = (value: number) => {
 
 export const WalletBalanceDisplay = () => {
   const { user } = useAuth();
+  const { isDemo } = useTradingAccount();
   const { balances, isLoading, refreshBalances } = useWallet();
+  const { cash: demoBrokerCash, isLoading: isDemoBrokerLoading, refetch: refreshDemoBrokerCash } = useUsdDemoBrokerAccount(isDemo);
 
   const usdBalance = balances.find(b => b.currency === 'USD');
-  const available = usdBalance?.available ?? 0;
+  const available = isDemo ? demoBrokerCash : usdBalance?.available ?? 0;
   const reserved = usdBalance?.reserved ?? 0;
 
   if (!user) return null;
 
-  if (isLoading) {
+  if (isLoading || (isDemo && isDemoBrokerLoading)) {
     return (
       <Card className="card-gradient">
         <CardContent className="p-4">
@@ -56,7 +60,13 @@ export const WalletBalanceDisplay = () => {
               variant="ghost"
               size="icon"
               className="h-6 w-6"
-              onClick={refreshBalances}
+              onClick={() => {
+                if (isDemo) {
+                  refreshDemoBrokerCash();
+                  return;
+                }
+                refreshBalances();
+              }}
             >
               <RefreshCw className="h-3 w-3" />
             </Button>
