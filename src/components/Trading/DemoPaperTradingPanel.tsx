@@ -123,11 +123,11 @@ const DemoPaperTradingPanel = () => {
       <CardHeader>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="h-5 w-5 text-primary" />
-              Demo Trading — Alpaca Paper
-            </CardTitle>
-            <CardDescription>Real US-equity prices. Virtual money. Orders execute live in the paper market.</CardDescription>
+              <CardTitle className="flex items-center gap-2">
+                <Activity className="h-5 w-5 text-primary" />
+                Demo Trading — United States
+              </CardTitle>
+              <CardDescription>Real US-equity prices. Virtual money. Orders execute live in the demo market.</CardDescription>
           </div>
           <div className="flex items-center gap-2">
             {marketOpen !== null && (

@@ -201,7 +201,7 @@ const DemoPortfolio = () => {
                 <PieChart className="h-5 w-5 text-primary" />
                 Portfolio Summary
               </CardTitle>
-              <CardDescription>Live values from Alpaca paper trading</CardDescription>
+              <CardDescription>Live values from the United States demo account</CardDescription>
             </div>
             <Button size="sm" variant="outline" onClick={load} disabled={loading}>
               <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
@@ -263,7 +263,7 @@ const DemoPortfolio = () => {
               <CardDescription>
                 {chartStats
                   ? `${chartStats.change >= 0 ? "+" : ""}${fmt(Math.abs(chartStats.change))} (${chartStats.changePct >= 0 ? "+" : ""}${chartStats.changePct.toFixed(2)}%) over ${period}`
-                  : `${chartView === "equity" ? "Equity" : "Profit/Loss"} history from Alpaca paper account`}
+                  : `${chartView === "equity" ? "Equity" : "Profit/Loss"} history from the United States demo account`}
               </CardDescription>
             </div>
             <div className="flex flex-wrap gap-2">
