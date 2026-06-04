@@ -7,6 +7,8 @@ import { useTradingAccount } from "@/hooks/useTradingAccount";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRealTimePrice } from "@/hooks/useRealTimePrice";
 import { useAuth } from "@/hooks/useAuth";
+import { useUsdDemoBrokerAccount, USD_DEMO_ACCOUNT_QUERY_KEY } from "@/hooks/useUsdDemoBrokerAccount";
+import { notifyUsdDemoPortfolioUpdated } from "@/lib/usdDemoPortfolioEvents";
 import { OrderExecutionEngine } from "@/services/OrderExecutionEngine";
 import { AlpacaPaperService } from "@/services/AlpacaPaperService";
 import { TrendingUp, TrendingDown, Zap, AlertTriangle, Loader2 } from "lucide-react";
@@ -25,13 +27,15 @@ const QuickTradePanel = ({ symbol, onTrade }: QuickTradePanelProps) => {
   const { activeAccount, isDemo, getAvailableBalance, refreshAccounts } = useTradingAccount();
   const queryClient = useQueryClient();
   const { price, change, changePercent, isLoading } = useRealTimePrice(symbol);
+  const { cash: demoBrokerCash, refetch: refetchDemoBrokerAccount } = useUsdDemoBrokerAccount(isDemo);
   const [selectedAmount, setSelectedAmount] = useState<number | null>(100);
   const [customAmount, setCustomAmount] = useState("");
   const [isExecuting, setIsExecuting] = useState(false);
   const [confirmSell, setConfirmSell] = useState(false);
 
   const tradeAmount = selectedAmount || parseFloat(customAmount) || 0;
-  const availableBalance = getAvailableBalance();
+  const accountAvailableBalance = getAvailableBalance();
+  const availableBalance = isDemo ? demoBrokerCash : accountAvailableBalance;
   const canAfford = tradeAmount <= availableBalance;
   const shares = price ? tradeAmount / price : 0;
 
@@ -72,9 +76,14 @@ const QuickTradePanel = ({ symbol, onTrade }: QuickTradePanelProps) => {
         toast.success(
           `${type === 'buy' ? 'Bought' : 'Sold'} $${tradeAmount.toLocaleString()} of ${symbol} (${res.order.status})`
         );
-        queryClient.invalidateQueries({ queryKey: ["paperAccount"] });
+        await refetchDemoBrokerAccount();
+        queryClient.invalidateQueries({ queryKey: USD_DEMO_ACCOUNT_QUERY_KEY });
         queryClient.invalidateQueries({ queryKey: ["paperPositions"] });
+        queryClient.invalidateQueries({ queryKey: ["paperOrders"] });
         queryClient.invalidateQueries({ queryKey: ["portfolio"] });
+        queryClient.invalidateQueries({ queryKey: ["portfolioSummary"] });
+        queryClient.invalidateQueries({ queryKey: ["recentTrades"] });
+        notifyUsdDemoPortfolioUpdated();
       } else {
         const result = await OrderExecutionEngine.executeOrder({
           userId: user.id,
