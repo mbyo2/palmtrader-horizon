@@ -17,6 +17,7 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from "recharts";
+import { USD_DEMO_PORTFOLIO_UPDATED_EVENT } from "@/lib/usdDemoPortfolioEvents";
 
 interface PaperAccount {
   cash: string;
@@ -130,6 +131,16 @@ const DemoPortfolio = () => {
     const i = setInterval(load, 30000);
     return () => clearInterval(i);
   }, []);
+
+  useEffect(() => {
+    const handlePortfolioUpdate = () => {
+      load();
+      loadHistory(period);
+    };
+
+    window.addEventListener(USD_DEMO_PORTFOLIO_UPDATED_EVENT, handlePortfolioUpdate);
+    return () => window.removeEventListener(USD_DEMO_PORTFOLIO_UPDATED_EVENT, handlePortfolioUpdate);
+  }, [period]);
 
   useEffect(() => {
     loadHistory(period);
