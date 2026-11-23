@@ -56,6 +56,8 @@ export default {
           DEFAULT: "hsl(var(--success))",
           foreground: "hsl(var(--success-foreground))",
         },
+        gain: "hsl(var(--gain))",
+        loss: "hsl(var(--loss))",
         warning: {
           DEFAULT: "hsl(var(--warning))",
           foreground: "hsl(var(--warning-foreground))",

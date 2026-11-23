@@ -137,7 +137,7 @@ function App() {
   }, []);
 
   return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+    <ThemeProvider attribute="class" defaultTheme="dark">
       <BrowserRouter>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
