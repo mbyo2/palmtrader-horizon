@@ -24,12 +24,12 @@ const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm">
+    <nav className="sticky top-0 z-50 w-full border-b border-border bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
             <Link to="/" className="flex-shrink-0 flex items-center space-x-2 sm:space-x-3">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary rounded-lg flex items-center justify-center shadow-lg">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary rounded-md flex items-center justify-center">
                 <PalmcaciaLogo className="w-6 h-6 sm:w-8 sm:h-8 text-primary-foreground" />
               </div>
               <h1 className="text-lg sm:text-2xl font-bold text-foreground">Palm<span className="text-primary">Cacia</span></h1>
@@ -120,7 +120,7 @@ const Navbar = () => {
                 <Button variant="ghost" size="sm" asChild className="hover:bg-accent hidden sm:inline-flex">
                   <Link to="/auth">Sign In</Link>
                 </Button>
-                <Button size="sm" asChild className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-lg hover:shadow-xl transition-all duration-200 text-xs sm:text-sm px-3 sm:px-4">
+                <Button size="sm" asChild className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs sm:text-sm px-3 sm:px-4">
                   <Link to="/auth">Get Started</Link>
                 </Button>
               </div>

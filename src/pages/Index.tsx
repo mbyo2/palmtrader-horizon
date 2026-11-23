@@ -1,115 +1,40 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import MarketOverview from "@/components/MarketOverview";
-import StockList from "@/components/StockList";
-import PortfolioPerformance from "@/components/Dashboard/PortfolioPerformance";
-import MarketNews from "@/components/Research/MarketNews";
-import PopularStocks from "@/components/Social/PopularStocks";
-import NewsFeed from "@/components/Research/NewsFeed";
-import { ArrowRight, TrendingUp, BarChart3, Clock, DollarSign, Star, Users, Shield, Zap } from "lucide-react";
-import { useNavigate, Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import TickerStrip from "@/components/home/TickerStrip";
+import { MarketTable, MoversPanel } from "@/components/home/MarketTable";
+import NewsList from "@/components/home/NewsList";
+import PortfolioPerformance from "@/components/Dashboard/PortfolioPerformance";
 
-// Component for dynamic stats
-const StatsSection = () => {
-  const { data: stats } = useQuery({
-    queryKey: ["platformStats"],
-    queryFn: async () => {
-      try {
-        const [userCountResult, portfolioStatsResult] = await Promise.all([
-          supabase.from('account_details').select('id', { count: 'exact', head: true }),
-          supabase.from('portfolio').select('user_id, shares, average_price')
-        ]);
+/**
+ * Homepage, rebuilt to the professional trading design language
+ * (see ~/workspace/palmtrader-horizon-work/DESIGN-BRIEF.md): live data
+ * first, flat surfaces, hairline dividers, one accent, factual copy.
+ * No gradients, no feature-card grids, no invented statistics.
+ */
 
-        const userCount = userCountResult.count || 0;
-        const portfolioData = portfolioStatsResult.data || [];
-        
-        const totalValue = portfolioData.reduce((sum, item) => 
-          sum + (item.shares * item.average_price), 0
-        );
+const FACTS: { value: string; label: string }[] = [
+  { value: "10", label: "Crypto pairs" },
+  { value: "18", label: "Listed stocks — US & LuSE" },
+  { value: "USD · ZMW", label: "Market currencies" },
+  { value: "24h", label: "Crypto markets, around the clock" },
+];
 
-        return {
-          userCount: userCount > 0 ? userCount : 10000,
-          aum: totalValue > 0 ? `K${(totalValue / 1000000).toFixed(1)}M+` : "K50M+",
-          marketAccess: "24/7"
-        };
-      } catch (error) {
-        console.error("Error fetching stats:", error);
-        return {
-          userCount: 10000,
-          aum: "K50M+",
-          marketAccess: "24/7"
-        };
-      }
-    },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
-
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-8 pt-8 sm:pt-12 max-w-2xl mx-auto px-4">
-      <div className="text-center">
-        <div className="text-xl sm:text-2xl font-bold text-primary">{stats?.aum || "K50M+"}</div>
-        <div className="text-xs sm:text-sm text-muted-foreground">Assets Under Management</div>
-      </div>
-      <div className="text-center">
-        <div className="text-xl sm:text-2xl font-bold text-primary">{(stats?.userCount || 10000).toLocaleString()}+</div>
-        <div className="text-xs sm:text-sm text-muted-foreground">Active Investors</div>
-      </div>
-      <div className="text-center">
-        <div className="text-xl sm:text-2xl font-bold text-primary">{stats?.marketAccess || "24/7"}</div>
-        <div className="text-xs sm:text-sm text-muted-foreground">Market Access</div>
-      </div>
-    </div>
-  );
-};
-
-// Component for community stats
-const CommunityStatsCard = () => {
-  const { data: communityStats } = useQuery({
-    queryKey: ["communityStats"],
-    queryFn: async () => {
-      try {
-        const [userResult, commentsResult] = await Promise.all([
-          supabase.from('account_details').select('id', { count: 'exact', head: true }),
-          supabase.from('comments').select('id', { count: 'exact', head: true })
-        ]);
-
-        return {
-          activeUsers: userResult.count || 10000,
-          totalComments: commentsResult.count || 0
-        };
-      } catch (error) {
-        console.error("Error fetching community stats:", error);
-        return { activeUsers: 10000, totalComments: 0 };
-      }
-    },
-    staleTime: 5 * 60 * 1000,
-  });
-
-  return (
-    <div className="bg-gradient-to-r from-primary/10 to-secondary/10 rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-primary/20">
-      <div className="flex items-center space-x-3 sm:space-x-4 mb-3 sm:mb-4">
-        <Users className="h-6 w-6 sm:h-8 sm:w-8 text-primary flex-shrink-0" />
-        <div>
-          <h3 className="text-sm sm:text-base font-semibold">{(communityStats?.activeUsers || 10000).toLocaleString()}+ Active Investors</h3>
-          <p className="text-xs sm:text-sm text-muted-foreground">
-            {communityStats?.totalComments ? `${communityStats.totalComments.toLocaleString()} discussions` : "Growing every day"}
-          </p>
-        </div>
-      </div>
-      <p className="text-xs sm:text-sm mb-3 sm:mb-4">
-        Connect with like-minded investors, share insights, and learn from the community.
-      </p>
-      <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => window.location.href = '/auth'}>
-        Join Community
-      </Button>
-    </div>
-  );
-};
+const NOTES: { title: string; body: string }[] = [
+  {
+    title: "An order book on every pair",
+    body: "Spot and futures screens show live bids, asks and depth, with market, limit and stop orders — the way a professional terminal works.",
+  },
+  {
+    title: "Fees on the ticket, before you trade",
+    body: "Your fee tier is set by your 30-day trading volume, and the order ticket shows the charge before you confirm. Nothing is added afterwards.",
+  },
+  {
+    title: "Kwacha markets",
+    body: "Bitcoin and Ethereum trade against the Zambian kwacha, and Lusaka Securities Exchange shares are priced in kwacha, alongside the US dollar markets.",
+  },
+];
 
 export default function Index() {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
@@ -120,266 +45,138 @@ export default function Index() {
       const { data } = await supabase.auth.getSession();
       setIsLoggedIn(!!data.session);
     };
-    
     checkAuth();
   }, []);
 
   if (isLoggedIn === null) {
     return (
-      <div className="container py-6 flex items-center justify-center min-h-[60vh]">
-        <div className="flex flex-col items-center space-y-4">
-          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-          <div className="text-primary font-medium">Loading your experience...</div>
+      <div className="container flex min-h-[60vh] items-center justify-center py-6">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (!isLoggedIn) {
+    return (
+      <div className="min-h-screen bg-background">
+        <TickerStrip />
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          {/* Intro — compact, left-aligned, factual */}
+          <section className="grid gap-8 py-8 lg:grid-cols-[1fr_360px] lg:py-10">
+            <div>
+              <h1 className="max-w-xl text-3xl font-semibold leading-tight text-foreground sm:text-4xl">
+                Crypto, US stocks and LuSE shares in one terminal
+              </h1>
+              <p className="pt-3 max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+                PalmCacia is a trading terminal for Bitcoin and global crypto pairs,
+                US-listed stocks and shares on the Lusaka Securities Exchange —
+                priced in US dollars and Zambian kwacha, with live prices and an
+                order book on every market.
+              </p>
+              <div className="flex flex-wrap gap-3 pt-5">
+                <Button onClick={() => navigate("/auth")} className="font-semibold">
+                  Create account
+                </Button>
+                <Button variant="outline" onClick={() => navigate("/markets")}>
+                  Browse markets
+                </Button>
+              </div>
+              <dl className="grid max-w-xl grid-cols-2 gap-x-6 gap-y-4 pt-8 sm:grid-cols-4">
+                {FACTS.map((f) => (
+                  <div key={f.label} className="flex flex-col">
+                    <dt className="order-2 pt-1 text-xs text-muted-foreground">{f.label}</dt>
+                    <dd className="order-1 text-lg font-semibold tabular-nums text-foreground">{f.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+            <div className="hidden lg:block">
+              <MoversPanel />
+            </div>
+          </section>
+
+          {/* Markets — the product, first */}
+          <section className="border-t border-border py-6">
+            <h2 className="pb-4 text-base font-semibold text-foreground">Markets</h2>
+            <MarketTable />
+          </section>
+
+          <section className="border-t border-border py-6 lg:hidden">
+            <MoversPanel />
+          </section>
+
+          {/* Plain factual notes — hairline columns, no cards, no icons */}
+          <section className="border-t border-border py-8">
+            <div className="grid gap-8 sm:grid-cols-3 sm:gap-6">
+              {NOTES.map((n) => (
+                <div key={n.title} className="border-t-2 border-primary/70 pt-3">
+                  <h3 className="text-sm font-semibold text-foreground">{n.title}</h3>
+                  <p className="pt-1.5 text-sm leading-relaxed text-muted-foreground">{n.body}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* News */}
+          <section className="border-t border-border py-6">
+            <h2 className="pb-1 text-base font-semibold text-foreground">Market news</h2>
+            <NewsList />
+          </section>
         </div>
+
+        {/* Closing band — flat, one line, one action */}
+        <section className="border-t border-border bg-card">
+          <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-4 px-4 py-8 sm:px-6 lg:flex-row lg:items-center lg:px-8">
+            <div>
+              <h2 className="text-lg font-semibold text-foreground">Start with the live markets</h2>
+              <p className="pt-1 text-sm text-muted-foreground">
+                Open an account to trade US stocks and crypto on the Alpaca sandbox,
+                and LuSE shares on the PalmCacia paper market.
+              </p>
+            </div>
+            <Button onClick={() => navigate("/auth")} className="shrink-0 font-semibold">
+              Create account
+            </Button>
+          </div>
+        </section>
       </div>
     );
   }
 
   return (
-    <>
-      {!isLoggedIn ? (
-        <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
-          <div className="container px-4 sm:px-6 py-8 sm:py-12 space-y-12 sm:space-y-20">
-            {/* Enhanced Hero Section */}
-            <section className="relative overflow-hidden py-12 sm:py-16 md:py-24 rounded-2xl sm:rounded-3xl bg-gradient-to-r from-primary/10 via-secondary/10 to-primary/5 border border-border/50 px-4 sm:px-6">
-              <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
-              <div className="relative max-w-6xl mx-auto text-center space-y-8">
-                <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold gradient-text leading-tight px-4">
-                  Your Wealth Journey
-                  <br />
-                  <span className="text-primary">Starts Here</span>
-                </h1>
-                <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed px-4">
-                  Join the smartest Zambians building generational wealth through intelligent investing. 
-                  Zero fees. Real returns. Maximum growth.
-                </p>
-                <div className="flex flex-col sm:flex-row justify-center gap-4 pt-6">
-                  <Button 
-                    size="lg" 
-                    onClick={() => navigate("/auth")} 
-                    className="bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-white font-semibold px-8 py-4 h-auto text-lg shadow-lg"
-                  >
-                    Start Investing Today
-                    <ArrowRight className="ml-2 h-5 w-5" />
-                  </Button>
-                  <Button 
-                    size="lg" 
-                    variant="outline" 
-                    onClick={() => navigate("/markets")}
-                    className="border-2 border-primary/20 hover:bg-primary/10 font-semibold px-8 py-4 h-auto text-lg"
-                  >
-                    Explore Markets
-                  </Button>
-                </div>
-                
-                {/* Trust Indicators */}
-                 <StatsSection />
-              </div>
-            </section>
-
-            {/* Enhanced Feature Cards */}
-            <section className="px-4 sm:px-0">
-              <div className="text-center mb-8 sm:mb-12 md:mb-16">
-                <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4">Why Choose Palm Cacia</h2>
-                <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto px-4">
-                  Everything you need to build wealth, all in one beautiful platform
-                </p>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 md:gap-8">
-                {[
-                  {
-                    title: "Zambian Focus",
-                    description: "Tailored for Zambian investors with deep local market insights and currency support",
-                    icon: <DollarSign className="h-12 w-12 text-primary" />,
-                    color: "from-success/10 to-success/5",
-                    border: "border-success/20"
-                  },
-                  {
-                    title: "Real-time Data",
-                    description: "Lightning-fast market updates with institutional-grade data feeds",
-                    icon: <Clock className="h-12 w-12 text-info" />,
-                    color: "from-info/10 to-info/5",
-                    border: "border-info/20"
-                  },
-                  {
-                    title: "AI-Powered Analytics",
-                    description: "Smart insights and personalized recommendations powered by advanced AI",
-                    icon: <BarChart3 className="h-12 w-12 text-primary" />,
-                    color: "from-primary/10 to-primary/5",
-                    border: "border-primary/20"
-                  },
-                  {
-                    title: "Zero Commissions",
-                    description: "Trade stocks, bonds, and ETFs with absolutely no commission fees",
-                    icon: <TrendingUp className="h-12 w-12 text-warning" />,
-                    color: "from-warning/10 to-warning/5",
-                    border: "border-warning/20"
-                  }
-                ].map((feature, index) => (
-                  <Card key={index} className={`group relative overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-2xl ${feature.border} bg-gradient-to-br ${feature.color}`}>
-                    <CardContent className="p-4 sm:p-6 md:p-8 text-center space-y-3 sm:space-y-4 md:space-y-6">
-                      <div className="mx-auto w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full bg-background/50 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                        <div className="scale-75 sm:scale-90 md:scale-100">
-                          {feature.icon}
-                        </div>
-                      </div>
-                      <h3 className="text-base sm:text-lg md:text-xl font-bold">{feature.title}</h3>
-                      <p className="text-xs sm:text-sm md:text-base text-muted-foreground leading-relaxed">{feature.description}</p>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </section>
-
-            {/* Live Market Preview */}
-            <section className="bg-card/50 backdrop-blur-sm rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 border border-border/50">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
-                <div>
-                  <h2 className="text-2xl sm:text-3xl font-bold mb-1 sm:mb-2">Live Market Data</h2>
-                  <p className="text-sm sm:text-base text-muted-foreground">Real-time insights from global markets</p>
-                </div>
-                <Badge variant="secondary" className="px-3 py-1">
-                  <div className="w-2 h-2 bg-success rounded-full mr-2 animate-pulse"></div>
-                  Live
-                </Badge>
-              </div>
-              <MarketOverview />
-            </section>
-
-            {/* Social Proof & News */}
-            <section className="px-4 sm:px-0">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-10 md:gap-12">
-                <div>
-                  <h2 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6">Latest Market News</h2>
-                  <NewsFeed defaultCategory="general" limit={4} />
-                </div>
-                <div className="space-y-4 sm:space-y-6">
-                  <h2 className="text-2xl sm:text-3xl font-bold">Join Our Community</h2>
-                   <CommunityStatsCard />
-                  
-                  <div className="bg-gradient-to-r from-success/10 to-success/5 rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-success/20">
-                    <div className="flex items-center space-x-3 sm:space-x-4 mb-3 sm:mb-4">
-                      <Shield className="h-6 w-6 sm:h-8 sm:w-8 text-success flex-shrink-0" />
-                      <div>
-                        <h3 className="text-sm sm:text-base font-semibold">Bank-Level Security</h3>
-                        <p className="text-xs sm:text-sm text-muted-foreground">Your money is safe</p>
-                      </div>
-                    </div>
-                    <p className="text-xs sm:text-sm">
-                      256-bit encryption, cold storage, and regulatory compliance ensure your investments are protected.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            {/* Enhanced CTA */}
-            <section className="relative overflow-hidden px-4 sm:px-0">
-              <div className="bg-gradient-to-r from-primary via-secondary to-primary p-6 sm:p-8 md:p-12 rounded-2xl sm:rounded-3xl text-center space-y-4 sm:space-y-6 md:space-y-8 text-white">
-                <div className="absolute inset-0 bg-black/20 rounded-2xl sm:rounded-3xl"></div>
-                <div className="relative z-10">
-                  <Zap className="h-10 w-10 sm:h-12 sm:w-12 md:h-16 md:w-16 mx-auto mb-4 sm:mb-6" />
-                  <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4">Ready to Build Your Wealth?</h2>
-                  <p className="text-sm sm:text-base md:text-xl opacity-90 max-w-2xl mx-auto mb-6 sm:mb-8 px-4">
-                    Open your account and start investing across Zambian and global markets with Palm Cacia
-                  </p>
-                  <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                    <Button 
-                      size="lg" 
-                      onClick={() => navigate("/auth")} 
-                      className="bg-background text-primary hover:bg-muted font-semibold px-8 py-4 h-auto text-lg"
-                    >
-                      Create Free Account
-                    </Button>
-                    <Button 
-                      size="lg" 
-                      variant="outline" 
-                      onClick={() => navigate("/markets")}
-                      className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground/10 font-semibold px-8 py-4 h-auto text-lg"
-                    >
-                      Watch Demo
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </section>
+    <div className="min-h-screen bg-background">
+      <TickerStrip />
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-5">
+          <h1 className="text-xl font-semibold text-foreground">Home</h1>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/watchlist">Watchlist</Link>
+            </Button>
+            <Button size="sm" asChild className="font-semibold">
+              <Link to="/portfolio">Portfolio</Link>
+            </Button>
           </div>
         </div>
-      ) : (
-        <div className="min-h-screen bg-gradient-to-br from-background to-primary/5">
-          <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8 space-y-8 md:space-y-10">
-            {/* Enhanced Dashboard Header */}
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6">
-              <div className="space-y-1">
-                <h1 className="text-3xl md:text-4xl font-bold gradient-text">Welcome Back!</h1>
-                <p className="text-muted-foreground text-base md:text-lg">Here's what's happening with your investments today</p>
-              </div>
-              <div className="flex flex-wrap gap-3">
-                <Button variant="outline" className="border-primary/20 hover:bg-primary/10" asChild>
-                  <Link to="/watchlist">
-                    <Star className="h-4 w-4 mr-2" />
-                    Watchlist
-                  </Link>
-                </Button>
-                <Button className="bg-gradient-to-r from-primary to-secondary text-white" asChild>
-                  <Link to="/portfolio">
-                    <TrendingUp className="h-4 w-4 mr-2" />
-                    Start Trading
-                  </Link>
-                </Button>
-              </div>
-            </div>
-            
-            {/* Enhanced Dashboard Grid */}
-            <div className="grid gap-8 md:gap-10 lg:grid-cols-3 xl:grid-cols-6">
-              <div className="lg:col-span-2 xl:col-span-4 space-y-8 md:space-y-10">
-                <Card className="bg-gradient-to-r from-card to-card/50 border-border/50 shadow-lg">
-                  <CardHeader>
-                    <CardTitle className="flex items-center space-x-2 text-lg md:text-xl">
-                      <BarChart3 className="h-5 w-5 text-primary" />
-                      <span>Portfolio Performance</span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <PortfolioPerformance />
-                  </CardContent>
-                </Card>
-                
-                <MarketOverview />
-                
-                <Card className="bg-gradient-to-r from-card to-card/50 border-border/50 shadow-lg">
-                  <CardHeader>
-                    <CardTitle className="text-lg md:text-xl">Market Opportunities</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <StockList />
-                  </CardContent>
-                </Card>
-              </div>
-              
-              <div className="lg:col-span-1 xl:col-span-2 space-y-8 md:space-y-10">
-                <Card className="bg-gradient-to-br from-primary/10 to-secondary/10 border-primary/20">
-                  <CardHeader>
-                    <CardTitle className="text-primary text-lg md:text-xl">Trending Stocks</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <PopularStocks />
-                  </CardContent>
-                </Card>
-                
-                <Card className="bg-gradient-to-br from-info/10 to-info/5 border-info/20">
-                  <CardHeader>
-                    <CardTitle className="text-info text-lg md:text-xl">Latest News</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <NewsFeed defaultCategory="general" limit={5} />
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
+
+        <section>
+          <PortfolioPerformance />
+        </section>
+
+        <section className="py-8">
+          <h2 className="pb-4 text-base font-semibold text-foreground">Markets</h2>
+          <MarketTable />
+        </section>
+
+        <section className="border-t border-border py-6">
+          <MoversPanel />
+        </section>
+
+        <section className="border-t border-border py-6">
+          <h2 className="pb-1 text-base font-semibold text-foreground">Market news</h2>
+          <NewsList />
+        </section>
+      </div>
+    </div>
   );
 }

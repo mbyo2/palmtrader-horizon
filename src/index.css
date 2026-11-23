@@ -105,21 +105,19 @@
   }
 }
 
+/* Design language (2026-11-23 rebuild): flat surfaces, no gradients, no
+   glow, no glass. These legacy utility names are kept so existing markup
+   keeps working, but they now resolve to the flat professional treatment. */
 .gradient-text {
-  @apply bg-gradient-to-r from-[#F0B90B] via-[#F8D33A] to-[#F0B90B] bg-clip-text text-transparent;
-  background-size: 200% 100%;
-  animation: gradient-flow 3s ease-in-out infinite;
+  @apply text-foreground;
 }
 
 .card-gradient {
-  @apply bg-background/80 backdrop-blur-[2px] border border-border/50;
-  background-attachment: local;
+  @apply bg-card border border-border;
 }
 
 .animated-gradient {
-  background: linear-gradient(-45deg, #0b0e11, #181a20, #1e2329, #0b0e11);
-  background-size: 400% 400%;
-  animation: gradient 8s ease infinite;
+  background: hsl(var(--background));
 }
 
 @keyframes gradient {
@@ -144,30 +142,24 @@
 }
 
 .hero-section {
-  background: radial-gradient(circle at center, rgba(240, 185, 11, 0.12), rgba(0, 0, 0, 0) 70%);
+  background: transparent;
 }
 
 .feature-card {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: border-color 0.2s ease;
 }
 
 .feature-card:hover {
-  transform: translateY(-8px) scale(1.02);
-  box-shadow: 0 20px 40px -10px rgba(240, 185, 11, 0.3);
+  transform: none;
+  box-shadow: none;
 }
 
 .bg-grid-pattern {
-  background-image: 
-    linear-gradient(rgba(240, 185, 11, 0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(240, 185, 11, 0.08) 1px, transparent 1px);
-  background-size: 20px 20px;
+  background-image: none;
 }
 
-/* Enhanced dark mode transitions */
 .dark .bg-grid-pattern {
-  background-image: 
-    linear-gradient(rgba(240, 185, 11, 0.15) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(240, 185, 11, 0.15) 1px, transparent 1px);
+  background-image: none;
 }
 
 /* Smooth transitions for theme changes */
@@ -235,22 +227,21 @@
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-/* Enhanced button hover effects */
+/* Flat hover treatment — no glow, no lift */
 .hover-glow:hover {
-  box-shadow: 0 0 20px rgba(240, 185, 11, 0.4);
-  transform: translateY(-2px);
+  box-shadow: none;
+  transform: none;
 }
 
-/* Glass morphism effect */
+/* Was glassmorphism; now a flat surface with a hairline border */
 .glass {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
 }
 
 .dark .glass {
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
 }
 
 /* Hide scrollbar but keep scroll functionality */
