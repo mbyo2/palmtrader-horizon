@@ -18,8 +18,9 @@ import { toast } from 'sonner';
 import { RefreshCw, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { RealTimeOrderBook } from './RealTimeOrderBook';
-import { AdvancedStockChart } from '@/components/Research/AdvancedStockChart';
-import { generateChartData } from '@/services/demo/demoMarket';
+import ProChart from '@/components/Trading/ProChart';
+import DepthChart from '@/components/Trading/DepthChart';
+import TradesTape from '@/components/Trading/TradesTape';
 
 export const SpotTrading = () => {
   const { user } = useAuth();
@@ -57,16 +58,6 @@ export const SpotTrading = () => {
   });
 
   const { price: livePrice, changePct } = useDemoPrice(selectedPairId || null);
-
-  // Chart series for the selected pair (same demo market generator as the Crypto page)
-  const chartData = useMemo(() => {
-    if (!selectedPair) return [];
-    return generateChartData(selectedPair.base_currency, 60).map((c, i) => ({
-      symbol: selectedPair.base_currency,
-      timestamp: (Date.now() - (59 - i) * 3600000).toString(),
-      price: c.close, close: c.close, type: 'crypto' as const,
-    }));
-  }, [selectedPair]);
 
   // For Alpaca-venue pairs, available balances are read back from the
   // Alpaca paper account (cash for buys, position quantity for sells) —
@@ -220,11 +211,11 @@ export const SpotTrading = () => {
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
         <div className="xl:col-span-6 order-1 min-w-0">
           {selectedPair ? (
-            <AdvancedStockChart
-              symbol={`${selectedPair.base_currency}/${selectedPair.quote_currency}`}
-              data={chartData}
-              compact
-            />
+            <Card>
+              <CardContent className="p-3">
+                <ProChart instrument={selectedPairId} height={430} />
+              </CardContent>
+            </Card>
           ) : (
             <Card>
               <CardContent className="py-16 text-center text-muted-foreground">
@@ -236,7 +227,11 @@ export const SpotTrading = () => {
 
         <div className="xl:col-span-3 order-3 xl:order-2 min-w-0">
           {selectedPairId && (
-            <RealTimeOrderBook pairId={selectedPairId} onPriceClick={handlePriceClick} />
+            <div className="space-y-4">
+              <RealTimeOrderBook pairId={selectedPairId} onPriceClick={handlePriceClick} />
+              <DepthChart pairId={selectedPairId} />
+              <TradesTape pairId={selectedPairId} />
+            </div>
           )}
         </div>
 

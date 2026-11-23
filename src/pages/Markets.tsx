@@ -8,13 +8,13 @@ import { toast } from "sonner";
 import { finnhubSocket } from "@/utils/finnhubSocket";
 import MarketOverview from "@/components/MarketOverview";
 import TradingInterface from "@/components/Trading/TradingInterface";
-import TradingViewWidget from "@/components/Trading/TradingViewWidget";
+import ProChart from "@/components/Trading/ProChart";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TechnicalIndicators from "@/components/TechnicalIndicators";
 import SocialShare from "@/components/Social/SocialShare";
 import Comments from "@/components/Social/Comments";
 import CopyTradingSystem from "@/components/Social/CopyTradingSystem";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 
 const Markets = () => {
   const [symbol, setSymbol] = useState("AAPL");
@@ -59,8 +59,8 @@ const Markets = () => {
         </TabsList>
         
         <TabsContent value="chart" className="space-y-6 mt-4">
-          {/* Professional TradingView chart */}
-          <TradingViewWidget symbol={symbol} height={500} />
+          {/* Professional chart on our own stack — venue data, not an external embed */}
+          <Card><CardContent className="p-3"><ProChart instrument={symbol} height={500} /></CardContent></Card>
           
           {/* Research tools with chart, fundamentals, etc. */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">

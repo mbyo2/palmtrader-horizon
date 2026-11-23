@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
-import { AdvancedStockChart } from "@/components/Research/AdvancedStockChart";
+import ProChart from "@/components/Trading/ProChart";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -93,20 +93,10 @@ const Crypto = () => {
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-lg">{selectedCrypto.name} Chart</CardTitle>
-                <CardDescription className="text-sm">30-day price history</CardDescription>
+                <CardDescription className="text-sm">Professional chart — timeframes, indicators and drawing tools</CardDescription>
               </CardHeader>
               <CardContent className="p-2 sm:p-4">
-                {isLoading ? (
-                  <Skeleton className="h-[350px] w-full" />
-                ) : cryptoData && cryptoData.length > 0 ? (
-                  <TooltipProvider>
-                    <AdvancedStockChart symbol={selectedCrypto.ticker} data={cryptoData} />
-                  </TooltipProvider>
-                ) : (
-                  <div className="h-[350px] flex items-center justify-center text-muted-foreground text-sm">
-                    No data available
-                  </div>
-                )}
+                <ProChart instrument={selectedCrypto.ticker} height={430} />
               </CardContent>
             </Card>
           </div>

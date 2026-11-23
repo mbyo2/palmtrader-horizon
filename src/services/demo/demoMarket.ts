@@ -278,3 +278,47 @@ export function generateChartData(instrument: string, points = 60): Candle[] {
   if (last) { last.close = getPrice(instrument) || last.close; last.value = last.close; }
   return candles;
 }
+
+// ---------------------------------------------------------------------------
+// Resolution candles for the pro chart — same seeded walk family as
+// generateChartData, parameterised by timeframe, with deterministic volume.
+// The series is a pure function of (instrument, tfSeconds, count): every
+// surface that asks for the same series gets the same candles, and the last
+// candle always closes at the live engine price.
+// ---------------------------------------------------------------------------
+
+export interface ResolutionCandle {
+  /** bucket start, unix seconds */
+  time: number;
+  open: number; high: number; low: number; close: number; volume: number;
+}
+
+export function generateCandles(instrument: string, tfSeconds: number, count = 300): ResolutionCandle[] {
+  const live = getPrice(instrument) || 100;
+  const seedBase = instrument.split('').reduce((a, c) => a + c.charCodeAt(0), 0) * 131 + tfSeconds * 7 + count;
+  const rand = seededRandom(seedBase);
+  // hourly walk in generateChartData moves ~1.2%/candle; scale by sqrt(time)
+  const vol = 0.012 * Math.sqrt(tfSeconds / 3600);
+  const nowBucket = Math.floor(Date.now() / 1000 / tfSeconds) * tfSeconds;
+  const startBucket = nowBucket - (count - 1) * tfSeconds;
+  // walk forward from a seeded distance below/above the live price
+  let price = live * (0.92 + rand() * 0.10);
+  const baseVolume = instrument.includes('-') || getPairDef(instrument) ? 850 : 42000;
+  const candles: ResolutionCandle[] = [];
+  for (let i = 0; i < count; i++) {
+    const open = price;
+    const change = price * (rand() - 0.487) * 2 * vol;
+    price = Math.max(price + change, live * 0.4);
+    const high = Math.max(open, price) * (1 + rand() * vol * 0.35);
+    const low = Math.min(open, price) * (1 - rand() * vol * 0.35);
+    const volume = baseVolume * (0.45 + rand() * 1.1) * (1 + Math.abs(change) / (price * vol + 1e-9));
+    candles.push({ time: startBucket + i * tfSeconds, open, high, low, close: price, volume });
+  }
+  const last = candles[candles.length - 1];
+  if (last) {
+    last.close = live;
+    last.high = Math.max(last.high, last.open, live);
+    last.low = Math.min(last.low, last.open, live);
+  }
+  return candles;
+}

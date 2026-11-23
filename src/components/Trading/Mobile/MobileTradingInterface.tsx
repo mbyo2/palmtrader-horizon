@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { TrendingUp, TrendingDown, Activity, Clock } from "lucide-react";
 import { MobileOrderForm, type OrderData } from "./MobileOrderForm";
 import { MobileOrderConfirmation } from "./MobileOrderConfirmation";
-import { MobileStockChart } from "./MobileStockChart";
+import ProChart from "../ProChart";
 import { useRealtimeStockData } from "@/hooks/useRealtimeStockData";
 import { useDemoPrice } from "@/hooks/useDemoPrice";
 import { useOrders, type Order } from "@/hooks/useOrders";
@@ -185,11 +185,7 @@ const TradingShell = ({
         </TabsContent>
 
         <TabsContent value="chart" className="mt-0 p-4">
-          <MobileStockChart
-            symbol={symbol}
-            data={chartData}
-            onTimeframeChange={onTimeframeChange}
-          />
+          <ProChart instrument={symbol} height={400} />
         </TabsContent>
 
         <TabsContent value="orders" className="mt-0 p-4">
