@@ -144,9 +144,6 @@ export default function Index() {
             <section className="relative overflow-hidden py-12 sm:py-16 md:py-24 rounded-2xl sm:rounded-3xl bg-gradient-to-r from-primary/10 via-secondary/10 to-primary/5 border border-border/50 px-4 sm:px-6">
               <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
               <div className="relative max-w-6xl mx-auto text-center space-y-8">
-                <Badge variant="secondary" className="px-4 py-2 text-sm font-medium mb-4">
-                  🚀 Trusted by 10,000+ Zambian Investors
-                </Badge>
                 <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold gradient-text leading-tight px-4">
                   Your Wealth Journey
                   <br />
@@ -284,7 +281,7 @@ export default function Index() {
                   <Zap className="h-10 w-10 sm:h-12 sm:w-12 md:h-16 md:w-16 mx-auto mb-4 sm:mb-6" />
                   <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4">Ready to Build Your Wealth?</h2>
                   <p className="text-sm sm:text-base md:text-xl opacity-90 max-w-2xl mx-auto mb-6 sm:mb-8 px-4">
-                    Join thousands of successful Zambian investors who are already growing their portfolios with Palm Cacia
+                    Open your account and start investing across Zambian and global markets with Palm Cacia
                   </p>
                   <div className="flex flex-col sm:flex-row gap-4 justify-center">
                     <Button 
