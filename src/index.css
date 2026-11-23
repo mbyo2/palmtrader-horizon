@@ -6,20 +6,20 @@
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 216 15% 14%;
+    --foreground: 213 15% 14%;
     --card: 0 0% 100%;
-    --card-foreground: 216 15% 14%;
+    --card-foreground: 213 15% 14%;
     --popover: 0 0% 100%;
-    --popover-foreground: 216 15% 14%;
+    --popover-foreground: 213 15% 14%;
     --primary: 46 91% 49%;
-    --primary-foreground: 210 20% 5%;
+    --primary-foreground: 210 21% 5.5%;
     --secondary: 216 13% 93%;
-    --secondary-foreground: 216 15% 14%;
+    --secondary-foreground: 213 15% 14%;
     --muted: 210 17% 98%;
     --muted-foreground: 218 11% 49%;
     --accent: 210 17% 98%;
-    --accent-foreground: 216 15% 14%;
-    --destructive: 349 91% 62%;
+    --accent-foreground: 213 15% 14%;
+    --destructive: 352 91% 62%;
     --destructive-foreground: 0 0% 100%;
     --border: 216 13% 93%;
     --input: 216 13% 93%;
@@ -28,7 +28,7 @@
     --success: 157 87% 43%;
     --success-foreground: 0 0% 100%;
     --gain: 157 87% 43%;
-    --loss: 349 91% 62%;
+    --loss: 352 91% 62%;
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
     --info: 210 90% 55%;
@@ -36,29 +36,29 @@
   }
 
   .dark {
-    --background: 210 20% 5%;
+    --background: 210 21% 5.5%;
     --foreground: 216 13% 93%;
     --card: 225 14% 11%;
     --card-foreground: 216 13% 93%;
-    --popover: 216 15% 14%;
+    --popover: 213 15% 14%;
     --popover-foreground: 216 13% 93%;
     --primary: 46 91% 49%;
-    --primary-foreground: 210 20% 5%;
-    --secondary: 217 14% 20%;
+    --primary-foreground: 210 21% 5.5%;
+    --secondary: 214 14% 20%;
     --secondary-foreground: 216 13% 93%;
-    --muted: 216 15% 14%;
+    --muted: 213 15% 14%;
     --muted-foreground: 215 11% 57%;
-    --accent: 216 15% 14%;
+    --accent: 213 15% 14%;
     --accent-foreground: 216 13% 93%;
-    --destructive: 349 91% 62%;
+    --destructive: 352 91% 62%;
     --destructive-foreground: 0 0% 100%;
-    --border: 217 14% 20%;
-    --input: 217 14% 20%;
+    --border: 214 14% 20%;
+    --input: 214 14% 20%;
     --ring: 46 91% 49%;
     --success: 157 87% 43%;
     --success-foreground: 0 0% 100%;
     --gain: 157 87% 43%;
-    --loss: 349 91% 62%;
+    --loss: 352 91% 62%;
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
     --info: 210 90% 55%;
