@@ -28,10 +28,10 @@ const Navbar = () => {
         <div className="flex justify-between h-16">
           <div className="flex items-center">
             <Link to="/" className="flex-shrink-0 flex items-center space-x-2 sm:space-x-3">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-primary to-secondary rounded-xl flex items-center justify-center shadow-lg">
-                <span className="text-white font-bold text-base sm:text-lg">P</span>
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary rounded-lg flex items-center justify-center shadow-lg">
+                <span className="text-primary-foreground font-bold text-base sm:text-lg">P</span>
               </div>
-              <h1 className="text-lg sm:text-2xl font-bold gradient-text">Palm Cacia</h1>
+              <h1 className="text-lg sm:text-2xl font-bold text-foreground">Palm<span className="text-primary">Cacia</span></h1>
             </Link>
             
             <div className="hidden lg:block ml-8">
@@ -60,7 +60,7 @@ const Navbar = () => {
                     <Button variant="ghost" className="relative h-8 w-8 sm:h-10 sm:w-10 rounded-full hover:ring-2 hover:ring-primary/20">
                       <Avatar className="h-8 w-8 sm:h-10 sm:w-10">
                         <AvatarImage src="/placeholder-avatar.jpg" alt="User" />
-                        <AvatarFallback className="bg-gradient-to-r from-primary to-secondary text-white font-semibold text-sm">
+                        <AvatarFallback className="bg-primary text-primary-foreground font-semibold text-sm">
                           {accountDetails?.first_name?.[0] || user.email?.[0]?.toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
@@ -106,7 +106,7 @@ const Navbar = () => {
                       </DropdownMenuItem>
                     </div>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => signOut()} className="text-red-600 focus:text-red-600 py-2">
+                    <DropdownMenuItem onClick={() => signOut()} className="text-loss focus:text-loss py-2">
                       <LogOut className="mr-3 h-4 w-4" />
                       Sign out
                     </DropdownMenuItem>
@@ -119,7 +119,7 @@ const Navbar = () => {
                 <Button variant="ghost" size="sm" asChild className="hover:bg-accent hidden sm:inline-flex">
                   <Link to="/auth">Sign In</Link>
                 </Button>
-                <Button size="sm" asChild className="bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-white shadow-lg hover:shadow-xl transition-all duration-200 text-xs sm:text-sm px-3 sm:px-4">
+                <Button size="sm" asChild className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-lg hover:shadow-xl transition-all duration-200 text-xs sm:text-sm px-3 sm:px-4">
                   <Link to="/auth">Get Started</Link>
                 </Button>
               </div>

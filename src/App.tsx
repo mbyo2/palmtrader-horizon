@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster"
 import { AuthProvider } from '@/hooks/useAuth';
 import { ThemeProvider } from "next-themes";
 import Navbar from '@/components/Navbar';
+import MobileTabBar from '@/components/Navigation/MobileTabBar';
 import Footer from '@/components/Footer';
 import PullToRefresh from './components/Mobile/PullToRefresh';
 import SwipeNavigation from './components/Mobile/SwipeNavigation';
@@ -66,7 +67,7 @@ function AppContent() {
   const isMobile = useIsMobile();
 
   const content = (
-    <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
+    <div className="min-h-screen bg-background text-foreground transition-colors duration-300 pb-16 lg:pb-0">
       <Navbar />
       <main className="flex-1" id="main">
         <Routes>
@@ -107,6 +108,7 @@ function AppContent() {
         </Routes>
       </main>
       <Footer />
+      <MobileTabBar />
       <Toaster />
       <OrderProcessorInitializer />
     </div>
