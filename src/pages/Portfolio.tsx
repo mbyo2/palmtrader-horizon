@@ -1,8 +1,7 @@
 import { useProtectedRoute } from "@/hooks/useProtectedRoute";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { RealTimePortfolioSummary } from "@/components/Portfolio/RealTimePortfolioSummary";
-import { RealTimePositionsList } from "@/components/Portfolio/RealTimePositionsList";
 import DemoPortfolio from "@/components/Portfolio/DemoPortfolio";
+import DemoStorePortfolio from "@/components/Portfolio/DemoStorePortfolio";
 import EnhancedOrderHistory from "@/components/Trading/EnhancedOrderHistory";
 import RecurringInvestments from "@/components/Trading/RecurringInvestments";
 import WalletManager from "@/components/Trading/WalletManager";
@@ -26,9 +25,19 @@ import { Plus, LayoutGrid, LineChart } from "lucide-react";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import DemoModeBanner from "@/components/Trading/DemoModeBanner";
 import LiveModeNotice from "@/components/Trading/LiveModeNotice";
+import { useAuth } from "@/hooks/useAuth";
+import { isDemoSync, DEMO_USER_ID } from "@/services/demo/DemoBackend";
 
 const PortfolioContent = () => {
+  const { user } = useAuth();
   const { activeAccount, isLoading: isAccountLoading, isDemo } = useTradingAccount();
+  // The portfolio must read from the SAME venue trades execute on:
+  // - signed-out demo → the local demo store (DemoBackend demo mode);
+  // - signed-in → Alpaca broker sandbox read-backs (US) / LuSE paper (ZM).
+  // The old code keyed this off the trading account's demo flag, which sent
+  // signed-out visitors to the Alpaca/LuSE edge functions — calls that can
+  // never succeed without a session, so demo trades never appeared here.
+  const demoBackend = !user || user.id === DEMO_USER_ID || isDemoSync();
   const [selectedSymbol, setSelectedSymbol] = useState("AAPL");
   const { price: currentSymbolPrice } = useRealTimePrice(selectedSymbol);
   const [showAccountSelector, setShowAccountSelector] = useState(false);
@@ -151,17 +160,16 @@ const PortfolioContent = () => {
             </Button>
           </div>
 
-          {market === 'zm' ? (
+          {demoBackend ? (
+            <DemoStorePortfolio market={market} />
+          ) : market === 'zm' ? (
             <TradingErrorBoundary>
               <ZambianPortfolio />
             </TradingErrorBoundary>
-          ) : isDemo ? (
-            <DemoPortfolio />
           ) : (
-            <>
-              <RealTimePortfolioSummary />
-              <RealTimePositionsList />
-            </>
+            <TradingErrorBoundary>
+              <DemoPortfolio />
+            </TradingErrorBoundary>
           )}
         </TabsContent>
 

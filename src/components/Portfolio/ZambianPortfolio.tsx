@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +32,8 @@ const ZambianPortfolio = () => {
   const [listings, setListings] = useState<LuseListing[]>([]);
   const [positions, setPositions] = useState<LusePosition[]>([]);
   const [trades, setTrades] = useState<LuseTrade[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const hasAccountRef = useRef(false);
 
   const [symbol, setSymbol] = useState("CECZ");
   const [side, setSide] = useState<"buy" | "sell">("buy");
@@ -52,12 +54,19 @@ const ZambianPortfolio = () => {
         LusePaperService.getTrades(50),
       ]);
       setAccount(acc.account);
+      hasAccountRef.current = true;
       setMarketOpen(acc.market);
       setListings(lst.listings);
       setPositions(pos.positions.filter((p) => Number(p.shares) > 0));
       setTrades(trd.trades);
+      setLoadError(null);
     } catch (e: any) {
-      toast({ title: "Failed to load Zambian portfolio", description: e.message, variant: "destructive" });
+      // Keep cached values on screen when we have them; the unavailable
+      // state below only replaces the view when nothing has loaded.
+      setLoadError(e?.message ?? "Failed to load Zambian portfolio");
+      if (hasAccountRef.current) {
+        toast({ title: "Failed to refresh Zambian portfolio", description: e.message, variant: "destructive" });
+      }
     } finally {
       setLoading(false);
     }
@@ -175,12 +184,44 @@ const ZambianPortfolio = () => {
     );
   }
 
+  // Honest unavailable state: the LuSE paper venue failed and nothing has
+  // loaded — never render a zeroed-out fake portfolio in that case.
+  if (loadError && !account) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Zambian portfolio unavailable</CardTitle>
+          <CardDescription>
+            We couldn't reach the LuSE paper market service, so there are no values to show right now — nothing has been estimated or filled in.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">{loadError}</p>
+          <Button size="sm" onClick={refresh}>
+            <RefreshCw className="h-4 w-4 mr-2" /> Retry
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
   const totalPnl = account?.total_pnl ?? 0;
   const pnlPct = account && account.starting_balance > 0 ? (totalPnl / account.starting_balance) * 100 : 0;
   const PnlIcon = totalPnl >= 0 ? TrendingUp : TrendingDown;
 
   return (
     <div className="space-y-6">
+      {loadError && account && (
+        <Alert>
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription className="flex flex-wrap items-center gap-3 text-sm">
+            <span>Showing the last values we loaded — the latest refresh failed ({loadError}).</span>
+            <Button size="sm" variant="outline" onClick={refresh}>
+              <RefreshCw className="h-4 w-4 mr-2" /> Retry
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
       {/* Compliance / market banner */}
       <Alert>
         <AlertTriangle className="h-4 w-4" />

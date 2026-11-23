@@ -86,6 +86,8 @@ const DemoPortfolio = () => {
   const [positions, setPositions] = useState<PaperPosition[]>([]);
   const [realized, setRealized] = useState<{ total: number; bySymbol: Record<string, number> }>({ total: 0, bySymbol: {} });
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [linked, setLinked] = useState<boolean | null>(null);
   const [period, setPeriod] = useState<Period>(() => readPref<Period>("range", ["1D", "1W", "1M"], "1M"));
   const [history, setHistory] = useState<{ timestamp: number[]; equity: number[]; profit_loss: number[] } | null>(null);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -105,10 +107,14 @@ const DemoPortfolio = () => {
         AlpacaPaperService.getRealizedPL().catch(() => ({ realized_total: 0, realized_by_symbol: {} } as any)),
       ]);
       setAccount(acc.account);
+      setLinked(typeof acc.linked === "boolean" ? acc.linked : acc.account != null);
       setPositions((pos.positions ?? []) as PaperPosition[]);
       setRealized({ total: Number(rp.realized_total ?? 0), bySymbol: rp.realized_by_symbol ?? {} });
+      setLoadError(null);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to load demo portfolio");
+      // Keep any previously loaded (cached) values on screen; only when we
+      // have nothing do we replace the portfolio with the unavailable state.
+      setLoadError(err instanceof Error ? err.message : "Failed to load portfolio");
     } finally {
       setLoading(false);
     }
@@ -190,8 +196,54 @@ const DemoPortfolio = () => {
     );
   }
 
+  // Honest unavailable state: the broker venue failed and we have no cached
+  // values to show. Never render a fake empty portfolio in this case.
+  if (loadError && !account) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Portfolio unavailable</CardTitle>
+          <CardDescription>
+            We couldn't reach your Alpaca sandbox account, so there are no values to show right now — nothing has been estimated or filled in.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">{loadError}</p>
+          <Button size="sm" onClick={load} disabled={loading}>
+            <RefreshCw className={cn("h-4 w-4 mr-2", loading && "animate-spin")} />
+            Retry
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Signed in but no Alpaca sandbox account linked yet — say so plainly
+  // instead of rendering an empty portfolio with "—" values.
+  if (!loadError && linked === false) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Alpaca Sandbox — account not linked</CardTitle>
+          <CardDescription>
+            Your US stock and crypto trades run on your linked Alpaca sandbox account. Once an account is linked, its cash, buying power and positions will appear here, read back live from Alpaca.
+          </CardDescription>
+        </CardHeader>
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-6">
+      {loadError && account && (
+        <div className="rounded-md border border-warning/40 bg-warning/10 px-4 py-3 text-sm flex flex-wrap items-center gap-3">
+          <span>Showing the last values we loaded — the latest refresh failed ({loadError}).</span>
+          <Button size="sm" variant="outline" onClick={load} disabled={loading}>
+            <RefreshCw className={cn("h-4 w-4 mr-2", loading && "animate-spin")} />
+            Retry
+          </Button>
+        </div>
+      )}
       {/* Summary Card */}
       <Card>
         <CardHeader>
@@ -201,7 +253,7 @@ const DemoPortfolio = () => {
                 <PieChart className="h-5 w-5 text-primary" />
                 Portfolio Summary
               </CardTitle>
-              <CardDescription>Live values from the United States demo account</CardDescription>
+              <CardDescription>Read back live from your Alpaca sandbox account</CardDescription>
             </div>
             <Button size="sm" variant="outline" onClick={load} disabled={loading}>
               <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
@@ -263,7 +315,7 @@ const DemoPortfolio = () => {
               <CardDescription>
                 {chartStats
                   ? `${chartStats.change >= 0 ? "+" : ""}${fmt(Math.abs(chartStats.change))} (${chartStats.changePct >= 0 ? "+" : ""}${chartStats.changePct.toFixed(2)}%) over ${period}`
-                  : `${chartView === "equity" ? "Equity" : "Profit/Loss"} history from the United States demo account`}
+                  : `${chartView === "equity" ? "Equity" : "Profit/Loss"} history from your Alpaca sandbox account`}
               </CardDescription>
             </div>
             <div className="flex flex-wrap gap-2">

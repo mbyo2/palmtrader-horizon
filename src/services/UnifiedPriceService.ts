@@ -232,6 +232,16 @@ class UnifiedPriceService {
     return finnhubSocket.getConnectionStatus();
   }
 
+  /** True when at least one real/cached price is on hand — data IS available. */
+  hasCachedData(): boolean {
+    return this.priceCache.size > 0;
+  }
+
+  /** User-initiated retry of the realtime price connection. */
+  reconnect(): void {
+    finnhubSocket.reconnect();
+  }
+
   destroy(): void {
     if (this.unsubscribeFromSocket) {
       this.unsubscribeFromSocket();

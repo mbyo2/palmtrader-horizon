@@ -77,6 +77,11 @@ class RealTimeFinnhubSocket {
     return this.connection.getStatus();
   }
 
+  /** User-initiated retry: (re)start the connection attempt immediately. */
+  reconnect(): void {
+    this.connection.connect();
+  }
+
   close(): void {
     this.connection.close();
     this.subscribers.clear();
