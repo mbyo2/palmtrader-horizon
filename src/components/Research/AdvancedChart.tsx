@@ -158,8 +158,8 @@ const AdvancedChart: React.FC<AdvancedChartProps> = ({
             )}
             <defs>
               <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="var(--color-price)" stopOpacity={0.8} />
-                <stop offset="95%" stopColor="var(--color-price)" stopOpacity={0} />
+                <stop offset="5%" stopColor="var(--color-price)" stopOpacity={0.12} />
+                <stop offset="95%" stopColor="var(--color-price)" stopOpacity={0.12} />
               </linearGradient>
             </defs>
             <Brush dataKey="date" height={25} stroke="hsl(var(--primary))" startIndex={Math.max(0, allData.length - 30)} />

@@ -92,7 +92,7 @@ export const Launchpad = () => {
 
     return (
       <Card className="overflow-hidden hover:border-primary transition-colors">
-        <div className="h-32 bg-gradient-to-r from-primary/20 to-primary/5 flex items-center justify-center">
+        <div className="h-32 bg-muted flex items-center justify-center border-b border-border">
           {project.logo_url ? (
             <img src={project.logo_url} alt={project.name} className="h-16 w-16 rounded-full" />
           ) : (

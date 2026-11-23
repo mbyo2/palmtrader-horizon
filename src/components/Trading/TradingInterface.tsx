@@ -89,7 +89,7 @@ const TradingInterface = () => {
         <RealTimeChart symbol={symbol} height={300} onPriceUpdate={handlePriceUpdate} />
         
         {/* Quick Trade Bar */}
-        <Card className="border-primary/20 bg-gradient-to-r from-primary/5 to-transparent">
+        <Card className="border-border bg-card">
           <CardContent className="py-3 px-4">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
               <div className="flex items-center gap-3 w-full sm:w-auto">

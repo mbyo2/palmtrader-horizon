@@ -103,7 +103,7 @@ const Profile = () => {
         <div className="flex min-w-0 items-center space-x-4">
           <Avatar className="h-20 w-20">
             <AvatarImage src="/placeholder-avatar.jpg" alt="Profile" />
-            <AvatarFallback className="text-xl bg-gradient-to-r from-primary to-secondary text-primary-foreground">
+            <AvatarFallback className="text-xl bg-primary text-primary-foreground">
               {accountDetails?.first_name?.[0] || user?.email?.[0]?.toUpperCase()}
             </AvatarFallback>
           </Avatar>

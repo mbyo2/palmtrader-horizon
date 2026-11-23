@@ -124,16 +124,16 @@ const MarketOverview = () => {
 
   if (isLoading && !prices.size) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+      <div className="divide-y divide-border border-y border-border">
         {Array.from({ length: 6 }).map((_, i) => (
-          <Skeleton key={i} className="h-24 w-full" />
+          <Skeleton key={i} className="my-2.5 h-9 w-full" />
         ))}
       </div>
     );
   }
   
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 content-visibility-auto">
+    <div className="divide-y divide-border border-y border-border content-visibility-auto">
       {markets.map((market) => (
         <EnhancedMarketCard key={market.symbol} market={market} />
       ))}

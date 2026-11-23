@@ -128,22 +128,22 @@ const Auth = () => {
 
   if (showPasswordReset) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 p-4">
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <PasswordReset onBack={() => setShowPasswordReset(false)} />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 p-4">
-      <Card className="w-full max-w-md shadow-xl">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <Card className="w-full max-w-md">
         <CardHeader className="text-center space-y-2">
-          <div className="w-16 h-16 bg-gradient-to-r from-primary to-secondary rounded-xl flex items-center justify-center mx-auto shadow-lg">
-            <PalmcaciaLogo className="w-11 h-11 text-primary-foreground" />
+          <div className="w-12 h-12 bg-primary rounded-md flex items-center justify-center mx-auto">
+            <PalmcaciaLogo className="w-8 h-8 text-primary-foreground" />
           </div>
-          <CardTitle className="text-2xl font-bold gradient-text">Palm Cacia</CardTitle>
+          <CardTitle className="text-xl font-semibold">Palm Cacia</CardTitle>
           <CardDescription>
-            Join thousands of Zambians building wealth through smart investing
+            Trade crypto, US stocks and LuSE shares — in USD and kwacha
           </CardDescription>
         </CardHeader>
         
@@ -206,7 +206,7 @@ const Auth = () => {
               <Button 
                 onClick={handleSignIn} 
                 disabled={loading}
-                className="w-full bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90"
+                className="w-full font-semibold"
               >
                 {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                 Sign In
@@ -292,7 +292,7 @@ const Auth = () => {
               <Button 
                 onClick={handleSignUp} 
                 disabled={loading}
-                className="w-full bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90"
+                className="w-full font-semibold"
               >
                 {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                 Create Account

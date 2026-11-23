@@ -40,12 +40,12 @@ const Markets = () => {
   };
 
   return (
-    <div className="container py-4 sm:py-6 px-3 sm:px-4 space-y-6 sm:space-y-8">
-      <h1 className="text-2xl sm:text-3xl font-bold">Markets</h1>
+    <div className="container py-4 sm:py-6 px-3 sm:px-4 space-y-6">
+      <h1 className="text-xl sm:text-2xl font-semibold">Markets</h1>
       
       {/* Market Overview */}
       <section>
-        <h2 className="text-lg sm:text-xl font-semibold mb-4">Market Overview</h2>
+        <h2 className="text-base font-semibold mb-3">Market overview</h2>
         <MarketOverview />
       </section>
       
@@ -56,7 +56,7 @@ const Markets = () => {
           <TabsTrigger value="social" className="text-xs sm:text-sm">Social</TabsTrigger>
         </TabsList>
         
-        <TabsContent value="chart" className="space-y-6 sm:space-y-8 mt-4">
+        <TabsContent value="chart" className="space-y-6 mt-4">
           {/* Professional TradingView chart */}
           <TradingViewWidget symbol={symbol} height={500} />
           
@@ -75,7 +75,7 @@ const Markets = () => {
           <TradingInterface />
         </TabsContent>
         
-        <TabsContent value="social" className="mt-4 space-y-6 sm:space-y-8">
+        <TabsContent value="social" className="mt-4 space-y-6">
           <CopyTradingSystem />
           <Card className="p-4 sm:p-6">
             <div className="space-y-4">

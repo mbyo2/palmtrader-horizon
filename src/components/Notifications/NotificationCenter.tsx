@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bell, Check, CheckCheck, X } from 'lucide-react';
+import { ArrowLeftRight, Bell, Check, CheckCheck, Megaphone, Settings, ShieldCheck, TrendingUp, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
@@ -27,17 +27,18 @@ const NotificationCenter = () => {
   }
 
   const getNotificationIcon = (type: string) => {
+    const cls = "h-4 w-4 text-muted-foreground";
     switch (type) {
       case 'trade_executed':
-        return '💰';
+        return <ArrowLeftRight className={cls} />;
       case 'price_alert':
-        return '📈';
+        return <TrendingUp className={cls} />;
       case 'kyc_update':
-        return '🔐';
+        return <ShieldCheck className={cls} />;
       case 'system':
-        return '⚙️';
+        return <Settings className={cls} />;
       default:
-        return '📢';
+        return <Megaphone className={cls} />;
     }
   };
 
@@ -96,7 +97,7 @@ const NotificationCenter = () => {
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex gap-3 flex-1">
-                      <div className="text-lg">
+                      <div className="pt-0.5 shrink-0">
                         {getNotificationIcon(notification.type)}
                       </div>
                       <div className="flex-1 space-y-1">
