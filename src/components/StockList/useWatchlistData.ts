@@ -2,6 +2,10 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Stock } from "./useStockData";
+import { isDemoSync } from "@/services/demo/DemoBackend";
+import { DemoStockTrading } from "@/services/demo/demoStocks";
+import { getInstrument, getPrice, getChangePct, subscribePrices } from "@/services/demo/demoMarket";
+import { DEMO_EVENT } from "@/services/demo/demoStore";
 
 const useWatchlistData = () => {
   const { user } = useAuth();
@@ -10,6 +14,27 @@ const useWatchlistData = () => {
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
+    if (isDemoSync()) {
+      const build = () => {
+        const stocks: Stock[] = DemoStockTrading.getWatchlistSymbols().map(symbol => {
+          const inst = getInstrument(symbol);
+          const change = getChangePct(symbol);
+          return {
+            symbol,
+            name: inst?.name || symbol,
+            price: getPrice(symbol).toFixed(2),
+            change: `${change >= 0 ? '+' : ''}${change.toFixed(1)}%`,
+          } as Stock;
+        });
+        setWatchlistStocks(stocks);
+        setLoading(false);
+      };
+      build();
+      const unsub = subscribePrices(build);
+      window.addEventListener(DEMO_EVENT, build);
+      return () => { unsub(); window.removeEventListener(DEMO_EVENT, build); };
+    }
+
     if (!user) {
       setLoading(false);
       return;

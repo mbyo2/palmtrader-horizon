@@ -1,4 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
+import { isDemo } from '@/services/demo/DemoBackend';
+import { DemoAccounts } from '@/services/demo/demoStocks';
 
 export type TradingAccountType = 'demo' | 'cent' | 'standard_stp' | 'raw_ecn' | 'pro_ecn' | 'islamic';
 
@@ -48,6 +50,7 @@ export interface TradingAccount {
 export class TradingAccountService {
   // Get all account type configurations
   static async getAccountTypeConfigs(): Promise<AccountTypeConfig[]> {
+    if (await isDemo()) return DemoAccounts.getAccountTypeConfigs() as unknown as AccountTypeConfig[];
     try {
       const { data, error } = await supabase
         .from('account_type_configs')
@@ -70,6 +73,7 @@ export class TradingAccountService {
 
   // Get user's trading accounts
   static async getUserAccounts(): Promise<TradingAccount[]> {
+    if (await isDemo()) return DemoAccounts.getUserAccounts() as unknown as TradingAccount[];
     try {
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) throw new Error("Not authenticated");
@@ -95,6 +99,7 @@ export class TradingAccountService {
     accountName?: string,
     initialDeposit: number = 0
   ): Promise<TradingAccount | null> {
+    if (await isDemo()) return DemoAccounts.createAccount(accountType, currency, accountName, initialDeposit) as unknown as TradingAccount;
     try {
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) throw new Error("Not authenticated");
@@ -147,6 +152,7 @@ export class TradingAccountService {
 
   // Get single account by ID
   static async getAccount(accountId: string): Promise<TradingAccount | null> {
+    if (await isDemo()) return DemoAccounts.getAccount(accountId) as unknown as TradingAccount | null;
     try {
       const { data, error } = await supabase
         .from('trading_accounts')
@@ -170,6 +176,7 @@ export class TradingAccountService {
       leverage?: number;
     }
   ): Promise<boolean> {
+    if (await isDemo()) return DemoAccounts.updateAccount(accountId, updates);
     try {
       const { error } = await supabase
         .from('trading_accounts')
@@ -186,6 +193,7 @@ export class TradingAccountService {
 
   // Deposit funds to account
   static async deposit(accountId: string, amount: number): Promise<boolean> {
+    if (await isDemo()) return DemoAccounts.deposit(accountId, amount);
     try {
       const account = await this.getAccount(accountId);
       if (!account) throw new Error("Account not found");
@@ -209,6 +217,7 @@ export class TradingAccountService {
 
   // Withdraw funds from account
   static async withdraw(accountId: string, amount: number): Promise<boolean> {
+    if (await isDemo()) return DemoAccounts.withdraw(accountId, amount);
     try {
       const account = await this.getAccount(accountId);
       if (!account) throw new Error("Account not found");

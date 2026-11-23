@@ -4,6 +4,8 @@ import { Star } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { isDemoSync } from "@/services/demo/DemoBackend";
+import { DemoStockTrading } from "@/services/demo/demoStocks";
 
 interface WatchlistButtonProps {
   symbol: string;
@@ -20,6 +22,11 @@ const WatchlistButton = ({ symbol }: WatchlistButtonProps) => {
   }, [symbol]);
 
   const checkWatchlistStatus = async () => {
+    if (isDemoSync()) {
+      setIsInWatchlist(DemoStockTrading.isWatched(symbol));
+      setIsLoading(false);
+      return;
+    }
     try {
       const { data: session } = await supabase.auth.getSession();
       if (!session.session) {
@@ -43,6 +50,18 @@ const WatchlistButton = ({ symbol }: WatchlistButtonProps) => {
   };
 
   const toggleWatchlist = async () => {
+    if (isDemoSync()) {
+      if (isInWatchlist) {
+        DemoStockTrading.removeFromWatchlist(symbol);
+        setIsInWatchlist(false);
+        toast({ title: "Removed from watchlist", description: `${symbol} has been removed from your watchlist` });
+      } else {
+        DemoStockTrading.addToWatchlist(symbol);
+        setIsInWatchlist(true);
+        toast({ title: "Added to watchlist", description: `${symbol} has been added to your watchlist` });
+      }
+      return;
+    }
     try {
       const { data: session } = await supabase.auth.getSession();
       if (!session.session) {

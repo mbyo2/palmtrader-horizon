@@ -2,6 +2,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { toast } from "sonner";
+import { isDemo } from '@/services/demo/DemoBackend';
+import { DemoStockTrading } from '@/services/demo/demoStocks';
 
 export interface Order {
   id: string;
@@ -35,6 +37,7 @@ export const useOrders = () => {
     queryKey: ["orders", user?.id],
     queryFn: async () => {
       if (!user) return [];
+      if (await isDemo()) return DemoStockTrading.getOrders(user.id) as unknown as Order[];
       
       const { data, error } = await supabase
         .from('orders')
@@ -53,6 +56,20 @@ export const useOrders = () => {
     if (!user) {
       toast.error("User not authenticated");
       return null;
+    }
+    if (await isDemo()) {
+      const r = await DemoStockTrading.placeOrder(user.id, {
+        symbol: orderData.symbol, side: orderData.side,
+        orderType: orderData.order_type, quantity: orderData.quantity,
+        limitPrice: orderData.limit_price ?? undefined, stopPrice: orderData.stop_price ?? undefined,
+        timeInForce: orderData.time_in_force,
+      });
+      if (!r.success) { toast.error(r.error || "Failed to create order"); throw new Error(r.error || 'Order failed'); }
+      await queryClient.invalidateQueries({ queryKey: ["orders", user.id] });
+      await queryClient.invalidateQueries({ queryKey: ["positions", user.id] });
+      await queryClient.invalidateQueries({ queryKey: ["portfolio", user.id] });
+      toast.success("Order created successfully");
+      return (await DemoStockTrading.getOrders(user.id)).find(o => o.id === r.orderId) as unknown as Order;
     }
 
     const { data, error } = await supabase
@@ -78,6 +95,13 @@ export const useOrders = () => {
 
   const cancelOrder = async (orderId: string) => {
     if (!user) return;
+    if (await isDemo()) {
+      const r = await DemoStockTrading.cancelOrder(orderId);
+      if (!r.success) { toast.error(r.error || "Failed to cancel order"); throw new Error(r.error || 'Cancel failed'); }
+      await queryClient.invalidateQueries({ queryKey: ["orders", user.id] });
+      toast.success("Order cancelled");
+      return;
+    }
 
     const { error } = await supabase
       .from('orders')

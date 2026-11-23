@@ -2,6 +2,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { RealMarketDataService } from "./RealMarketDataService";
 import { PortfolioService } from "./PortfolioService";
 import { toast } from "sonner";
+import { isDemo } from '@/services/demo/DemoBackend';
+import { DemoStockTrading } from '@/services/demo/demoStocks';
 
 export interface OrderRequest {
   userId: string;
@@ -42,6 +44,25 @@ export class OrderExecutionEngine {
   // Risk limits are now dynamic based on account balance
 
   static async executeOrder(order: OrderRequest): Promise<OrderResult> {
+    if (await isDemo()) {
+      const typeMap: Record<string, 'market' | 'limit' | 'stop' | 'stop_limit'> = {
+        market: 'market', limit: 'limit', stop: 'stop',
+        stop_limit: 'stop_limit', trailing_stop: 'stop',
+      };
+      const r = await DemoStockTrading.placeOrder(order.userId, {
+        symbol: order.symbol, side: order.type,
+        orderType: typeMap[order.orderType] || 'market',
+        quantity: order.shares, limitPrice: order.limitPrice, stopPrice: order.stopPrice,
+        timeInForce: (order.timeInForce || 'DAY').toLowerCase() as 'day' | 'gtc',
+      });
+      if (!r.success) return { success: false, error: r.error };
+      const placed = (await DemoStockTrading.getOrders(order.userId)).find(o => o.id === r.orderId);
+      return {
+        success: true, orderId: r.orderId,
+        executedPrice: placed?.average_fill_price ?? undefined,
+        executedShares: placed?.status === 'filled' ? order.shares : undefined,
+      };
+    }
     console.log('Executing order:', order);
     
     try {

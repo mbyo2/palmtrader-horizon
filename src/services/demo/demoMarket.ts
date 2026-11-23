@@ -75,6 +75,40 @@ export function getPairDef(pairId: string): CryptoPairDef | undefined {
   return CRYPTO_PAIRS.find(p => p.id === pairId);
 }
 
+export interface InstrumentDef {
+  symbol: string;
+  name: string;
+  currency: string;
+  exchange: string;
+  basePrice: number;
+}
+
+const CRYPTO_NAMES: Record<string, string> = {
+  BTC: 'Bitcoin', ETH: 'Ethereum', BNB: 'BNB', SOL: 'Solana', XRP: 'XRP',
+  ADA: 'Cardano', DOGE: 'Dogecoin', DOT: 'Polkadot', USDT: 'Tether', USDC: 'USD Coin',
+};
+
+/** Unified instrument lookup: stock symbol, crypto symbol, or pair id. */
+export function getInstrument(id: string): InstrumentDef | undefined {
+  const stock = getStockDef(id);
+  if (stock) {
+    return { symbol: stock.symbol, name: stock.name, currency: stock.currency, exchange: stock.market, basePrice: stock.basePrice };
+  }
+  const pair = getPairDef(id);
+  if (pair) {
+    return {
+      symbol: pair.id, name: `${CRYPTO_NAMES[pair.base] || pair.base} / ${pair.quote}`,
+      currency: pair.quote, exchange: 'Crypto',
+      basePrice: pair.quote === 'ZMW' ? pair.baseUsd * USD_ZMW_RATE : pair.baseUsd,
+    };
+  }
+  const base = CRYPTO_USD_BASE[id.toUpperCase()];
+  if (base !== undefined) {
+    return { symbol: id.toUpperCase(), name: CRYPTO_NAMES[id.toUpperCase()] || id.toUpperCase(), currency: 'USD', exchange: 'Crypto', basePrice: base };
+  }
+  return undefined;
+}
+
 /** USD value of 1 unit of a currency/asset (ZMW converted at the demo rate). */
 export function usdValueOf(currency: string): number {
   if (currency === 'ZMW') return 1 / USD_ZMW_RATE;

@@ -1,6 +1,8 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
+import { isDemo, isDemoSync } from '@/services/demo/DemoBackend';
+import { DemoStockTrading } from '@/services/demo/demoStocks';
 
 export interface Position {
   id: string;
@@ -28,6 +30,7 @@ export const usePositions = () => {
     queryKey: ["positions", user?.id],
     queryFn: async () => {
       if (!user) return [];
+      if (await isDemo()) return DemoStockTrading.getPositionsHookShape() as Position[];
       
       const { data, error } = await supabase
         .from('positions')
@@ -44,6 +47,7 @@ export const usePositions = () => {
 
   const updatePosition = async (symbol: string, quantity: number, averageCost: number) => {
     if (!user) return;
+    if (isDemoSync()) { await queryClient.invalidateQueries({ queryKey: ["positions", user.id] }); return; }
 
     const { error } = await supabase
       .from('positions')

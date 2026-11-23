@@ -1,6 +1,8 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { MarketDataService } from "./MarketDataService";
+import { isDemo } from '@/services/demo/DemoBackend';
+import { DemoStockTrading } from '@/services/demo/demoStocks';
 
 export interface PortfolioPosition {
   id: string;
@@ -25,6 +27,7 @@ export interface PortfolioSummary {
 
 export class PortfolioService {
   static async getPortfolio(userId: string): Promise<PortfolioPosition[]> {
+    if (await isDemo()) return DemoStockTrading.getPortfolio() as unknown as PortfolioPosition[];
     const { data, error } = await supabase
       .from("portfolio")
       .select("*")
@@ -79,6 +82,7 @@ export class PortfolioService {
   }
 
   static async getPortfolioSummary(userId: string): Promise<PortfolioSummary> {
+    if (await isDemo()) return DemoStockTrading.getPortfolioSummary() as unknown as PortfolioSummary;
     const positions = await this.getPortfolio(userId);
 
     const totalValue = positions.reduce((sum, pos) => sum + (pos.currentValue || 0), 0);
@@ -96,6 +100,7 @@ export class PortfolioService {
   }
 
   static async getPosition(userId: string, symbol: string): Promise<PortfolioPosition | null> {
+    if (await isDemo()) return (DemoStockTrading.getPortfolio().find(p => p.symbol === symbol) || null) as unknown as PortfolioPosition | null;
     const { data, error } = await supabase
       .from("portfolio")
       .select("*")
@@ -144,6 +149,7 @@ export class PortfolioService {
   }
 
   static async refreshPortfolio(userId: string): Promise<void> {
+    if (await isDemo()) return;
     // This could trigger a background refresh of all portfolio positions
     // For now, we'll just update the updated_at timestamp
     await supabase
