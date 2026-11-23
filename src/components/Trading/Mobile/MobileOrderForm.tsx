@@ -12,6 +12,7 @@ interface MobileOrderFormProps {
   currentPrice: number;
   onSubmit: (order: OrderData) => void;
   availableBalance: number;
+  currencySymbol?: string;
 }
 
 export interface OrderData {
@@ -26,6 +27,7 @@ export const MobileOrderForm = ({
   currentPrice,
   onSubmit,
   availableBalance,
+  currencySymbol = "$",
 }: MobileOrderFormProps) => {
   const [orderSide, setOrderSide] = useState<"buy" | "sell">("buy");
   const [orderType, setOrderType] = useState<"market" | "limit">("market");
@@ -117,7 +119,7 @@ export const MobileOrderForm = ({
           </Label>
           <div className="relative">
             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground text-base">
-              $
+              {currencySymbol}
             </span>
             <Input
               id="limitPrice"
@@ -163,17 +165,17 @@ export const MobileOrderForm = ({
       <Card className="p-4 space-y-3 bg-muted/30">
         <div className="flex items-center justify-between text-sm">
           <span className="text-muted-foreground">Current Price</span>
-          <span className="font-semibold">${currentPrice.toFixed(2)}</span>
+          <span className="font-semibold">{currencySymbol}{currentPrice.toFixed(2)}</span>
         </div>
         <div className="flex items-center justify-between text-sm">
           <span className="text-muted-foreground">Available Balance</span>
-          <span className="font-semibold">${availableBalance.toFixed(2)}</span>
+          <span className="font-semibold">{currencySymbol}{availableBalance.toFixed(2)}</span>
         </div>
         <div className="h-px bg-border" />
         <div className="flex items-center justify-between">
           <span className="font-semibold">Estimated Total</span>
           <span className={`font-bold text-lg ${orderSide === "buy" ? "text-green-500" : "text-red-500"}`}>
-            ${estimatedTotal.toFixed(2)}
+            {currencySymbol}{estimatedTotal.toFixed(2)}
           </span>
         </div>
       </Card>

@@ -18,6 +18,7 @@ interface MobileOrderConfirmationProps {
   orderData: OrderData | null;
   symbol: string;
   currentPrice: number;
+  currencySymbol?: string;
   onConfirm: () => Promise<void>;
 }
 
@@ -27,6 +28,7 @@ export const MobileOrderConfirmation = ({
   orderData,
   symbol,
   currentPrice,
+  currencySymbol = "$",
   onConfirm,
 }: MobileOrderConfirmationProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -154,7 +156,7 @@ export const MobileOrderConfirmation = ({
                   {orderData.orderType === "market" ? "Current Price" : "Limit Price"}
                 </span>
                 <span className="font-semibold text-base">
-                  ${(orderData.limitPrice || currentPrice).toFixed(2)}
+                  {currencySymbol}{(orderData.limitPrice || currentPrice).toFixed(2)}
                 </span>
               </div>
               
@@ -165,7 +167,7 @@ export const MobileOrderConfirmation = ({
                 <span className={`font-bold text-2xl ${
                   orderData.type === "buy" ? "text-green-500" : "text-red-500"
                 }`}>
-                  ${estimatedTotal.toFixed(2)}
+                  {currencySymbol}{estimatedTotal.toFixed(2)}
                 </span>
               </div>
             </Card>

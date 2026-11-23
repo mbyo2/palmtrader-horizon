@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { MobileTradingInterface } from "@/components/Trading/Mobile/MobileTradingInterface";
 import { Button } from "@/components/ui/button";
@@ -5,10 +6,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, TrendingUp, TrendingDown } from "lucide-react";
 import { TradingErrorBoundary } from "@/components/ErrorBoundary/TradingErrorBoundary";
-import { getInstrument } from "@/services/demo/demoMarket";
+import { getInstrument, getPairDef, getStockDef } from "@/services/demo/demoMarket";
+import { isDemoSync } from "@/services/demo/DemoBackend";
+import { DEMO_USER_ID, subscribeDemoState, walletBalance } from "@/services/demo/demoStore";
+import { DemoSpot } from "@/services/demo/demoExchange";
+import type { SpotOrder } from "@/services/SpotTradingService";
 import { useDemoPrice } from "@/hooks/useDemoPrice";
 import { useOrders } from "@/hooks/useOrders";
 import { usePositions } from "@/hooks/usePositions";
+import { toast } from "sonner";
 import WatchlistButton from "@/components/WatchlistButton";
 
 /**
@@ -25,6 +31,40 @@ const MobileTrade = () => {
   const { price, changePct } = useDemoPrice(symbol || null);
   const { orders, cancelOrder } = useOrders();
   const { positions } = usePositions();
+
+  // Demo crypto instruments have no stock position/order book — their
+  // holdings live in the demo spot wallet and their orders in DemoSpot.
+  const stockDef = symbol ? getStockDef(symbol) : undefined;
+  const pairId = !stockDef && symbol
+    ? (getPairDef(symbol)
+        ? symbol
+        : getPairDef(`${symbol}-USDT`)
+          ? `${symbol}-USDT`
+          : getPairDef(`${symbol}-ZMW`)
+            ? `${symbol}-ZMW`
+            : null)
+    : null;
+  const isCryptoDemo = isDemoSync() && !!instrument && !stockDef && !!pairId;
+  const [spotOrders, setSpotOrders] = useState<SpotOrder[]>([]);
+  const [baseHolding, setBaseHolding] = useState(0);
+
+  useEffect(() => {
+    if (!isCryptoDemo || !pairId) {
+      setSpotOrders([]);
+      setBaseHolding(0);
+      return;
+    }
+    const read = () => {
+      const pair = getPairDef(pairId);
+      setSpotOrders(DemoSpot.getOrderHistory(DEMO_USER_ID, 50).filter((o) => o.pair_id === pairId));
+      if (pair) {
+        const w = walletBalance(pair.base, "spot");
+        setBaseHolding(w.available + w.locked);
+      }
+    };
+    read();
+    return subscribeDemoState(read);
+  }, [isCryptoDemo, pairId]);
 
   if (!symbol) {
     return (
@@ -83,6 +123,8 @@ const MobileTrade = () => {
           symbol={symbol}
           companyName={instrument.name}
           currentPrice={displayPrice}
+          priceChange={change}
+          priceChangePercent={changePct}
         />
 
         <div className="grid md:grid-cols-2 gap-4 mt-4">
@@ -91,7 +133,26 @@ const MobileTrade = () => {
               <CardTitle className="text-base">Your position</CardTitle>
             </CardHeader>
             <CardContent>
-              {position ? (
+              {isCryptoDemo ? (
+                baseHolding > 0 ? (
+                  <div className="grid grid-cols-3 gap-2 text-sm">
+                    <div>
+                      <div className="text-muted-foreground">Amount</div>
+                      <div className="font-medium">{baseHolding.toLocaleString(undefined, { maximumFractionDigits: 6 })}</div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">Wallet</div>
+                      <div className="font-medium">Spot</div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">Market value</div>
+                      <div className="font-medium">{currencySymbol}{(baseHolding * displayPrice).toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">You don't own {symbol} yet. Place a buy order above to open a position.</p>
+                )
+              ) : position ? (
                 <div className="grid grid-cols-3 gap-2 text-sm">
                   <div>
                     <div className="text-muted-foreground">Shares</div>
@@ -114,10 +175,35 @@ const MobileTrade = () => {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Orders for {symbol} ({symbolOrders.length})</CardTitle>
+              <CardTitle className="text-base">Orders for {symbol} ({isCryptoDemo ? spotOrders.length : symbolOrders.length})</CardTitle>
             </CardHeader>
             <CardContent>
-              {symbolOrders.length === 0 ? (
+              {isCryptoDemo ? (
+                spotOrders.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No orders for {symbol} yet.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {spotOrders.slice(0, 8).map(o => (
+                      <div key={o.id} className="flex items-center justify-between text-sm p-2 rounded-lg bg-muted/50">
+                        <span>
+                          <Badge variant={o.side === "buy" ? "default" : "destructive"} className="mr-2">{o.side.toUpperCase()}</Badge>
+                          {o.quantity} @ {o.average_fill_price ? `${currencySymbol}${o.average_fill_price.toFixed(2)}` : o.price ? `${currencySymbol}${o.price.toFixed(2)}` : "market"}
+                        </span>
+                        <span className="flex items-center gap-2">
+                          <Badge variant="outline">{o.status}</Badge>
+                          {(o.status === "open" || o.status === "partially_filled") && (
+                            <Button size="sm" variant="ghost" onClick={() => {
+                              const r = DemoSpot.cancelOrder(o.id);
+                              if (r.success) toast.success("Order cancelled");
+                              else toast.error(r.error || "Failed to cancel order");
+                            }}>Cancel</Button>
+                          )}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )
+              ) : symbolOrders.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No orders for {symbol} yet.</p>
               ) : (
                 <div className="space-y-2">
