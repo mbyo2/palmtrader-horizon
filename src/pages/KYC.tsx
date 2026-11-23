@@ -3,6 +3,7 @@ import { useProtectedRoute } from "@/hooks/useProtectedRoute";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import KYCStatusCard from "@/components/KYC/KYCStatusCard";
 import KYCDocumentUpload from "@/components/KYC/KYCDocumentUpload";
+import AlpacaBrokerLink from "@/components/AlpacaBrokerLink";
 import { useEnhancedTrading } from "@/hooks/useEnhancedTrading";
 
 const KYC = () => {
@@ -24,10 +25,15 @@ const KYC = () => {
         <TabsList>
           <TabsTrigger value="status">Status</TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
+          <TabsTrigger value="brokerage">Brokerage</TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="status" className="space-y-6">
           <KYCStatusCard kycStatus={kycStatus} />
+        </TabsContent>
+
+        <TabsContent value="brokerage" className="space-y-6">
+          <AlpacaBrokerLink />
         </TabsContent>
         
         <TabsContent value="documents" className="space-y-6">

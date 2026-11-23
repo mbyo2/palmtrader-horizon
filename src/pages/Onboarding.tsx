@@ -12,10 +12,11 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { 
-  CheckCircle, ArrowRight, ArrowLeft, User, Target, Shield, 
-  Upload, FileCheck, AlertTriangle, Fingerprint, CreditCard
+import {
+  CheckCircle, ArrowRight, ArrowLeft, User, Target, Shield,
+  Upload, FileCheck, AlertTriangle, Fingerprint, CreditCard, Landmark
 } from 'lucide-react';
+import AlpacaBrokerLink from '@/components/AlpacaBrokerLink';
 
 interface OnboardingData {
   first_name: string;
@@ -56,7 +57,10 @@ const Onboarding = () => {
     agreed_to_risk_disclosure: false,
   });
 
-  const totalSteps = 6;
+  const [alpacaLinked, setAlpacaLinked] = useState(false);
+  const [alpacaStatus, setAlpacaStatus] = useState('');
+
+  const totalSteps = 7;
   const progress = (currentStep / totalSteps) * 100;
 
   useEffect(() => {
@@ -91,7 +95,8 @@ const Onboarding = () => {
       case 2: return !!(data.country && data.address);
       case 3: return !!(data.investment_experience && data.risk_tolerance);
       case 4: return true; // KYC is optional to proceed but shown
-      case 5: return data.agreed_to_terms && data.agreed_to_risk_disclosure;
+      case 5: return true; // Alpaca linking is optional to proceed; can be done later from the KYC page
+      case 6: return data.agreed_to_terms && data.agreed_to_risk_disclosure;
       default: return true;
     }
   };
@@ -178,6 +183,7 @@ const Onboarding = () => {
     { icon: CreditCard, label: 'Address' },
     { icon: Target, label: 'Investor' },
     { icon: Fingerprint, label: 'Identity' },
+    { icon: Landmark, label: 'Brokerage' },
     { icon: Shield, label: 'Terms' },
     { icon: CheckCircle, label: 'Complete' },
   ];
@@ -425,6 +431,26 @@ const Onboarding = () => {
 
       case 5:
         return (
+          <AlpacaBrokerLink
+            prefill={{
+              first_name: data.first_name,
+              last_name: data.last_name,
+              phone_number: data.phone_number,
+              date_of_birth: data.date_of_birth,
+              tax_id: data.tax_id,
+              country: data.country,
+              address: data.address,
+              email: user?.email || '',
+            }}
+            onStatusChange={(linked, status) => {
+              setAlpacaLinked(linked);
+              setAlpacaStatus(status || '');
+            }}
+          />
+        );
+
+      case 6:
+        return (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -473,7 +499,7 @@ const Onboarding = () => {
           </Card>
         );
 
-      case 6:
+      case 7:
         return (
           <Card>
             <CardHeader>
@@ -492,6 +518,9 @@ const Onboarding = () => {
                   <div><span className="text-muted-foreground">Risk:</span> <strong>{data.risk_tolerance}</strong></div>
                   <div><span className="text-muted-foreground">KYC:</span> <Badge variant={kycStatus === 'verified' ? 'default' : 'secondary'}>{kycStatus}</Badge></div>
                   <div><span className="text-muted-foreground">Country:</span> <strong>{data.country}</strong></div>
+                  <div><span className="text-muted-foreground">US Brokerage:</span> {alpacaLinked
+                    ? <Badge variant="default">Alpaca linked{alpacaStatus ? ` — ${alpacaStatus}` : ''}</Badge>
+                    : <Badge variant="secondary">Not linked yet</Badge>}</div>
                 </div>
               </div>
 

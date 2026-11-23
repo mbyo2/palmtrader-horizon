@@ -48,7 +48,20 @@ async function call<T = unknown>(action: string, payload: Record<string, unknown
   const { data, error } = await supabase.functions.invoke("alpaca-broker", {
     body: { action, ...payload },
   });
-  if (error) throw new Error(error.message);
+  if (error) {
+    // supabase-js masks non-2xx bodies behind a generic message; recover the
+    // edge function's own error text (which carries Alpaca's message) so the
+    // UI can show the user what Alpaca actually said.
+    let message = error.message;
+    try {
+      const context = (error as { context?: Response }).context;
+      if (context && typeof context.clone === "function") {
+        const body = await context.clone().json().catch(() => null);
+        if (body && typeof body.error === "string" && body.error) message = body.error;
+      }
+    } catch { /* keep the generic message */ }
+    throw new Error(message);
+  }
   if (data && (data as { error?: string }).error) {
     throw new Error((data as { error: string }).error);
   }
