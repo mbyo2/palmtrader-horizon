@@ -568,17 +568,24 @@ export const DemoFees = {
 // ---------------------------------------------------------------------------
 
 export const DemoP2P = {
+  // NOTE: getters return snapshot copies, never live store references.
+  // Returning the store's own objects let in-place mutations (e.g. the demo
+  // counterparty marking an order paid via updateDemoState) silently mutate
+  // React Query's cached data too — structural sharing then saw "no change"
+  // on every poll/refetch and the UI never re-rendered in place.
   getAdvertisements(type?: 'buy' | 'sell', cryptoCurrency?: string, fiatCurrency?: string): P2PAdvertisement[] {
     return loadDemoState().p2pAds
       .filter(a => a.is_active && a.available_amount > 0)
       .filter(a => !type || a.type === type)
       .filter(a => !cryptoCurrency || a.crypto_currency === cryptoCurrency)
       .filter(a => !fiatCurrency || a.fiat_currency === fiatCurrency)
-      .sort((a, b) => type === 'sell' ? b.price - a.price : a.price - b.price);
+      .sort((a, b) => type === 'sell' ? b.price - a.price : a.price - b.price)
+      .map(a => ({ ...a, payment_methods: [...a.payment_methods] }));
   },
 
   getMyAdvertisements(userId: string): P2PAdvertisement[] {
-    return loadDemoState().p2pAds.filter(a => a.user_id === userId);
+    return loadDemoState().p2pAds.filter(a => a.user_id === userId)
+      .map(a => ({ ...a, payment_methods: [...a.payment_methods] }));
   },
 
   createAdvertisement(userId: string, req: CreateAdRequest): { success: boolean; id?: string; error?: string } {
@@ -654,11 +661,13 @@ export const DemoP2P = {
   },
 
   getMyOrders(userId: string): P2POrder[] {
-    return loadDemoState().p2pOrders.filter(o => o.buyer_id === userId || o.seller_id === userId);
+    return loadDemoState().p2pOrders.filter(o => o.buyer_id === userId || o.seller_id === userId)
+      .map(o => ({ ...o }));
   },
 
   getOrder(orderId: string): P2POrder | null {
-    return loadDemoState().p2pOrders.find(o => o.id === orderId) ?? null;
+    const o = loadDemoState().p2pOrders.find(x => x.id === orderId);
+    return o ? { ...o } : null;
   },
 
   confirmPayment(orderId: string): { success: boolean; error?: string } {
@@ -730,7 +739,7 @@ export const DemoP2P = {
   },
 
   getMessages(orderId: string): P2PMessage[] {
-    return loadDemoState().p2pMessages.filter(m => m.order_id === orderId);
+    return loadDemoState().p2pMessages.filter(m => m.order_id === orderId).map(m => ({ ...m }));
   },
 
   sendMessage(orderId: string, senderId: string, message: string, attachmentUrl?: string): { success: boolean; error?: string } {

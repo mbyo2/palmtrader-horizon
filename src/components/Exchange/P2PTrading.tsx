@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/hooks/useAuth';
+import { subscribeDemoState } from '@/services/demo/demoStore';
 import { P2PService, P2PAdvertisement, CreateAdRequest } from '@/services/P2PService';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -58,6 +59,19 @@ export const P2PTrading = () => {
     enabled: !!user,
     refetchInterval: 4000
   });
+
+  // Demo mode: the counterparty's state changes (e.g. marking an order paid)
+  // happen inside the demo store, not through a mutation here, so neither
+  // the mutation invalidations above nor the 4s poll alone were guaranteed
+  // to surface them. Subscribe to the store's update event — the same
+  // pattern PriceAlertList / MobileTrade use — and invalidate. The getters
+  // return snapshot copies and never write on read, so this cannot loop.
+  // In live mode the event never fires, so this is a no-op there.
+  useEffect(() => subscribeDemoState(() => {
+    queryClient.invalidateQueries({ queryKey: ['my-p2p-orders'] });
+    queryClient.invalidateQueries({ queryKey: ['my-p2p-ads'] });
+    queryClient.invalidateQueries({ queryKey: ['p2p-ads'] });
+  }), [queryClient]);
 
   const orderAction = useMutation({
     mutationFn: async ({ action, orderId }: { action: 'paid' | 'release' | 'cancel'; orderId: string }) => {
