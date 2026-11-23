@@ -188,21 +188,21 @@ const PredictiveAnalytics: React.FC<{ symbol: string; currentPrice?: number }> =
               <Area 
                 type="monotone" 
                 dataKey="actual" 
-                fill="#8884d8" 
-                stroke="#8884d8" 
+                fill="#F0B90B" 
+                stroke="#F0B90B" 
                 name="Actual" 
               />
               <Line 
                 type="monotone" 
                 dataKey="predicted" 
-                stroke="#ff7300" 
+                stroke="#F6465D" 
                 name="Predicted" 
               />
               <Area 
                 type="monotone" 
                 dataKey="low" 
                 stackId="1" 
-                fill="#82ca9d" 
+                fill="#0ECB81" 
                 stroke="none" 
                 name="Low Range" 
               />
@@ -210,7 +210,7 @@ const PredictiveAnalytics: React.FC<{ symbol: string; currentPrice?: number }> =
                 type="monotone" 
                 dataKey="high" 
                 stackId="1" 
-                fill="#ffc658" 
+                fill="#848E9C" 
                 stroke="none" 
                 name="High Range" 
               />

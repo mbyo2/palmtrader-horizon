@@ -150,7 +150,7 @@ const PriceTicker = ({ cryptoId }: { cryptoId: string }) => {
       <div className="text-sm font-semibold">
         {isLoading ? "..." : formatPrice(price)}
       </div>
-      <div className={`text-xs ${change && change >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+      <div className={`text-xs ${change && change >= 0 ? 'text-gain' : 'text-loss'}`}>
         {isLoading ? "..." : `${change && change >= 0 ? '+' : ''}${change?.toFixed(2) || '0.00'}%`}
       </div>
     </div>

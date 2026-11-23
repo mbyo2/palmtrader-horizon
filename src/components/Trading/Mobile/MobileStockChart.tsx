@@ -42,11 +42,11 @@ export const MobileStockChart = ({
     const chart = createChart(chartContainerRef.current, {
       layout: {
         background: { type: ColorType.Solid, color: "transparent" },
-        textColor: isDark ? "#a1a1aa" : "#71717a",
+        textColor: isDark ? "#848E9C" : "#707A8A",
       },
       grid: {
-        vertLines: { color: isDark ? "#27272a" : "#f4f4f5" },
-        horzLines: { color: isDark ? "#27272a" : "#f4f4f5" },
+        vertLines: { color: isDark ? "#2B3139" : "#EAECEF" },
+        horzLines: { color: isDark ? "#2B3139" : "#EAECEF" },
       },
       width: chartContainerRef.current.clientWidth,
       height: 300,
@@ -54,20 +54,20 @@ export const MobileStockChart = ({
         mode: 1,
         vertLine: {
           width: 1,
-          color: isDark ? "#52525b" : "#d4d4d8",
+          color: isDark ? "#2B3139" : "#EAECEF",
           style: 3,
         },
         horzLine: {
           width: 1,
-          color: isDark ? "#52525b" : "#d4d4d8",
+          color: isDark ? "#2B3139" : "#EAECEF",
           style: 3,
         },
       },
       rightPriceScale: {
-        borderColor: isDark ? "#27272a" : "#e4e4e7",
+        borderColor: isDark ? "#2B3139" : "#EAECEF",
       },
       timeScale: {
-        borderColor: isDark ? "#27272a" : "#e4e4e7",
+        borderColor: isDark ? "#2B3139" : "#EAECEF",
         timeVisible: true,
         secondsVisible: false,
       },
@@ -120,11 +120,11 @@ export const MobileStockChart = ({
 
     if (useChartType === "candlestick" && hasOHLC) {
       const candlestickSeries = chartRef.current.addSeries(CandlestickSeries, {
-        upColor: "#22c55e",
-        downColor: "#ef4444",
+        upColor: "#0ECB81",
+        downColor: "#F6465D",
         borderVisible: false,
-        wickUpColor: "#22c55e",
-        wickDownColor: "#ef4444",
+        wickUpColor: "#0ECB81",
+        wickDownColor: "#F6465D",
       });
 
       const candlestickData = data
@@ -141,7 +141,7 @@ export const MobileStockChart = ({
       seriesRef.current = candlestickSeries as any;
     } else {
       const lineSeries = chartRef.current.addSeries(LineSeries, {
-        color: "#3b82f6",
+        color: "#F0B90B",
         lineWidth: 2,
         crosshairMarkerVisible: true,
         crosshairMarkerRadius: 4,

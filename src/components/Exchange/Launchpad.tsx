@@ -80,8 +80,8 @@ export const Launchpad = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'upcoming': return 'bg-yellow-500';
-      case 'active': return 'bg-green-500';
-      case 'completed': return 'bg-blue-500';
+      case 'active': return 'bg-gain';
+      case 'completed': return 'bg-primary';
       default: return 'bg-gray-500';
     }
   };
@@ -190,7 +190,7 @@ export const Launchpad = () => {
           {activeProjects.length > 0 && (
             <div>
               <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                <span className="h-2 w-2 rounded-full bg-gain animate-pulse" />
                 Live Now
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

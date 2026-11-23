@@ -15,8 +15,8 @@ interface PortfolioAllocationProps {
 }
 
 const COLORS = [
-  "#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8", 
-  "#82CA9D", "#FFC658", "#8DD1E1", "#A4DE6C", "#D0ED57"
+  "#F0B90B", "#0ECB81", "#F6465D", "#848E9C", "#F8D33A", 
+  "#4C8BF5", "#B7BDC6", "#2EBD85", "#FF6B81", "#707A8A"
 ];
 
 const PortfolioAllocation = ({ portfolioData, totalValue }: PortfolioAllocationProps) => {

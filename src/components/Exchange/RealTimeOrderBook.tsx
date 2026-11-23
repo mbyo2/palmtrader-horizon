@@ -81,10 +81,10 @@ export const RealTimeOrderBook = ({ pairId, onPriceClick }: Props) => {
               onClick={() => onPriceClick?.(ask.price)}
             >
               <div
-                className="absolute inset-0 bg-red-500/10"
+                className="absolute inset-0 bg-loss/10"
                 style={{ width: `${(ask.quantity / maxAskQty) * 100}%`, right: 0, left: 'auto' }}
               />
-              <span className="text-red-500 relative z-10">{ask.price.toFixed(2)}</span>
+              <span className="text-loss relative z-10">{ask.price.toFixed(2)}</span>
               <span className="text-right relative z-10">{ask.quantity.toFixed(4)}</span>
               <span className="text-right text-muted-foreground relative z-10">{ask.total.toFixed(2)}</span>
             </div>
@@ -96,7 +96,7 @@ export const RealTimeOrderBook = ({ pairId, onPriceClick }: Props) => {
           <span className={cn(
             "font-bold text-sm",
             lastTradePrice && orderBook.bids[0]?.price && lastTradePrice >= orderBook.bids[0].price
-              ? "text-green-500" : "text-red-500"
+              ? "text-gain" : "text-loss"
           )}>
             {lastTradePrice?.toFixed(2) || '—'}
           </span>
@@ -111,10 +111,10 @@ export const RealTimeOrderBook = ({ pairId, onPriceClick }: Props) => {
               onClick={() => onPriceClick?.(bid.price)}
             >
               <div
-                className="absolute inset-0 bg-green-500/10"
+                className="absolute inset-0 bg-gain/10"
                 style={{ width: `${(bid.quantity / maxBidQty) * 100}%`, right: 0, left: 'auto' }}
               />
-              <span className="text-green-500 relative z-10">{bid.price.toFixed(2)}</span>
+              <span className="text-gain relative z-10">{bid.price.toFixed(2)}</span>
               <span className="text-right relative z-10">{bid.quantity.toFixed(4)}</span>
               <span className="text-right text-muted-foreground relative z-10">{bid.total.toFixed(2)}</span>
             </div>

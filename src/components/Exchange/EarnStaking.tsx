@@ -119,12 +119,12 @@ export const EarnStaking = () => {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-full bg-green-500/10">
-                <Gift className="h-5 w-5 text-green-500" />
+              <div className="p-2 rounded-full bg-gain/10">
+                <Gift className="h-5 w-5 text-gain" />
               </div>
               <div>
                 <div className="text-sm text-muted-foreground">Total Earned</div>
-                <div className="text-2xl font-bold text-green-500">${totalEarned.toLocaleString()}</div>
+                <div className="text-2xl font-bold text-gain">${totalEarned.toLocaleString()}</div>
               </div>
             </div>
           </CardContent>
@@ -133,8 +133,8 @@ export const EarnStaking = () => {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-full bg-blue-500/10">
-                <Percent className="h-5 w-5 text-blue-500" />
+              <div className="p-2 rounded-full bg-primary/10">
+                <Percent className="h-5 w-5 text-primary" />
               </div>
               <div>
                 <div className="text-sm text-muted-foreground">Active Positions</div>
@@ -173,7 +173,7 @@ export const EarnStaking = () => {
                     <div className="space-y-2">
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">APY</span>
-                        <span className="text-xl font-bold text-green-500">{product.apy}%</span>
+                        <span className="text-xl font-bold text-gain">{product.apy}%</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Min. Amount</span>
@@ -211,7 +211,7 @@ export const EarnStaking = () => {
                     <div className="space-y-2">
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">APY</span>
-                        <span className="text-xl font-bold text-green-500">{product.apy}%</span>
+                        <span className="text-xl font-bold text-gain">{product.apy}%</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Min. Amount</span>
@@ -254,7 +254,7 @@ export const EarnStaking = () => {
                           </div>
                         </div>
                         <div className="text-right">
-                          <div className="text-lg font-bold text-green-500">
+                          <div className="text-lg font-bold text-gain">
                             +{position.accrued_interest.toFixed(8)}
                           </div>
                           <div className="text-sm text-muted-foreground">
@@ -315,7 +315,7 @@ export const EarnStaking = () => {
             <div className="rounded-lg bg-muted p-4 space-y-2">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">APY</span>
-                <span className="text-green-500 font-bold">{selectedProduct?.apy}%</span>
+                <span className="text-gain font-bold">{selectedProduct?.apy}%</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Lock Period</span>

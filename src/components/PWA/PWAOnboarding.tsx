@@ -33,7 +33,7 @@ const PWAOnboarding: React.FC<PWAOnboardingProps> = ({ onComplete }) => {
       description: "Get instant alerts for price changes, trade confirmations, and market updates."
     },
     {
-      icon: <Wifi className="h-8 w-8 text-purple-500" />,
+      icon: <Wifi className="h-8 w-8 text-primary" />,
       title: "Offline Access",
       description: "View your portfolio and market data even when you're offline."
     },

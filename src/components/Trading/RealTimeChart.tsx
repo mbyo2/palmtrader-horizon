@@ -62,17 +62,17 @@ export const RealTimeChart: React.FC<RealTimeChartProps> = ({
       height: height,
       layout: {
         background: { type: ColorType.Solid, color: 'transparent' },
-        textColor: isDark ? '#9CA3AF' : '#374151',
+        textColor: isDark ? '#848E9C' : '#2B3139',
       },
       grid: {
-        vertLines: { color: isDark ? '#374151' : '#E5E7EB' },
-        horzLines: { color: isDark ? '#374151' : '#E5E7EB' },
+        vertLines: { color: isDark ? '#2B3139' : '#EAECEF' },
+        horzLines: { color: isDark ? '#2B3139' : '#EAECEF' },
       },
       rightPriceScale: {
-        borderColor: isDark ? '#374151' : '#E5E7EB',
+        borderColor: isDark ? '#2B3139' : '#EAECEF',
       },
       timeScale: {
-        borderColor: isDark ? '#374151' : '#E5E7EB',
+        borderColor: isDark ? '#2B3139' : '#EAECEF',
         timeVisible: true,
         secondsVisible: false,
       },
@@ -111,15 +111,15 @@ export const RealTimeChart: React.FC<RealTimeChartProps> = ({
     // Add new series based on type
     if (chartType === 'candle') {
       seriesRef.current = chartRef.current.addSeries(CandlestickSeries, {
-        upColor: '#22c55e',
-        downColor: '#ef4444',
+        upColor: '#0ECB81',
+        downColor: '#F6465D',
         borderVisible: false,
-        wickUpColor: '#22c55e',
-        wickDownColor: '#ef4444',
+        wickUpColor: '#0ECB81',
+        wickDownColor: '#F6465D',
       });
     } else {
       seriesRef.current = chartRef.current.addSeries(LineSeries, {
-        color: '#3b82f6',
+        color: '#F0B90B',
         lineWidth: 2,
         priceLineVisible: true,
         lastValueVisible: true,

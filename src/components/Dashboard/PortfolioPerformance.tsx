@@ -315,7 +315,7 @@ const PortfolioPerformance = () => {
                     type="monotone"
                     dataKey="value"
                     name="Portfolio Value"
-                    stroke="#8884d8"
+                    stroke="#F0B90B"
                     strokeWidth={2}
                   />
                 )}
@@ -324,7 +324,7 @@ const PortfolioPerformance = () => {
                     type="monotone"
                     dataKey="returns"
                     name="Returns %"
-                    stroke="#82ca9d"
+                    stroke="#0ECB81"
                     strokeWidth={2}
                   />
                 )}

@@ -200,7 +200,7 @@ export const ConvertSwap = () => {
                   Quote expires in
                 </span>
                 <div className="flex items-center gap-2">
-                  <span className={cn(quoteExpiry <= 3 ? 'text-red-500' : '')}>{quoteExpiry}s</span>
+                  <span className={cn(quoteExpiry <= 3 ? 'text-loss' : '')}>{quoteExpiry}s</span>
                   <Button variant="ghost" size="icon" className="h-6 w-6" onClick={refreshQuote}>
                     <RefreshCw className="h-3 w-3" />
                   </Button>
@@ -233,7 +233,7 @@ export const ConvertSwap = () => {
               {history.slice(0, 5).map(item => (
                 <div key={item.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
                   <div className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <CheckCircle className="h-4 w-4 text-gain" />
                     <div>
                       <div className="font-medium">
                         {item.from_amount.toFixed(4)} {item.from_currency} → {item.to_amount.toFixed(8)} {item.to_currency}

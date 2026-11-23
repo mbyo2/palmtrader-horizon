@@ -77,12 +77,12 @@ export function AdvancedStockChart({ symbol, data, compact = false }: AdvancedSt
 
   const isDarkMode = document.documentElement.classList.contains("dark");
   const colors = {
-    primary: isDarkMode ? "#818cf8" : "#4f46e5",
-    secondary: isDarkMode ? "#9ca3af" : "#6b7280",
-    positive: "#10b981",
-    negative: "#ef4444",
-    background: isDarkMode ? "#1f2937" : "#f3f4f6",
-    grid: isDarkMode ? "#374151" : "#e5e7eb",
+    primary: "#F0B90B",
+    secondary: "#848E9C",
+    positive: "#0ECB81",
+    negative: "#F6465D",
+    background: isDarkMode ? "#181A20" : "#F8F9FA",
+    grid: isDarkMode ? "#2B3139" : "#EAECEF",
   };
 
   // Format data for better visualization
@@ -159,7 +159,7 @@ export function AdvancedStockChart({ symbol, data, compact = false }: AdvancedSt
             <span className="text-base sm:text-lg font-semibold">${currentPrice.toFixed(2)}</span>
             <span
               className={`text-sm sm:text-base ${
-                priceChange >= 0 ? "text-green-500" : "text-red-500"
+                priceChange >= 0 ? "text-gain" : "text-loss"
               }`}
             >
               {priceChange >= 0 ? "+" : ""}

@@ -37,13 +37,13 @@ const PremiumFeature = ({ children, fallback }: PremiumFeatureProps) => {
 
   if (!isPremium()) {
     return fallback || (
-      <Card className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20">
+      <Card className="p-4 bg-primary/10 border border-primary/20">
         <div className="text-center">
-          <Crown className="w-8 h-8 mx-auto text-purple-500 mb-2" />
-          <h3 className="text-lg font-semibold text-purple-800 dark:text-purple-200">
+          <Crown className="w-8 h-8 mx-auto text-primary mb-2" />
+          <h3 className="text-lg font-semibold text-foreground">
             Premium Feature
           </h3>
-          <p className="text-sm text-purple-600 dark:text-purple-300 mt-1">
+          <p className="text-sm text-muted-foreground mt-1">
             Upgrade to Premium to access advanced trading features.
           </p>
           <Button

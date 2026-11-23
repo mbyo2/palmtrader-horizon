@@ -49,7 +49,7 @@ export default function AccountTypeSelector({ onAccountCreated }: AccountTypeSel
       demo: "border-muted-foreground/30 hover:border-muted-foreground/50",
       cent: "border-green-500/30 hover:border-green-500/50",
       standard_stp: "border-blue-500/30 hover:border-blue-500/50",
-      raw_ecn: "border-purple-500/30 hover:border-purple-500/50",
+      raw_ecn: "border-primary/30 hover:border-primary/50",
       pro_ecn: "border-amber-500/30 hover:border-amber-500/50 ring-1 ring-amber-500/20",
       islamic: "border-emerald-500/30 hover:border-emerald-500/50"
     };

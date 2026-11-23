@@ -274,8 +274,8 @@ export const P2PTrading = () => {
           <div className="flex flex-wrap items-center gap-4">
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'buy' | 'sell')}>
               <TabsList>
-                <TabsTrigger value="buy" className="text-green-500">Buy</TabsTrigger>
-                <TabsTrigger value="sell" className="text-red-500">Sell</TabsTrigger>
+                <TabsTrigger value="buy" className="text-gain">Buy</TabsTrigger>
+                <TabsTrigger value="sell" className="text-loss">Sell</TabsTrigger>
               </TabsList>
             </Tabs>
 

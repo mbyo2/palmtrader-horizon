@@ -120,10 +120,10 @@ const AdvancedChart: React.FC<AdvancedChartProps> = ({
       <div className="w-full" style={{ height }}>
         <ChartContainer
           config={{
-            price: { theme: { dark: '#8884d8', light: '#8884d8' } },
+            price: { theme: { dark: '#F0B90B', light: '#F0B90B' } },
             prediction: { theme: { dark: '#ff9800', light: '#ff9800' } },
-            sma50: { theme: { dark: '#4CAF50', light: '#4CAF50' } },
-            sma200: { theme: { dark: '#F44336', light: '#F44336' } },
+            sma50: { theme: { dark: '#0ECB81', light: '#0ECB81' } },
+            sma200: { theme: { dark: '#F6465D', light: '#F6465D' } },
             volume: { theme: { dark: '#64748b', light: '#64748b' } },
           }}
         >

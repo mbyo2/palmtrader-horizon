@@ -31,7 +31,7 @@ export default function TradingAccountsList({ onSelectAccount, onOpenNewAccount 
       demo: "bg-gray-500/10 text-gray-500 border-gray-500/30",
       cent: "bg-green-500/10 text-green-500 border-green-500/30",
       standard_stp: "bg-blue-500/10 text-blue-500 border-blue-500/30",
-      raw_ecn: "bg-purple-500/10 text-purple-500 border-purple-500/30",
+      raw_ecn: "bg-primary/10 text-primary border-primary/30",
       pro_ecn: "bg-amber-500/10 text-amber-500 border-amber-500/30",
       islamic: "bg-emerald-500/10 text-emerald-500 border-emerald-500/30"
     };

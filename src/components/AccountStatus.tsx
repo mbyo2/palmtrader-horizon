@@ -141,8 +141,8 @@ const AccountStatus = () => {
         
         {accountDetails.role === 'basic' && 
          accountDetails.account_status === 'active' && (
-          <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 p-4 rounded-lg">
-            <p className="text-sm text-purple-800 dark:text-purple-200">
+          <div className="bg-primary/10 border border-primary/20 p-4 rounded-lg">
+            <p className="text-sm text-foreground">
               Upgrade to Premium for advanced trading features and real-time market data.
             </p>
             <Button 

@@ -62,17 +62,17 @@ const MobileTrade = () => {
           </Button>
           <div className="flex-1">
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold">{symbol}</h1>
+              <h1 className="text-xl font-semibold">{symbol}</h1>
               <Badge variant="outline">{instrument.exchange}</Badge>
               <WatchlistButton symbol={symbol} />
             </div>
             <p className="text-sm text-muted-foreground">{instrument.name}</p>
           </div>
           <div className="text-right">
-            <div className="text-2xl font-bold">
+            <div className="text-4xl font-bold tracking-tight">
               {currencySymbol}{displayPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
-            <div className={`flex items-center justify-end gap-1 text-sm font-medium ${isUp ? "text-green-500" : "text-red-500"}`}>
+            <div className={`flex items-center justify-end gap-1 text-sm font-medium ${isUp ? "text-gain" : "text-loss"}`}>
               {isUp ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
               {isUp ? "+" : ""}{change.toFixed(2)} ({isUp ? "+" : ""}{changePct.toFixed(2)}%)
             </div>

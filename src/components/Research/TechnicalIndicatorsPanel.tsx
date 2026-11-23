@@ -114,7 +114,7 @@ export function TechnicalIndicatorsPanel({ symbol }: TechnicalIndicatorsPanelPro
                   />
                   <ReferenceLine y={70} stroke="red" strokeDasharray="3 3" label="Overbought" />
                   <ReferenceLine y={30} stroke="green" strokeDasharray="3 3" label="Oversold" />
-                  <Line type="monotone" dataKey="value" stroke="#8884d8" dot={false} strokeWidth={2} />
+                  <Line type="monotone" dataKey="value" stroke="#F0B90B" dot={false} strokeWidth={2} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -139,9 +139,9 @@ export function TechnicalIndicatorsPanel({ symbol }: TechnicalIndicatorsPanelPro
                     labelFormatter={(label) => new Date(label).toLocaleDateString()}
                   />
                   <ReferenceLine y={0} stroke="#666" />
-                  <Bar dataKey="histogram" fill="#82ca9d" name="Histogram" />
-                  <Line type="monotone" dataKey="value" stroke="#8884d8" dot={false} name="MACD" strokeWidth={2} />
-                  <Line type="monotone" dataKey="signal" stroke="#ff7300" dot={false} name="Signal" strokeWidth={2} />
+                  <Bar dataKey="histogram" fill="#0ECB81" name="Histogram" />
+                  <Line type="monotone" dataKey="value" stroke="#F0B90B" dot={false} name="MACD" strokeWidth={2} />
+                  <Line type="monotone" dataKey="signal" stroke="#F6465D" dot={false} name="Signal" strokeWidth={2} />
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
@@ -169,7 +169,7 @@ export function TechnicalIndicatorsPanel({ symbol }: TechnicalIndicatorsPanelPro
                     labelFormatter={(label) => new Date(label).toLocaleDateString()}
                     formatter={(value: number) => [`$${value.toFixed(2)}`, 'SMA 20']}
                   />
-                  <Line type="monotone" dataKey="value" stroke="#8884d8" dot={false} strokeWidth={2} />
+                  <Line type="monotone" dataKey="value" stroke="#F0B90B" dot={false} strokeWidth={2} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -193,9 +193,9 @@ export function TechnicalIndicatorsPanel({ symbol }: TechnicalIndicatorsPanelPro
                     labelFormatter={(label) => new Date(label).toLocaleDateString()}
                     formatter={(value: number) => [`$${value.toFixed(2)}`]}
                   />
-                  <Area type="monotone" dataKey="upperBand" stroke="#82ca9d" fill="#82ca9d" fillOpacity={0.1} name="Upper Band" />
-                  <Area type="monotone" dataKey="lowerBand" stroke="#ff7300" fill="#ff7300" fillOpacity={0.1} name="Lower Band" />
-                  <Line type="monotone" dataKey="value" stroke="#8884d8" dot={false} strokeWidth={2} name="Middle Band" />
+                  <Area type="monotone" dataKey="upperBand" stroke="#0ECB81" fill="#0ECB81" fillOpacity={0.1} name="Upper Band" />
+                  <Area type="monotone" dataKey="lowerBand" stroke="#F6465D" fill="#F6465D" fillOpacity={0.1} name="Lower Band" />
+                  <Line type="monotone" dataKey="value" stroke="#F0B90B" dot={false} strokeWidth={2} name="Middle Band" />
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
