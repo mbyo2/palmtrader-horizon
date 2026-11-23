@@ -4,11 +4,14 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
+import { isDemoSync } from '@/services/demo/DemoBackend';
+import { DemoResearch } from '@/services/demo/demoResearch';
 
 const AnalystRatings = ({ symbol }: { symbol: string }) => {
   const { data: ratings, isLoading } = useQuery({
     queryKey: ["analyst-ratings", symbol],
     queryFn: async () => {
+      if (isDemoSync()) return DemoResearch.analystRatings(symbol) as any;
       const { data, error } = await supabase
         .from("analyst_ratings")
         .select("*")

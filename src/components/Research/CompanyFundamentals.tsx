@@ -2,11 +2,14 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { isDemoSync } from '@/services/demo/DemoBackend';
+import { DemoResearch } from '@/services/demo/demoResearch';
 
 const CompanyFundamentals = ({ symbol }: { symbol: string }) => {
   const { data: fundamentals, isLoading } = useQuery({
     queryKey: ["fundamentals", symbol],
     queryFn: async () => {
+      if (isDemoSync()) return DemoResearch.fundamentals(symbol) as any;
       const { data, error } = await supabase
         .from("company_fundamentals")
         .select("*")

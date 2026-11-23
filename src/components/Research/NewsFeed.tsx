@@ -189,7 +189,7 @@ const NewsFeed = ({ defaultCategory = "general", limit = 10 }: NewsFeedProps) =>
                   )}
                 </div>
               ))}
-              <p className="text-xs text-center text-muted-foreground pt-2">Sample data — live news feed coming soon</p>
+              <p className="text-xs text-center text-muted-foreground pt-2">Demo headlines — connect a news provider in the backend to stream live coverage</p>
             </div>
           ) : (
             <div className="space-y-3 sm:space-y-4">

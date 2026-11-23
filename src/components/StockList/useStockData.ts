@@ -5,6 +5,8 @@ import { wsManager } from "@/services/market/WebSocketManager";
 import { supabase } from "@/integrations/supabase/client";
 import { nanoid } from "nanoid";
 import { devConsole } from "@/utils/productionConsole";
+import { isDemoSync } from "@/services/demo/DemoBackend";
+import { STOCKS, getStockPrice, getChangePct, subscribePrices } from "@/services/demo/demoMarket";
 
 export interface Stock {
   symbol: string;
@@ -22,6 +24,27 @@ export const useStockData = (searchQuery: string) => {
 
   // Fetch dynamic stock list from database or popular symbols
   useEffect(() => {
+    if (isDemoSync()) {
+      const build = () => {
+        const q = searchQuery.trim().toUpperCase();
+        const list: Stock[] = STOCKS
+          .filter(s => !q || s.symbol.includes(q) || s.name.toUpperCase().includes(q))
+          .map(s => {
+            const change = getChangePct(s.symbol);
+            return {
+              symbol: s.symbol,
+              name: s.name,
+              price: getStockPrice(s.symbol).toFixed(2),
+              change: `${change >= 0 ? "+" : ""}${change.toFixed(1)}%`,
+            };
+          });
+        setStocks(list);
+        setLoading(false);
+      };
+      build();
+      return subscribePrices(build);
+    }
+
     let cleanup: (() => void) | undefined;
     let isActive = true;
 

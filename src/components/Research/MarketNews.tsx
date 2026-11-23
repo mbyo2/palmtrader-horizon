@@ -3,11 +3,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { isDemoSync } from '@/services/demo/DemoBackend';
+import { DemoResearch } from '@/services/demo/demoResearch';
 
 const MarketNews = ({ symbol }: { symbol: string }) => {
   const { data: news, isLoading } = useQuery({
     queryKey: ["market-news", symbol],
     queryFn: async () => {
+      if (isDemoSync()) return DemoResearch.marketNews(symbol) as any;
       console.log("Fetching news for symbol:", symbol);
       const { data, error } = await supabase
         .from("market_news")
