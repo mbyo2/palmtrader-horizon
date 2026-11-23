@@ -26,6 +26,7 @@ import ContentModeration from "./ContentModeration";
 import { AnalyticsDashboard } from "./Analytics/AnalyticsDashboard";
 import ComplianceReporting from "./Compliance/ComplianceReporting";
 import SuspiciousActivityMonitor from "./Compliance/SuspiciousActivityMonitor";
+import KYCReviewQueue from "./KYCReviewQueue";
 
 export const SuperUserDashboard = () => {
   const [loading, setLoading] = useState(false);
@@ -157,8 +158,9 @@ export const SuperUserDashboard = () => {
       </div>
 
       <Tabs defaultValue="analytics" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-8">
+        <TabsList className="flex w-full flex-wrap">
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <TabsTrigger value="kyc">KYC Review</TabsTrigger>
           <TabsTrigger value="compliance">Compliance</TabsTrigger>
           <TabsTrigger value="suspicious">Suspicious</TabsTrigger>
           <TabsTrigger value="users">Users</TabsTrigger>
@@ -170,6 +172,10 @@ export const SuperUserDashboard = () => {
         
         <TabsContent value="analytics">
           <AnalyticsDashboard />
+        </TabsContent>
+
+        <TabsContent value="kyc">
+          <KYCReviewQueue />
         </TabsContent>
 
         <TabsContent value="compliance">

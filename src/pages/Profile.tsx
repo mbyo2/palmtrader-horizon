@@ -13,6 +13,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Shield, Camera, CheckCircle, XCircle, Clock, Award } from "lucide-react";
+import KYCStatusBanner from "@/components/KYC/KYCStatusBanner";
 import ActivityStats from "@/components/Profile/ActivityStats";
 import RecentActivityList from "@/components/Profile/RecentActivityList";
 
@@ -124,6 +125,9 @@ const Profile = () => {
           Change Photo
         </Button>
       </div>
+
+      {/* Identity verification (in-house KYC) */}
+      <KYCStatusBanner reason="Verify your identity with your NRC or passport to unlock withdrawals, higher limits and P2P trading." />
 
       {/* Completion */}
       <Card>

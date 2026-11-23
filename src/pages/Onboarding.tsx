@@ -85,7 +85,12 @@ const Onboarding = () => {
         date_of_birth: accountDetails.date_of_birth || '',
         tax_id: accountDetails.tax_id || '',
       }));
-      setKycStatus(accountDetails.kyc_status as any || 'not_started');
+      // account_details uses 'approved'; this screen's badge uses 'verified'.
+      setKycStatus(
+        accountDetails.kyc_status === 'approved'
+          ? 'verified'
+          : ((accountDetails.kyc_status as 'not_started' | 'pending' | 'rejected') || 'not_started'),
+      );
     }
   }, [user, accountDetails, navigate, authLoading]);
 
@@ -109,42 +114,10 @@ const Onboarding = () => {
     if (currentStep > 1) setCurrentStep(currentStep - 1);
   };
 
-  const handleStartKYC = async () => {
-    if (!user) return;
-    try {
-      const { data: result, error } = await supabase.functions.invoke('didit-kyc', {
-        body: {
-          action: 'create_session',
-          callback_url: `${window.location.origin}/onboarding`,
-        },
-      });
-      if (error) throw error;
-
-      if (result?.status === 'dev_mode') {
-        toast({
-          title: "Demo verification activated",
-          description: "Live identity verification is being configured. You've been granted demo access — full features will unlock when verification goes live.",
-        });
-        setKycStatus('pending');
-      } else if (result?.url) {
-        toast({
-          title: "Opening Didit verification",
-          description: "Complete the verification in the new window. We'll update your status automatically.",
-        });
-        window.open(result.url, '_blank', 'noopener,noreferrer');
-        setKycStatus('pending');
-      } else {
-        throw new Error('Unexpected response from verification service');
-      }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      console.error('KYC error:', err);
-      toast({
-        title: "Verification unavailable",
-        description: `${message}. You can continue to demo trading and try again from Settings later.`,
-        variant: "destructive",
-      });
-    }
+  // In-house KYC: the guided flow lives on /kyc (document photo + live
+  // selfie + details, reviewed by a member of our team).
+  const handleStartKYC = () => {
+    navigate('/kyc');
   };
 
   const handleComplete = async () => {
@@ -372,20 +345,16 @@ const Onboarding = () => {
                 {kycStatus === 'not_started' && (
                   <div className="space-y-3">
                     <p className="text-sm text-muted-foreground">
-                      You'll need a valid government-issued ID (passport, NRC, or driver's license) and a selfie for verification.
+                      You'll need your Zambian National Registration Card (NRC) or a passport, plus a live selfie taken in the app. A member of our team reviews every application.
                     </p>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                       <div className="flex items-center gap-2 p-2 bg-background rounded">
                         <FileCheck className="h-4 w-4 text-primary" />
-                        <span>Government ID</span>
+                        <span>NRC or Passport</span>
                       </div>
                       <div className="flex items-center gap-2 p-2 bg-background rounded">
                         <User className="h-4 w-4 text-primary" />
-                        <span>Selfie Photo</span>
-                      </div>
-                      <div className="flex items-center gap-2 p-2 bg-background rounded">
-                        <CreditCard className="h-4 w-4 text-primary" />
-                        <span>Proof of Address</span>
+                        <span>Live Selfie</span>
                       </div>
                     </div>
                     <Button onClick={handleStartKYC} className="w-full">

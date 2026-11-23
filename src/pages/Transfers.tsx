@@ -1,6 +1,7 @@
 
 import { useProtectedRoute } from "@/hooks/useProtectedRoute";
 import FundTransferInterface from "@/components/Banking/FundTransferInterface";
+import KYCStatusBanner from "@/components/KYC/KYCStatusBanner";
 
 const Transfers = () => {
   const { isLoading } = useProtectedRoute();
@@ -15,7 +16,9 @@ const Transfers = () => {
       <p className="text-muted-foreground">
         Deposit or withdraw funds from your trading account.
       </p>
-      
+
+      <KYCStatusBanner reason="Withdrawals need a verified identity. Verify with your NRC or passport and a live selfie — a member of our team reviews every application." />
+
       <FundTransferInterface />
     </div>
   );
