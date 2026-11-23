@@ -199,7 +199,7 @@ Deno.serve(async (req) => {
         }
         const created = await alpacaFetch('/v1/accounts', {
           method: 'POST',
-          body: JSON.stringify({ contact, identity, disclosures, agreements, enabled_assets: ['us_equity'] }),
+          body: JSON.stringify({ contact, identity, disclosures, agreements, enabled_assets: ['us_equity', 'crypto'] }),
         });
 
         // Persist link on user's existing trading account, or create a "live" trading_account row.
@@ -211,7 +211,7 @@ Deno.serve(async (req) => {
           .maybeSingle();
 
         if (existing) {
-          await adminClient.from('trading_accounts')
+          const { error: linkErr } = await adminClient.from('trading_accounts')
             .update({
               alpaca_account_id: created.id,
               alpaca_account_status: created.status,
@@ -219,11 +219,18 @@ Deno.serve(async (req) => {
               updated_at: new Date().toISOString(),
             })
             .eq('id', existing.id);
+          if (linkErr) {
+            return jsonResponse({ error: `Alpaca account created (${created.id}) but linking failed: ${linkErr.message}` }, 500);
+          }
         } else {
-          await adminClient.from('trading_accounts').insert({
+          // trading_accounts.account_number is NOT NULL — it must carry the
+          // Alpaca account number or this insert fails (silently, before the
+          // error surfacing below was added) and the account never links.
+          const { error: linkErr } = await adminClient.from('trading_accounts').insert({
             user_id: userId,
             account_type: 'live',
             account_name: 'Alpaca Live',
+            account_number: created.account_number,
             currency: 'USD',
             balance: 0,
             available_balance: 0,
@@ -232,6 +239,9 @@ Deno.serve(async (req) => {
             alpaca_account_status: created.status,
             alpaca_account_number: created.account_number,
           });
+          if (linkErr) {
+            return jsonResponse({ error: `Alpaca account created (${created.id}) but linking failed: ${linkErr.message}` }, 500);
+          }
         }
 
         return jsonResponse({ ok: true, alpaca_account: created });
@@ -296,7 +306,17 @@ Deno.serve(async (req) => {
           { method: 'POST', body: JSON.stringify(payload) },
         );
 
-        // Mirror the order locally for the UI
+        // Mirror the order locally for the UI. The local orders table only
+        // accepts pending/filled/cancelled/rejected/partial, so Alpaca's
+        // status vocabulary must be translated — inserting raw Alpaca
+        // statuses ('pending_new', 'accepted', 'canceled', ...) violates
+        // the CHECK constraint and the mirror silently never landed.
+        const localStatus =
+          order.status === 'filled' ? 'filled'
+          : order.status === 'partially_filled' ? 'partial'
+          : order.status === 'canceled' || order.status === 'cancelled' ? 'cancelled'
+          : order.status === 'rejected' ? 'rejected'
+          : 'pending';
         await adminClient.from('orders').insert({
           user_id: userId,
           symbol,
@@ -306,7 +326,7 @@ Deno.serve(async (req) => {
           limit_price: limit_price != null ? Number(limit_price) : null,
           stop_price: stop_price != null ? Number(stop_price) : null,
           time_in_force,
-          status: order.status ?? 'pending',
+          status: localStatus,
           alpaca_order_id: order.id,
           broker: 'alpaca',
         });

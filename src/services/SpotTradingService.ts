@@ -1,6 +1,12 @@
 import { supabase } from "@/integrations/supabase/client";
 import { isDemo } from '@/services/demo/DemoBackend';
 import { DemoSpot } from '@/services/demo/demoExchange';
+import { ALPACA_CRYPTO_BASES, alpacaCryptoSymbol, isAlpacaCryptoSymbol } from '@/services/venueRouting';
+import {
+  AlpacaPaperService,
+  mapMirrorOrderToUiOrder,
+  type AlpacaMirrorOrder,
+} from '@/services/AlpacaPaperService';
 
 export interface TradingPair {
   id: string;
@@ -14,6 +20,46 @@ export interface TradingPair {
   taker_fee: number;
   is_active: boolean;
   created_at: string;
+  /**
+   * Execution venue for signed-in users (CEO directive 2026-11-23):
+   * 'alpaca' pairs execute on Alpaca paper; 'simulated' pairs run on the
+   * local PalmCacia simulated market (ZMW/USDT carve-outs). Undefined in
+   * demo mode, where the whole surface is the demo layer.
+   */
+  venue?: 'alpaca' | 'simulated';
+}
+
+/** Catalogue bases that get a real Alpaca paper USD pair for signed-in users. */
+const ALPACA_SPOT_BASES = ['BTC', 'ETH', 'SOL', 'XRP', 'ADA', 'DOGE'];
+
+export const alpacaPairId = (base: string) => `alpaca:${base.toUpperCase()}-USD`;
+export const isAlpacaPairId = (pairId: string) => pairId.startsWith('alpaca:');
+
+function alpacaTradingPair(base: string): TradingPair {
+  return {
+    id: alpacaPairId(base),
+    base_currency: base,
+    quote_currency: 'USD',
+    min_order_size: 0.0001,
+    max_order_size: 100000,
+    price_precision: 2,
+    quantity_precision: 6,
+    maker_fee: 0,
+    taker_fee: 0,
+    is_active: true,
+    created_at: new Date(0).toISOString(),
+    venue: 'alpaca',
+  };
+}
+
+function alpacaTradingPairs(): TradingPair[] {
+  return ALPACA_SPOT_BASES.filter((b) => ALPACA_CRYPTO_BASES.has(b)).map(alpacaTradingPair);
+}
+
+function alpacaPairById(pairId: string): TradingPair | null {
+  if (!isAlpacaPairId(pairId)) return null;
+  const base = pairId.slice('alpaca:'.length).split('-')[0];
+  return ALPACA_SPOT_BASES.includes(base) ? alpacaTradingPair(base) : null;
 }
 
 export interface SpotOrder {
@@ -57,17 +103,24 @@ export class SpotTradingService {
       .order('base_currency');
 
     if (error) throw error;
-    return (data || []).map(pair => ({
+    const dbPairs = (data || []).map(pair => ({
       ...pair,
       min_order_size: Number(pair.min_order_size),
       max_order_size: Number(pair.max_order_size),
       maker_fee: Number(pair.maker_fee),
-      taker_fee: Number(pair.taker_fee)
+      taker_fee: Number(pair.taker_fee),
+      // DB pairs are USDT/ETH quoted — Alpaca lists none of them, so for
+      // signed-in users they run on the PalmCacia simulated market.
+      venue: 'simulated' as const
     }));
+    // Alpaca paper USD pairs come first so the default selection is a real venue.
+    return [...alpacaTradingPairs(), ...dbPairs];
   }
 
   static async getPairById(pairId: string): Promise<TradingPair | null> {
     if (await isDemo()) return DemoSpot.getPairById(pairId);
+    const alpacaPair = alpacaPairById(pairId);
+    if (alpacaPair) return alpacaPair;
     const { data, error } = await supabase
       .from('trading_pairs')
       .select('*')
@@ -80,7 +133,8 @@ export class SpotTradingService {
       min_order_size: Number(data.min_order_size),
       max_order_size: Number(data.max_order_size),
       maker_fee: Number(data.maker_fee),
-      taker_fee: Number(data.taker_fee)
+      taker_fee: Number(data.taker_fee),
+      venue: 'simulated' as const
     };
   }
 
@@ -147,8 +201,34 @@ export class SpotTradingService {
     price?: number,
     stopPrice?: number,
     timeInForce: 'GTC' | 'IOC' | 'FOK' = 'GTC'
-  ): Promise<{ success: boolean; orderId?: string; error?: string }> {
+  ): Promise<{ success: boolean; orderId?: string; error?: string; venue?: 'alpaca' | 'simulated' }> {
     if (await isDemo()) return DemoSpot.placeOrder(userId, pairId, side, orderType, quantity, price, stopPrice, timeInForce);
+
+    // Alpaca-venue pairs execute on the Alpaca paper account as BASE/USD.
+    // A rejection or outage is returned as an honest failure — the order is
+    // never silently re-routed to the simulated market.
+    const alpacaPair = alpacaPairById(pairId);
+    if (alpacaPair) {
+      try {
+        const res = await AlpacaPaperService.placeOrder({
+          symbol: alpacaCryptoSymbol(alpacaPair.base_currency),
+          qty: quantity,
+          side,
+          type: orderType,
+          time_in_force: 'gtc',
+          limit_price: orderType !== 'market' ? price : undefined,
+          stop_price: stopPrice,
+        });
+        return { success: true, orderId: `alpaca:${res.order.id}`, venue: 'alpaca' };
+      } catch (error) {
+        return {
+          success: false,
+          venue: 'alpaca',
+          error: error instanceof Error ? `Alpaca Sandbox order failed: ${error.message}` : 'Alpaca Sandbox order failed',
+        };
+      }
+    }
+
     try {
       const orderData: any = {
         user_id: userId,
@@ -178,7 +258,7 @@ export class SpotTradingService {
         await this.executeMarketOrder(data.id, pairId, side, quantity);
       }
 
-      return { success: true, orderId: data.id };
+      return { success: true, orderId: data.id, venue: 'simulated' };
     } catch (error) {
       return { success: false, error: error instanceof Error ? error.message : 'Failed to place order' };
     }
@@ -206,8 +286,62 @@ export class SpotTradingService {
       .eq('id', orderId);
   }
 
+  /**
+   * The user's Alpaca paper crypto orders, read back from Alpaca (via the
+   * function's mirrored rows with live status overlay) in SpotOrder shape.
+   * Order ids are prefixed `alpaca:` so cancel can route back to Alpaca.
+   */
+  private static async fetchAlpacaSpotOrders(userId: string): Promise<SpotOrder[]> {
+    try {
+      const res = await AlpacaPaperService.getOrders(100);
+      return (res.orders as AlpacaMirrorOrder[])
+        .filter((r) => isAlpacaCryptoSymbol(r.symbol))
+        .map((r) => {
+          const ui = mapMirrorOrderToUiOrder(r);
+          const base = r.symbol.slice(0, -3);
+          const status: SpotOrder['status'] =
+            ui.status === 'filled' ? 'filled'
+            : ui.status === 'partial' ? 'partially_filled'
+            : ui.status === 'cancelled' || ui.status === 'rejected' ? 'cancelled'
+            : 'open';
+          return {
+            id: `alpaca:${r.alpaca_order_id ?? r.id}`,
+            user_id: userId,
+            pair_id: alpacaPairId(base),
+            side: ui.side,
+            order_type: (ui.order_type === 'stop' ? 'stop_limit' : ui.order_type) as SpotOrder['order_type'],
+            price: ui.limit_price ?? ui.average_fill_price,
+            stop_price: ui.stop_price,
+            quantity: ui.quantity,
+            filled_quantity: ui.filled_quantity,
+            remaining_quantity: Math.max(ui.quantity - ui.filled_quantity, 0),
+            average_fill_price: ui.average_fill_price,
+            status,
+            time_in_force: 'GTC' as const,
+            created_at: ui.created_at,
+            updated_at: ui.updated_at,
+          };
+        });
+    } catch (err) {
+      console.error('Alpaca paper spot orders read-back failed:', err);
+      return [];
+    }
+  }
+
   static async cancelOrder(orderId: string): Promise<{ success: boolean; error?: string }> {
     if (await isDemo()) return DemoSpot.cancelOrder(orderId);
+    // Alpaca orders are cancelled on Alpaca, not in the local table.
+    if (orderId.startsWith('alpaca:')) {
+      try {
+        await AlpacaPaperService.cancelOrder(orderId.slice('alpaca:'.length));
+        return { success: true };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? `Could not cancel on Alpaca Sandbox: ${error.message}` : 'Could not cancel on Alpaca Sandbox',
+        };
+      }
+    }
     try {
       const { error } = await supabase
         .from('spot_orders')
@@ -226,19 +360,23 @@ export class SpotTradingService {
 
   static async getOpenOrders(userId: string, pairId?: string): Promise<SpotOrder[]> {
     if (await isDemo()) return DemoSpot.getOpenOrders(userId, pairId);
-    let query = supabase
-      .from('spot_orders')
-      .select('*')
-      .eq('user_id', userId)
-      .in('status', ['open', 'partially_filled'])
-      .order('created_at', { ascending: false });
+    const wantAlpaca = !pairId || isAlpacaPairId(pairId);
+    const wantLocal = !pairId || !isAlpacaPairId(pairId);
 
-    if (pairId) query = query.eq('pair_id', pairId);
+    let localOrders: SpotOrder[] = [];
+    if (wantLocal) {
+      let query = supabase
+        .from('spot_orders')
+        .select('*')
+        .eq('user_id', userId)
+        .in('status', ['open', 'partially_filled'])
+        .order('created_at', { ascending: false });
 
-    const { data, error } = await query;
-    if (error) throw error;
+      if (pairId) query = query.eq('pair_id', pairId);
 
-    return (data || []).map(order => ({
+      const { data, error } = await query;
+      if (error) throw error;
+      localOrders = (data || []).map(order => ({
       ...order,
       side: order.side as 'buy' | 'sell',
       order_type: order.order_type as 'market' | 'limit' | 'stop_limit',
@@ -250,7 +388,18 @@ export class SpotTradingService {
       filled_quantity: Number(order.filled_quantity),
       remaining_quantity: order.remaining_quantity ? Number(order.remaining_quantity) : undefined,
       average_fill_price: order.average_fill_price ? Number(order.average_fill_price) : undefined
-    }));
+      }));
+    }
+
+    let alpacaOrders: SpotOrder[] = [];
+    if (wantAlpaca) {
+      alpacaOrders = (await this.fetchAlpacaSpotOrders(userId))
+        .filter((o) => o.status === 'open' || o.status === 'partially_filled');
+      if (pairId) alpacaOrders = alpacaOrders.filter((o) => o.pair_id === pairId);
+    }
+
+    return [...alpacaOrders, ...localOrders]
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   }
 
   static async getOrderHistory(userId: string, limit: number = 50): Promise<SpotOrder[]> {
@@ -264,7 +413,7 @@ export class SpotTradingService {
 
     if (error) throw error;
 
-    return (data || []).map(order => ({
+    const localOrders = (data || []).map(order => ({
       ...order,
       side: order.side as 'buy' | 'sell',
       order_type: order.order_type as 'market' | 'limit' | 'stop_limit',
@@ -277,6 +426,11 @@ export class SpotTradingService {
       remaining_quantity: order.remaining_quantity ? Number(order.remaining_quantity) : undefined,
       average_fill_price: order.average_fill_price ? Number(order.average_fill_price) : undefined
     }));
+
+    const alpacaOrders = await this.fetchAlpacaSpotOrders(userId);
+    return [...alpacaOrders, ...localOrders]
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .slice(0, limit);
   }
 
   static subscribeToOrderBook(pairId: string, callback: () => void) {

@@ -4,6 +4,12 @@ import { useAuth } from "./useAuth";
 import { toast } from "sonner";
 import { isDemo } from '@/services/demo/DemoBackend';
 import { DemoStockTrading } from '@/services/demo/demoStocks';
+import { resolveInstrument } from '@/services/venueRouting';
+import {
+  AlpacaPaperService,
+  mapMirrorOrderToUiOrder,
+  type AlpacaMirrorOrder,
+} from '@/services/AlpacaPaperService';
 
 export interface Order {
   id: string;
@@ -21,36 +27,64 @@ export interface Order {
   average_fill_price?: number;
   created_at: string;
   updated_at: string;
-  expires_at?: string;
+  /** Where this order actually executes: Alpaca paper, or the local engine (LuSE / ZMW carve-outs). */
+  venue?: 'alpaca' | 'local';
+  alpaca_order_id?: string | null;
 }
 
 export const useOrders = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  const { 
-    data: orders = [], 
-    isLoading, 
+  const {
+    data: orders = [],
+    isLoading,
     error,
-    refetch 
+    refetch
   } = useQuery({
     queryKey: ["orders", user?.id],
     queryFn: async () => {
       if (!user) return [];
       if (await isDemo()) return DemoStockTrading.getOrders(user.id) as unknown as Order[];
-      
-      const { data, error } = await supabase
-        .from('orders')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      return data as Order[];
+      // Signed-in: Alpaca-venue orders are read back from Alpaca paper
+      // (via the function's mirrored rows with live status overlay);
+      // local rows are kept only for local-venue instruments (LuSE stocks,
+      // ZMW pairs) — Alpaca is the source of truth for everything else.
+      const [localRes, alpacaOrders] = await Promise.all([
+        supabase
+          .from('orders')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false }),
+        AlpacaPaperService.getOrders(100)
+          .then((r) => (r.orders as AlpacaMirrorOrder[]).map(mapMirrorOrderToUiOrder) as unknown as Order[])
+          .catch((err) => {
+            console.error('Alpaca paper orders read-back failed:', err);
+            return [] as Order[];
+          }),
+      ]);
+
+      if (localRes.error) throw localRes.error;
+      const localOrders = ((localRes.data ?? []) as Order[])
+        .filter((o) => resolveInstrument(o.symbol).venue === 'local')
+        .map((o) => ({ ...o, venue: 'local' as const }));
+
+      return [...alpacaOrders, ...localOrders]
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     },
     enabled: !!user,
     staleTime: 5 * 1000, // 5 seconds for real-time feel
   });
+
+  const invalidateTradingQueries = async () => {
+    await queryClient.invalidateQueries({ queryKey: ["orders", user?.id] });
+    await queryClient.invalidateQueries({ queryKey: ["positions", user?.id] });
+    await queryClient.invalidateQueries({ queryKey: ["portfolio", user?.id] });
+    await queryClient.invalidateQueries({ queryKey: ["alpaca-paper-account"] });
+    await queryClient.invalidateQueries({ queryKey: ["paperPositions"] });
+    await queryClient.invalidateQueries({ queryKey: ["paperOrders"] });
+  };
 
   const createOrder = async (orderData: Omit<Order, 'id' | 'user_id' | 'status' | 'filled_quantity' | 'created_at' | 'updated_at'>) => {
     if (!user) {
@@ -72,6 +106,49 @@ export const useOrders = () => {
       return (await DemoStockTrading.getOrders(user.id)).find(o => o.id === r.orderId) as unknown as Order;
     }
 
+    const resolved = resolveInstrument(orderData.symbol);
+
+    if (resolved.venue === 'alpaca' && resolved.alpacaSymbol) {
+      // Alpaca paper is the execution venue. If Alpaca rejects the order or
+      // is unreachable, surface that honestly — never fall back to a local
+      // simulation and never pretend the order was placed.
+      try {
+        const res = await AlpacaPaperService.placeOrder({
+          symbol: resolved.alpacaSymbol,
+          qty: orderData.quantity,
+          side: orderData.side,
+          type: orderData.order_type,
+          time_in_force: resolved.kind === 'crypto' ? 'gtc' : (orderData.time_in_force ?? 'day'),
+          limit_price: orderData.limit_price ?? undefined,
+          stop_price: orderData.stop_price ?? undefined,
+        });
+        await invalidateTradingQueries();
+        toast.success(`Order placed on Alpaca Sandbox (${res.order.status})`);
+        return {
+          id: res.order.id,
+          user_id: user.id,
+          symbol: resolved.alpacaSymbol,
+          order_type: orderData.order_type,
+          side: orderData.side,
+          quantity: orderData.quantity,
+          limit_price: orderData.limit_price,
+          stop_price: orderData.stop_price,
+          time_in_force: orderData.time_in_force,
+          status: 'pending',
+          filled_quantity: 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          venue: 'alpaca',
+          alpaca_order_id: res.order.id,
+        } as Order;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Alpaca Sandbox is unreachable';
+        toast.error(`Alpaca Sandbox order failed: ${message}`);
+        throw err instanceof Error ? err : new Error(message);
+      }
+    }
+
+    // Local venue — LuSE stocks and ZMW/simulated pairs (CEO carve-outs).
     const { data, error } = await supabase
       .from('orders')
       .insert({
@@ -103,9 +180,25 @@ export const useOrders = () => {
       return;
     }
 
+    // Alpaca orders must be cancelled on Alpaca — the local row is only a mirror.
+    const cached = queryClient.getQueryData<Order[]>(["orders", user.id]);
+    const target = cached?.find((o) => o.id === orderId);
+    if (target?.venue === 'alpaca' && target.alpaca_order_id) {
+      try {
+        await AlpacaPaperService.cancelOrder(target.alpaca_order_id);
+        await invalidateTradingQueries();
+        toast.success("Order cancelled on Alpaca Sandbox");
+        return;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Alpaca Sandbox is unreachable';
+        toast.error(`Could not cancel on Alpaca Sandbox: ${message}`);
+        throw err instanceof Error ? err : new Error(message);
+      }
+    }
+
     const { error } = await supabase
       .from('orders')
-      .update({ 
+      .update({
         status: 'cancelled',
         updated_at: new Date().toISOString()
       })

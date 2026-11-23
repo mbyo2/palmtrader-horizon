@@ -9,6 +9,7 @@ import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { SpotTradingService, TradingPair, SpotOrder } from '@/services/SpotTradingService';
+import { AlpacaPaperService } from '@/services/AlpacaPaperService';
 import { CryptoWalletService } from '@/services/CryptoWalletService';
 import { FeeTierService } from '@/services/FeeTierService';
 import { useDemoPrice } from '@/hooks/useDemoPrice';
@@ -67,8 +68,36 @@ export const SpotTrading = () => {
     }));
   }, [selectedPair]);
 
-  const spotAvailable = (currency?: string) =>
-    wallets.find(w => w.currency === currency && w.wallet_type === 'spot')?.available_balance ?? 0;
+  // For Alpaca-venue pairs, available balances are read back from the
+  // Alpaca paper account (cash for buys, position quantity for sells) —
+  // the local wallet table does not govern Alpaca execution.
+  const isAlpacaPair = selectedPair?.venue === 'alpaca';
+  const { data: alpacaAccountRes } = useQuery({
+    queryKey: ['alpaca-paper-account'],
+    queryFn: () => AlpacaPaperService.getAccount(),
+    enabled: !!user && isAlpacaPair
+  });
+  const { data: alpacaPositionsRes } = useQuery({
+    queryKey: ['paperPositions'],
+    queryFn: () => AlpacaPaperService.getPositions(),
+    enabled: !!user && isAlpacaPair
+  });
+
+  const spotAvailable = (currency?: string) => {
+    if (isAlpacaPair && selectedPair) {
+      if (currency === 'USD') {
+        return alpacaAccountRes ? Number(alpacaAccountRes.account?.cash ?? 0) : 0;
+      }
+      if (currency === selectedPair.base_currency) {
+        const pos = (alpacaPositionsRes?.positions ?? []).find(
+          (p: any) => p.symbol === `${currency}USD`
+        );
+        return pos ? Number(pos.qty) : 0;
+      }
+      return 0;
+    }
+    return wallets.find(w => w.currency === currency && w.wallet_type === 'spot')?.available_balance ?? 0;
+  };
 
   useEffect(() => {
     if (pairs.length > 0 && !selectedPairId) {
@@ -90,13 +119,22 @@ export const SpotTrading = () => {
     },
     onSuccess: (result) => {
       if (result.success) {
-        toast.success(`${side.toUpperCase()} order placed — matching engine active`);
+        if (result.venue === 'alpaca') {
+          toast.success(`${side.toUpperCase()} order placed on Alpaca Sandbox`);
+        } else if (result.venue === 'simulated') {
+          toast.success(`${side.toUpperCase()} order placed — PalmCacia simulated market`);
+        } else {
+          toast.success(`${side.toUpperCase()} order placed`);
+        }
         setQuantity('');
         setPrice('');
         setPercentage([0]);
         queryClient.invalidateQueries({ queryKey: ['open-orders'] });
         queryClient.invalidateQueries({ queryKey: ['crypto-wallets'] });
         queryClient.invalidateQueries({ queryKey: ['user-volume'] });
+        queryClient.invalidateQueries({ queryKey: ['alpaca-paper-account'] });
+        queryClient.invalidateQueries({ queryKey: ['paperPositions'] });
+        queryClient.invalidateQueries({ queryKey: ['paperOrders'] });
       } else {
         toast.error(result.error || 'Failed to place order');
       }
@@ -113,7 +151,15 @@ export const SpotTrading = () => {
         toast.success('Order cancelled');
         queryClient.invalidateQueries({ queryKey: ['open-orders'] });
         queryClient.invalidateQueries({ queryKey: ['crypto-wallets'] });
+        queryClient.invalidateQueries({ queryKey: ['alpaca-paper-account'] });
+        queryClient.invalidateQueries({ queryKey: ['paperPositions'] });
+        queryClient.invalidateQueries({ queryKey: ['paperOrders'] });
+      } else {
+        toast.error(result.error || 'Failed to cancel order');
       }
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : 'Failed to cancel order');
     }
   });
 
@@ -157,6 +203,13 @@ export const SpotTrading = () => {
                 <Badge variant="secondary" className="text-xs">
                   {currentFee.tier_name} • Maker {(currentFee.maker_fee * 100).toFixed(2)}% / Taker {(currentFee.taker_fee * 100).toFixed(2)}%
                 </Badge>
+              )}
+
+              {selectedPair?.venue === 'alpaca' && (
+                <Badge className="text-xs">Venue: Alpaca Sandbox</Badge>
+              )}
+              {selectedPair?.venue === 'simulated' && (
+                <Badge variant="outline" className="text-xs">Venue: PalmCacia simulated market</Badge>
               )}
             </div>
           </CardContent>

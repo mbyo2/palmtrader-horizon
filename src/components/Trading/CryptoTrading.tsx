@@ -9,6 +9,8 @@ import { toast } from "sonner";
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { OrderExecutionEngine } from '@/services/OrderExecutionEngine';
+import { AlpacaPaperService } from '@/services/AlpacaPaperService';
+import { isDemo, isDemoSync } from '@/services/demo/DemoBackend';
 import { Loader2 } from 'lucide-react';
 import { useCryptoData } from '@/hooks/useCryptoData';
 
@@ -47,6 +49,23 @@ export default function CryptoTrading() {
     enabled: !!user,
   });
 
+  // Signed-in holdings live on Alpaca paper — read the position back from
+  // Alpaca rather than the local portfolio table (CEO directive 2026-11-23).
+  const signedInLive = !!user && !isDemoSync();
+  const { data: alpacaPositionsRes, refetch: refetchAlpacaPositions } = useQuery({
+    queryKey: ['paperPositions'],
+    queryFn: () => AlpacaPaperService.getPositions(),
+    enabled: signedInLive,
+  });
+  const alpacaOwned = signedInLive
+    ? Number(
+        (alpacaPositionsRes?.positions ?? []).find(
+          (p: any) => p.symbol === `${selectedCrypto.ticker}USD`
+        )?.qty ?? 0
+      )
+    : null;
+  const ownedQty = alpacaOwned ?? (cryptoPortfolio?.shares ? Number(cryptoPortfolio.shares) : 0);
+
   useEffect(() => {
     if (cryptoPrice && amount > 0) {
       setQuantity(amount / cryptoPrice);
@@ -78,7 +97,7 @@ export default function CryptoTrading() {
 
     // For sell orders, make sure the user has enough crypto
     if (orderType === 'sell') {
-      if (!cryptoPortfolio || cryptoPortfolio.shares < quantity) {
+      if (ownedQty < quantity) {
         toast.error(`You don't have enough ${selectedCrypto.ticker} to sell`);
         return;
       }
@@ -87,6 +106,27 @@ export default function CryptoTrading() {
     setIsSubmitting(true);
 
     try {
+      if (!(await isDemo())) {
+        // Signed-in: execute on the Alpaca sandbox as a market order for the
+        // quantity sized from the entered USD amount. If Alpaca rejects it,
+        // the error is shown as-is — no local fill is faked.
+        const res = await AlpacaPaperService.placeOrder({
+          symbol: `${selectedCrypto.ticker}USD`,
+          qty: Number(quantity.toFixed(8)),
+          side: orderType,
+          type: 'market',
+          time_in_force: 'gtc',
+        });
+        toast.success(
+          `${orderType === 'buy' ? 'Bought' : 'Sold'} $${amount.toFixed(2)} of ${selectedCrypto.ticker} on Alpaca Sandbox (${res.order.status})`
+        );
+        await refetchAlpacaPositions();
+        refetchPortfolio();
+        setAmount(0);
+        setQuantity(0);
+        return;
+      }
+
       // Use the OrderExecutionEngine for proper wallet/portfolio sync
       const result = await OrderExecutionEngine.executeOrder({
         userId: user.id,
@@ -101,10 +141,10 @@ export default function CryptoTrading() {
       if (!result.success) throw new Error(result.error);
 
       toast.success(`${orderType === 'buy' ? 'Bought' : 'Sold'} ${quantity.toFixed(8)} ${selectedCrypto.ticker} for $${amount.toFixed(2)}`);
-      
+
       // Refetch portfolio data
       refetchPortfolio();
-      
+
       // Reset form
       setAmount(0);
       setQuantity(0);
@@ -154,9 +194,12 @@ export default function CryptoTrading() {
                 )}
               </p>
               <p className="text-xs text-green-500">● Live Price</p>
-              {cryptoPortfolio?.shares && (
+              {signedInLive && (
+                <p className="text-xs text-muted-foreground">Venue: Alpaca Sandbox</p>
+              )}
+              {ownedQty > 0 && (
                 <p className="text-sm text-muted-foreground">
-                  You own: {cryptoPortfolio.shares.toFixed(8)} {selectedCrypto.ticker}
+                  You own: {ownedQty.toFixed(8)} {selectedCrypto.ticker}
                 </p>
               )}
             </div>

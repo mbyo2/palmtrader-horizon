@@ -13,6 +13,8 @@ import { useOrders, type Order } from "@/hooks/useOrders";
 import { useHaptic } from "@/hooks/useHaptic";
 import { toast } from "sonner";
 import { isDemoSync } from "@/services/demo/DemoBackend";
+import { resolveInstrument } from "@/services/venueRouting";
+import { useAlpacaAccount } from "@/hooks/useAlpacaAccount";
 import { DEMO_USER_ID, loadDemoState, subscribeDemoState, walletBalance } from "@/services/demo/demoStore";
 import { generateChartData, getPairDef, getStockDef } from "@/services/demo/demoMarket";
 import { DemoSpot } from "@/services/demo/demoExchange";
@@ -72,6 +74,9 @@ interface TradingShellProps {
   availableBalance: number;
   ordersContent: ReactNode;
   onOrderSubmit: (order: OrderData) => Promise<void>;
+  /** Honest venue label, e.g. "Alpaca Sandbox" or "PalmCacia simulated market". */
+  venueLabel?: string;
+  venueUnavailable?: boolean;
 }
 
 const TradingShell = ({
@@ -86,6 +91,8 @@ const TradingShell = ({
   availableBalance,
   ordersContent,
   onOrderSubmit,
+  venueLabel,
+  venueUnavailable,
 }: TradingShellProps) => {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [pendingOrder, setPendingOrder] = useState<OrderData | null>(null);
@@ -114,6 +121,11 @@ const TradingShell = ({
           <div>
             <h1 className="text-2xl font-bold">{symbol}</h1>
             <p className="text-sm text-muted-foreground">{companyName}</p>
+            {venueLabel && (
+              <Badge variant={venueUnavailable ? "destructive" : "secondary"} className="mt-1">
+                {venueUnavailable ? venueLabel : `Venue: ${venueLabel}`}
+              </Badge>
+            )}
           </div>
 
           <div className="flex items-end justify-between">
@@ -242,6 +254,7 @@ const StockOrdersList = ({
                   : "market"}
             </span>
             <span className="flex items-center gap-2">
+              {o.venue === "alpaca" && <Badge variant="secondary">Alpaca</Badge>}
               <Badge variant="outline">{o.status}</Badge>
               {o.status === "pending" && (
                 <Button size="sm" variant="ghost" onClick={() => onCancel(o.id)}>Cancel</Button>
@@ -421,6 +434,12 @@ const LiveTradingInterface = (props: MobileTradingInterfaceProps) => {
   const realtime = useRealtimeStockData(symbol, timeframe);
   const { orders, cancelOrder, createOrder } = useOrders();
 
+  // Venue routing (CEO directive 2026-11-23): US stocks and Alpaca-listed
+  // crypto execute on Alpaca paper; LuSE stocks and ZMW pairs stay local.
+  const resolved = resolveInstrument(symbol);
+  const isAlpacaVenue = resolved.venue === 'alpaca';
+  const alpacaAccount = useAlpacaAccount(isAlpacaVenue);
+
   const loaded = !realtime.isLoading;
   const displayPrice = loaded && realtime.currentPrice > 0 ? realtime.currentPrice : props.currentPrice;
   const displayChange = loaded ? realtime.priceChange : (props.priceChange ?? 0);
@@ -441,6 +460,12 @@ const LiveTradingInterface = (props: MobileTradingInterfaceProps) => {
     });
   };
 
+  // Orders for this instrument may be recorded under the page symbol, the
+  // bare base ('BTC'), or the Alpaca symbol ('BTCUSD').
+  const symbolMatches = new Set(
+    [symbol, resolved.base, resolved.alpacaSymbol].filter(Boolean) as string[],
+  );
+
   return (
     <TradingShell
       symbol={symbol}
@@ -451,10 +476,22 @@ const LiveTradingInterface = (props: MobileTradingInterfaceProps) => {
       displayChangePercent={displayChangePercent}
       chartData={realtime.chartData}
       onTimeframeChange={setTimeframe}
-      availableBalance={props.availableBalance ?? 0}
+      availableBalance={
+        isAlpacaVenue
+          ? (alpacaAccount.isLoading ? (props.availableBalance ?? 0) : alpacaAccount.buyingPower)
+          : (props.availableBalance ?? 0)
+      }
+      venueLabel={
+        isAlpacaVenue && alpacaAccount.isError
+          ? `${resolved.venueLabel} — unavailable`
+          : isAlpacaVenue && alpacaAccount.linked === false
+            ? `${resolved.venueLabel} — account not linked`
+            : resolved.venueLabel
+      }
+      venueUnavailable={isAlpacaVenue && (alpacaAccount.isError || alpacaAccount.linked === false)}
       ordersContent={
         <StockOrdersList
-          orders={orders.filter((o) => o.symbol === symbol)}
+          orders={orders.filter((o) => symbolMatches.has(o.symbol))}
           currencySymbol="$"
           onCancel={(id) => void cancelOrder(id)}
         />

@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, TrendingUp, TrendingDown } from "lucide-react";
 import { TradingErrorBoundary } from "@/components/ErrorBoundary/TradingErrorBoundary";
 import { getInstrument, getPairDef, getStockDef } from "@/services/demo/demoMarket";
+import { resolveInstrument } from "@/services/venueRouting";
 import { isDemoSync } from "@/services/demo/DemoBackend";
 import { DEMO_USER_ID, subscribeDemoState, walletBalance } from "@/services/demo/demoStore";
 import { DemoSpot } from "@/services/demo/demoExchange";
@@ -89,8 +90,14 @@ const MobileTrade = () => {
   const displayPrice = price ?? instrument.basePrice;
   const change = (displayPrice * changePct) / 100;
   const isUp = changePct >= 0;
-  const symbolOrders = orders.filter(o => o.symbol === symbol);
-  const position = positions.find(p => p.symbol === symbol);
+  // Signed-in Alpaca positions/orders are recorded under the Alpaca symbol
+  // ('BTCUSD') or bare base ('BTC'), not the pair id shown in the URL.
+  const resolved = resolveInstrument(symbol);
+  const symbolMatches = new Set(
+    [symbol, resolved.base, resolved.alpacaSymbol].filter(Boolean) as string[],
+  );
+  const symbolOrders = orders.filter(o => symbolMatches.has(o.symbol));
+  const position = positions.find(p => symbolMatches.has(p.symbol));
   const currencySymbol = instrument.currency === "ZMW" ? "K" : "$";
 
   return (
