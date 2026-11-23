@@ -1,9 +1,9 @@
-import { MarkA } from "./palmcacia-marks";
+import { MarkC } from "./palmcacia-marks";
 
 /**
- * The standing Palmcacia logo (Variant A: acacia umbrella + palm fronds
- * on a single forked trunk). To swap the brand mark to Variant B or C,
- * change the import above to MarkB / MarkC from "./palmcacia-marks" —
+ * The standing Palmcacia logo (Variant C: ringed palm trunk, fronds flattening into an acacia umbrella
+ * on a curved palm trunk). To swap the brand mark to Variant A or B,
+ * change the import above to MarkA / MarkB from "./palmcacia-marks" —
  * this is the only file that chooses the variant.
  *
  * The mark inherits its colour from `color` (currentColor), so place it
@@ -15,7 +15,7 @@ interface PalmcaciaLogoProps {
 }
 
 const PalmcaciaLogo = ({ className }: PalmcaciaLogoProps) => (
-  <MarkA className={className} />
+  <MarkC className={className} />
 );
 
 export default PalmcaciaLogo;
