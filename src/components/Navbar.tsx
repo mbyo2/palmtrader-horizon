@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import NavigationLinks from "@/components/Navigation/NavigationLinks";
+import PalmcaciaLogo from "@/components/brand/PalmcaciaLogo";
 import MobileNav from "@/components/Navigation/MobileNav";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import NotificationCenter from "@/components/Notifications/NotificationCenter";
@@ -29,7 +30,7 @@ const Navbar = () => {
           <div className="flex items-center">
             <Link to="/" className="flex-shrink-0 flex items-center space-x-2 sm:space-x-3">
               <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary rounded-lg flex items-center justify-center shadow-lg">
-                <span className="text-primary-foreground font-bold text-base sm:text-lg">P</span>
+                <PalmcaciaLogo className="w-6 h-6 sm:w-8 sm:h-8 text-primary-foreground" />
               </div>
               <h1 className="text-lg sm:text-2xl font-bold text-foreground">Palm<span className="text-primary">Cacia</span></h1>
             </Link>

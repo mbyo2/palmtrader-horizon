@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import PasswordReset from '@/components/Auth/PasswordReset';
+import PalmcaciaLogo from '@/components/brand/PalmcaciaLogo';
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -138,7 +139,7 @@ const Auth = () => {
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center space-y-2">
           <div className="w-16 h-16 bg-gradient-to-r from-primary to-secondary rounded-xl flex items-center justify-center mx-auto shadow-lg">
-            <span className="text-white font-bold text-2xl">P</span>
+            <PalmcaciaLogo className="w-11 h-11 text-primary-foreground" />
           </div>
           <CardTitle className="text-2xl font-bold gradient-text">Palm Cacia</CardTitle>
           <CardDescription>
