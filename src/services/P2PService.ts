@@ -1,4 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
+import { isDemo } from '@/services/demo/DemoBackend';
+import { DemoP2P } from '@/services/demo/demoExchange';
 
 export interface P2PAdvertisement {
   id: string;
@@ -79,6 +81,7 @@ export class P2PService {
     cryptoCurrency?: string,
     fiatCurrency?: string
   ): Promise<P2PAdvertisement[]> {
+    if (await isDemo()) return DemoP2P.getAdvertisements(type, cryptoCurrency, fiatCurrency);
     let query = supabase
       .from('p2p_advertisements')
       .select('*')
@@ -106,6 +109,7 @@ export class P2PService {
   }
 
   static async getMyAdvertisements(userId: string): Promise<P2PAdvertisement[]> {
+    if (await isDemo()) return DemoP2P.getMyAdvertisements(userId);
     const { data, error } = await supabase
       .from('p2p_advertisements')
       .select('*')
@@ -126,6 +130,7 @@ export class P2PService {
   }
 
   static async createAdvertisement(userId: string, request: CreateAdRequest): Promise<{ success: boolean; id?: string; error?: string }> {
+    if (await isDemo()) return DemoP2P.createAdvertisement(userId, request);
     try {
       const { data, error } = await supabase
         .from('p2p_advertisements')
@@ -144,6 +149,7 @@ export class P2PService {
   }
 
   static async updateAdvertisement(adId: string, updates: Partial<CreateAdRequest>): Promise<{ success: boolean; error?: string }> {
+    if (await isDemo()) return DemoP2P.updateAdvertisement(adId, updates);
     try {
       const { error } = await supabase
         .from('p2p_advertisements')
@@ -173,6 +179,7 @@ export class P2PService {
     cryptoCurrency: string,
     fiatCurrency: string
   ): Promise<{ success: boolean; orderId?: string; error?: string }> {
+    if (await isDemo()) return DemoP2P.createOrder(advertisementId, buyerId, sellerId, cryptoAmount, fiatAmount, price, paymentMethod, cryptoCurrency, fiatCurrency);
     try {
       const expiresAt = new Date();
       expiresAt.setMinutes(expiresAt.getMinutes() + 15); // 15 minute payment window
@@ -202,6 +209,7 @@ export class P2PService {
   }
 
   static async getMyOrders(userId: string): Promise<P2POrder[]> {
+    if (await isDemo()) return DemoP2P.getMyOrders(userId);
     const { data, error } = await supabase
       .from('p2p_orders')
       .select('*')
@@ -218,6 +226,7 @@ export class P2PService {
   }
 
   static async getOrder(orderId: string): Promise<P2POrder | null> {
+    if (await isDemo()) return DemoP2P.getOrder(orderId);
     const { data, error } = await supabase
       .from('p2p_orders')
       .select('*')
@@ -234,6 +243,7 @@ export class P2PService {
   }
 
   static async confirmPayment(orderId: string): Promise<{ success: boolean; error?: string }> {
+    if (await isDemo()) return DemoP2P.confirmPayment(orderId);
     try {
       const { error } = await supabase
         .from('p2p_orders')
@@ -253,6 +263,7 @@ export class P2PService {
   }
 
   static async releaseEscrow(orderId: string): Promise<{ success: boolean; error?: string }> {
+    if (await isDemo()) return DemoP2P.releaseEscrow(orderId);
     try {
       const { error } = await supabase
         .from('p2p_orders')
@@ -274,6 +285,7 @@ export class P2PService {
   }
 
   static async cancelOrder(orderId: string): Promise<{ success: boolean; error?: string }> {
+    if (await isDemo()) return DemoP2P.cancelOrder(orderId);
     try {
       const { error } = await supabase
         .from('p2p_orders')
@@ -291,6 +303,7 @@ export class P2PService {
   }
 
   static async openDispute(orderId: string, reason: string): Promise<{ success: boolean; error?: string }> {
+    if (await isDemo()) return DemoP2P.openDispute(orderId, reason);
     try {
       const { error } = await supabase
         .from('p2p_orders')
@@ -310,6 +323,7 @@ export class P2PService {
 
   // Chat
   static async getMessages(orderId: string): Promise<P2PMessage[]> {
+    if (await isDemo()) return DemoP2P.getMessages(orderId);
     const { data, error } = await supabase
       .from('p2p_messages')
       .select('*')
@@ -321,6 +335,7 @@ export class P2PService {
   }
 
   static async sendMessage(orderId: string, senderId: string, message: string, attachmentUrl?: string): Promise<{ success: boolean; error?: string }> {
+    if (await isDemo()) return DemoP2P.sendMessage(orderId, senderId, message, attachmentUrl);
     try {
       const { error } = await supabase
         .from('p2p_messages')

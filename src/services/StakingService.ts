@@ -1,4 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
+import { isDemo } from '@/services/demo/DemoBackend';
+import { DemoStaking } from '@/services/demo/demoExchange';
 
 export interface StakingProduct {
   id: string;
@@ -35,6 +37,7 @@ export interface StakingPosition {
 
 export class StakingService {
   static async getProducts(): Promise<StakingProduct[]> {
+    if (await isDemo()) return DemoStaking.getProducts();
     const { data, error } = await supabase
       .from('staking_products')
       .select('*')
@@ -54,6 +57,7 @@ export class StakingService {
   }
 
   static async getProductsByCurrency(currency: string): Promise<StakingProduct[]> {
+    if (await isDemo()) return DemoStaking.getProducts().filter(p => p.currency === currency);
     const { data, error } = await supabase
       .from('staking_products')
       .select('*')
@@ -74,6 +78,7 @@ export class StakingService {
   }
 
   static async getMyPositions(userId: string): Promise<StakingPosition[]> {
+    if (await isDemo()) return DemoStaking.getMyPositions(userId);
     const { data, error } = await supabase
       .from('staking_positions')
       .select(`
@@ -101,6 +106,7 @@ export class StakingService {
   }
 
   static async stake(userId: string, productId: string, amount: number, autoRestake: boolean = false): Promise<{ success: boolean; positionId?: string; error?: string }> {
+    if (await isDemo()) return DemoStaking.stake(userId, productId, amount, autoRestake);
     try {
       // Get product to calculate end date
       const { data: product, error: productError } = await supabase
@@ -135,6 +141,7 @@ export class StakingService {
   }
 
   static async unstake(positionId: string): Promise<{ success: boolean; error?: string }> {
+    if (await isDemo()) return DemoStaking.unstake(positionId);
     try {
       const { data: position, error: fetchError } = await supabase
         .from('staking_positions')
@@ -165,6 +172,7 @@ export class StakingService {
   }
 
   static async claimInterest(positionId: string): Promise<{ success: boolean; amount?: number; error?: string }> {
+    if (await isDemo()) return DemoStaking.claimInterest(positionId);
     try {
       const { data: position, error: fetchError } = await supabase
         .from('staking_positions')

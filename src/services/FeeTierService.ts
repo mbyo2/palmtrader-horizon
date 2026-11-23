@@ -1,4 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
+import { isDemo } from '@/services/demo/DemoBackend';
+import { DemoFees } from '@/services/demo/demoExchange';
 
 export interface FeeTier {
   id: string;
@@ -20,6 +22,7 @@ export interface UserVolume {
 
 export class FeeTierService {
   static async getFeeTiers(): Promise<FeeTier[]> {
+    if (await isDemo()) return DemoFees.getFeeTiers();
     const { data, error } = await (supabase as any)
       .from('fee_tiers')
       .select('*')
@@ -35,6 +38,7 @@ export class FeeTierService {
   }
 
   static async getUserVolume(userId: string): Promise<UserVolume> {
+    if (await isDemo()) return DemoFees.getUserVolume(userId);
     const { data } = await (supabase as any)
       .from('user_trading_volumes')
       .select('*')

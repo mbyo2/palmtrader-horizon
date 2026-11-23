@@ -1,4 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
+import { isDemo } from '@/services/demo/DemoBackend';
+import { DemoFutures } from '@/services/demo/demoExchange';
 
 export interface FuturesPosition {
   id: string;
@@ -35,6 +37,7 @@ export class FuturesService {
   static readonly MAINTENANCE_MARGIN_RATE = 0.004; // 0.4%
 
   static async getPositions(userId: string, status?: 'open' | 'closed' | 'liquidated'): Promise<FuturesPosition[]> {
+    if (await isDemo()) return DemoFutures.getPositions(userId, status);
     let query = supabase
       .from('futures_positions')
       .select('*')
@@ -62,6 +65,7 @@ export class FuturesService {
   }
 
   static async openPosition(userId: string, request: OpenPositionRequest): Promise<{ success: boolean; positionId?: string; error?: string }> {
+    if (await isDemo()) return DemoFutures.openPosition(userId, request, (e, l, s) => this.calculateLiquidationPrice(e, l, s));
     try {
       const { symbol, side, quantity, leverage, entryPrice, takeProfit, stopLoss } = request;
 
@@ -97,6 +101,7 @@ export class FuturesService {
   }
 
   static async closePosition(positionId: string, exitPrice: number): Promise<{ success: boolean; pnl?: number; error?: string }> {
+    if (await isDemo()) return DemoFutures.closePosition(positionId, exitPrice);
     try {
       const { data: position, error: fetchError } = await supabase
         .from('futures_positions')
@@ -133,6 +138,7 @@ export class FuturesService {
   }
 
   static async updateTpSl(positionId: string, takeProfit?: number, stopLoss?: number): Promise<{ success: boolean; error?: string }> {
+    if (await isDemo()) return DemoFutures.updateTpSl(positionId, takeProfit, stopLoss);
     try {
       const updates: any = { updated_at: new Date().toISOString() };
       if (takeProfit !== undefined) updates.take_profit = takeProfit;
@@ -182,6 +188,7 @@ export class FuturesService {
   }
 
   static async getPositionHistory(userId: string, limit: number = 50): Promise<FuturesPosition[]> {
+    if (await isDemo()) return DemoFutures.getPositionHistory(userId, limit);
     const { data, error } = await supabase
       .from('futures_positions')
       .select('*')

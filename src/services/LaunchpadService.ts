@@ -1,4 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
+import { isDemo } from '@/services/demo/DemoBackend';
+import { DemoLaunchpad } from '@/services/demo/demoExchange';
 
 export interface LaunchpadProject {
   id: string;
@@ -38,6 +40,7 @@ export interface LaunchpadSubscription {
 
 export class LaunchpadService {
   static async getProjects(status?: 'upcoming' | 'active' | 'completed'): Promise<LaunchpadProject[]> {
+    if (await isDemo()) return DemoLaunchpad.getProjects(status);
     let query = supabase
       .from('launchpad_projects')
       .select('*')
@@ -59,6 +62,7 @@ export class LaunchpadService {
   }
 
   static async getProject(projectId: string): Promise<LaunchpadProject | null> {
+    if (await isDemo()) return DemoLaunchpad.getProject(projectId);
     const { data, error } = await supabase
       .from('launchpad_projects')
       .select('*')
@@ -78,6 +82,7 @@ export class LaunchpadService {
   }
 
   static async getMySubscriptions(userId: string): Promise<LaunchpadSubscription[]> {
+    if (await isDemo()) return DemoLaunchpad.getMySubscriptions(userId);
     const { data, error } = await supabase
       .from('launchpad_subscriptions')
       .select(`
@@ -107,6 +112,7 @@ export class LaunchpadService {
   }
 
   static async subscribe(userId: string, projectId: string, amount: number): Promise<{ success: boolean; subscriptionId?: string; error?: string }> {
+    if (await isDemo()) return DemoLaunchpad.subscribe(userId, projectId, amount);
     try {
       // Check if project is active
       const project = await this.getProject(projectId);
@@ -165,6 +171,7 @@ export class LaunchpadService {
   }
 
   static async claimTokens(subscriptionId: string): Promise<{ success: boolean; error?: string }> {
+    if (await isDemo()) return DemoLaunchpad.claimTokens(subscriptionId);
     try {
       const { data: subscription, error: fetchError } = await supabase
         .from('launchpad_subscriptions')

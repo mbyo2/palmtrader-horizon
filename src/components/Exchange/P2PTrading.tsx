@@ -23,7 +23,7 @@ export const P2PTrading = () => {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<'buy' | 'sell'>('buy');
   const [selectedCrypto, setSelectedCrypto] = useState('USDT');
-  const [selectedFiat, setSelectedFiat] = useState('USD');
+  const [selectedFiat, setSelectedFiat] = useState('ZMW');
   const [amount, setAmount] = useState('');
   const [createAdOpen, setCreateAdOpen] = useState(false);
   const [newAd, setNewAd] = useState<Partial<CreateAdRequest>>({
@@ -50,6 +50,31 @@ export const P2PTrading = () => {
     queryKey: ['my-p2p-ads', user?.id],
     queryFn: () => user ? P2PService.getMyAdvertisements(user.id) : [],
     enabled: !!user
+  });
+
+  const { data: myOrders = [] } = useQuery({
+    queryKey: ['my-p2p-orders', user?.id],
+    queryFn: () => user ? P2PService.getMyOrders(user.id) : [],
+    enabled: !!user,
+    refetchInterval: 4000
+  });
+
+  const orderAction = useMutation({
+    mutationFn: async ({ action, orderId }: { action: 'paid' | 'release' | 'cancel'; orderId: string }) => {
+      if (action === 'paid') return P2PService.confirmPayment(orderId);
+      if (action === 'release') return P2PService.releaseEscrow(orderId);
+      return P2PService.cancelOrder(orderId);
+    },
+    onSuccess: (result) => {
+      if (result.success) {
+        toast.success('Order updated');
+        queryClient.invalidateQueries({ queryKey: ['my-p2p-orders'] });
+        queryClient.invalidateQueries({ queryKey: ['crypto-wallets'] });
+        queryClient.invalidateQueries({ queryKey: ['p2p-ads'] });
+      } else {
+        toast.error(result.error || 'Action failed');
+      }
+    }
   });
 
   const createAdMutation = useMutation({
@@ -89,7 +114,8 @@ export const P2PTrading = () => {
     );
 
     if (result.success) {
-      toast.success('Order created! Check your orders for payment details.');
+      toast.success('Order created! See "My P2P Orders" below for the next steps.');
+      queryClient.invalidateQueries({ queryKey: ['my-p2p-orders'] });
     } else {
       toast.error(result.error || 'Failed to create order');
     }
@@ -363,6 +389,92 @@ export const P2PTrading = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* My Orders — escrow lifecycle */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">My P2P Orders ({myOrders.length})</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {myOrders.length === 0 ? (
+            <div className="text-center text-muted-foreground py-4">
+              No P2P orders yet. Pick an offer above to start a trade — crypto is held in escrow until payment is confirmed.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {myOrders.map(order => {
+                const iAmBuyer = order.buyer_id === user?.id;
+                return (
+                  <div key={order.id} className="p-3 rounded-lg bg-muted/50 space-y-2">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div className="flex items-center gap-2">
+                        <Badge variant={iAmBuyer ? 'default' : 'destructive'}>
+                          {iAmBuyer ? 'BUY' : 'SELL'}
+                        </Badge>
+                        <span className="font-medium text-sm">
+                          {order.crypto_amount.toFixed(6)} {order.crypto_currency} for {order.fiat_amount.toLocaleString()} {order.fiat_currency}
+                        </span>
+                        <Badge variant="outline" className="text-xs">{order.payment_method}</Badge>
+                      </div>
+                      <Badge variant={order.status === 'completed' ? 'default' : order.status === 'cancelled' ? 'destructive' : 'secondary'}>
+                        {order.status} · {order.payment_status}
+                      </Badge>
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Price {order.price.toLocaleString()} {order.fiat_currency} · Created {new Date(order.created_at).toLocaleString()}
+                      {order.status !== 'completed' && order.status !== 'cancelled' && (
+                        <span> · {iAmBuyer
+                          ? (order.payment_status === 'paid' ? 'Payment marked as sent — waiting for the seller to release the crypto from escrow.' : `Pay the seller via ${order.payment_method}, then mark as paid.`)
+                          : (order.payment_status === 'paid' ? 'The buyer has marked payment as sent. Confirm receipt in your account, then release the crypto.' : 'Waiting for the buyer to pay. Your crypto is locked in escrow.')}
+                        </span>
+                      )}
+                    </div>
+                    {order.status !== 'completed' && order.status !== 'cancelled' && (
+                      <div className="flex gap-2">
+                        {iAmBuyer && order.payment_status === 'pending' && (
+                          <Button size="sm" onClick={() => orderAction.mutate({ action: 'paid', orderId: order.id })} disabled={orderAction.isPending}>
+                            I've Paid
+                          </Button>
+                        )}
+                        {!iAmBuyer && order.payment_status === 'paid' && (
+                          <Button size="sm" onClick={() => orderAction.mutate({ action: 'release', orderId: order.id })} disabled={orderAction.isPending}>
+                            Release Crypto
+                          </Button>
+                        )}
+                        <Button size="sm" variant="outline" onClick={() => orderAction.mutate({ action: 'cancel', orderId: order.id })} disabled={orderAction.isPending}>
+                          Cancel Order
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* My Advertisements */}
+      {myAds.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">My Advertisements ({myAds.length})</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {myAds.map(ad => (
+                <div key={ad.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/50 text-sm">
+                  <span>
+                    <Badge variant={ad.type === 'buy' ? 'default' : 'destructive'} className="mr-2">{ad.type.toUpperCase()}</Badge>
+                    {ad.crypto_currency}/{ad.fiat_currency} @ {ad.price.toLocaleString()} · Available {ad.available_amount.toLocaleString()}
+                  </span>
+                  <Badge variant={ad.is_active ? 'secondary' : 'outline'}>{ad.is_active ? 'Active' : 'Inactive'}</Badge>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

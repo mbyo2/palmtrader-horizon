@@ -1,4 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
+import { isDemo } from '@/services/demo/DemoBackend';
+import { DemoWallets } from '@/services/demo/demoExchange';
 
 export type WalletType = 'spot' | 'funding' | 'earn';
 
@@ -22,6 +24,7 @@ export interface WalletTransferRequest {
 
 export class CryptoWalletService {
   static async getWallets(userId: string): Promise<CryptoWallet[]> {
+    if (await isDemo()) return DemoWallets.getWallets(userId);
     const { data, error } = await supabase
       .from('crypto_wallets')
       .select('*')
@@ -37,6 +40,7 @@ export class CryptoWalletService {
   }
 
   static async getWalletsByType(userId: string, walletType: WalletType): Promise<CryptoWallet[]> {
+    if (await isDemo()) return DemoWallets.getWalletsByType(userId, walletType);
     const { data, error } = await supabase
       .from('crypto_wallets')
       .select('*')
@@ -52,6 +56,7 @@ export class CryptoWalletService {
   }
 
   static async getOrCreateWallet(userId: string, currency: string, walletType: WalletType): Promise<CryptoWallet> {
+    if (await isDemo()) return DemoWallets.getOrCreateWallet(userId, currency, walletType);
     // Try to get existing wallet
     const { data: existing } = await supabase
       .from('crypto_wallets')
@@ -91,6 +96,7 @@ export class CryptoWalletService {
   }
 
   static async transferBetweenWallets(userId: string, request: WalletTransferRequest): Promise<{ success: boolean; error?: string }> {
+    if (await isDemo()) return DemoWallets.transferBetweenWallets(userId, request);
     try {
       const { fromWallet, toWallet, currency, amount } = request;
 
@@ -145,6 +151,7 @@ export class CryptoWalletService {
   }
 
   static async depositToWallet(userId: string, currency: string, walletType: WalletType, amount: number): Promise<{ success: boolean; error?: string }> {
+    if (await isDemo()) return DemoWallets.depositToWallet(userId, currency, walletType, amount);
     try {
       const wallet = await this.getOrCreateWallet(userId, currency, walletType);
       
@@ -167,6 +174,7 @@ export class CryptoWalletService {
   }
 
   static async getTotalBalance(userId: string, currency: string): Promise<number> {
+    if (await isDemo()) return DemoWallets.getTotalBalance(userId, currency);
     const wallets = await this.getWallets(userId);
     return wallets
       .filter(w => w.currency === currency)
@@ -174,6 +182,7 @@ export class CryptoWalletService {
   }
 
   static async getOverviewBalances(userId: string): Promise<Record<string, { spot: number; funding: number; earn: number; total: number }>> {
+    if (await isDemo()) return DemoWallets.getOverviewBalances(userId);
     const wallets = await this.getWallets(userId);
     const result: Record<string, { spot: number; funding: number; earn: number; total: number }> = {};
 

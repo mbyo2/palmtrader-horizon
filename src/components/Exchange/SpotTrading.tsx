@@ -9,7 +9,9 @@ import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { SpotTradingService, TradingPair, SpotOrder } from '@/services/SpotTradingService';
+import { CryptoWalletService } from '@/services/CryptoWalletService';
 import { FeeTierService } from '@/services/FeeTierService';
+import { useDemoPrice } from '@/hooks/useDemoPrice';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { RefreshCw, X } from 'lucide-react';
@@ -45,6 +47,17 @@ export const SpotTrading = () => {
     enabled: !!user
   });
 
+  const { data: wallets = [] } = useQuery({
+    queryKey: ['crypto-wallets', user?.id],
+    queryFn: () => user ? CryptoWalletService.getWallets(user.id) : [],
+    enabled: !!user
+  });
+
+  const { price: livePrice, changePct } = useDemoPrice(selectedPairId || null);
+
+  const spotAvailable = (currency?: string) =>
+    wallets.find(w => w.currency === currency && w.wallet_type === 'spot')?.available_balance ?? 0;
+
   useEffect(() => {
     if (pairs.length > 0 && !selectedPairId) {
       setSelectedPairId(pairs[0].id);
@@ -68,10 +81,16 @@ export const SpotTrading = () => {
         toast.success(`${side.toUpperCase()} order placed — matching engine active`);
         setQuantity('');
         setPrice('');
+        setPercentage([0]);
         queryClient.invalidateQueries({ queryKey: ['open-orders'] });
+        queryClient.invalidateQueries({ queryKey: ['crypto-wallets'] });
+        queryClient.invalidateQueries({ queryKey: ['user-volume'] });
       } else {
         toast.error(result.error || 'Failed to place order');
       }
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : 'Failed to place order');
     }
   });
 
@@ -81,6 +100,7 @@ export const SpotTrading = () => {
       if (result.success) {
         toast.success('Order cancelled');
         queryClient.invalidateQueries({ queryKey: ['open-orders'] });
+        queryClient.invalidateQueries({ queryKey: ['crypto-wallets'] });
       }
     }
   });
@@ -112,6 +132,15 @@ export const SpotTrading = () => {
                   ))}
                 </SelectContent>
               </Select>
+
+              {livePrice !== null && selectedPair && (
+                <div className="flex items-baseline gap-2">
+                  <span className="text-xl font-bold">{livePrice.toLocaleString(undefined, { maximumFractionDigits: 2 })} {selectedPair.quote_currency}</span>
+                  <span className={changePct >= 0 ? 'text-green-500 text-sm font-medium' : 'text-red-500 text-sm font-medium'}>
+                    {changePct >= 0 ? '+' : ''}{changePct.toFixed(2)}%
+                  </span>
+                </div>
+              )}
 
               {currentFee && (
                 <Badge variant="secondary" className="text-xs">
@@ -223,18 +252,31 @@ export const SpotTrading = () => {
 
             <div className="space-y-2">
               <div className="flex justify-between text-xs text-muted-foreground">
+                <span>Available: {spotAvailable(side === 'buy' ? selectedPair?.quote_currency : selectedPair?.base_currency).toLocaleString(undefined, { maximumFractionDigits: 6 })} {side === 'buy' ? selectedPair?.quote_currency : selectedPair?.base_currency}</span>
+                <span>{percentage[0]}%</span>
+              </div>
+              <Slider
+                value={percentage}
+                onValueChange={(v) => {
+                  setPercentage(v);
+                  const pct = v[0] / 100;
+                  const refPrice = orderType === 'limit' ? parseFloat(price) || livePrice || 0 : livePrice || parseFloat(price) || 0;
+                  if (side === 'buy') {
+                    if (refPrice > 0) setQuantity(((spotAvailable(selectedPair?.quote_currency) * pct) / refPrice).toFixed(6));
+                  } else {
+                    setQuantity((spotAvailable(selectedPair?.base_currency) * pct).toFixed(6));
+                  }
+                }}
+                max={100}
+                step={25}
+              />
+              <div className="flex justify-between text-xs text-muted-foreground">
                 <span>0%</span>
                 <span>25%</span>
                 <span>50%</span>
                 <span>75%</span>
                 <span>100%</span>
               </div>
-              <Slider
-                value={percentage}
-                onValueChange={setPercentage}
-                max={100}
-                step={25}
-              />
             </div>
 
             <div className="space-y-1 text-sm">

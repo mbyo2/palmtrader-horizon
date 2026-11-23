@@ -1,4 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
+import { isDemo } from '@/services/demo/DemoBackend';
+import { DemoSpot } from '@/services/demo/demoExchange';
 
 export interface TradingPair {
   id: string;
@@ -47,6 +49,7 @@ export interface OrderBook {
 
 export class SpotTradingService {
   static async getTradingPairs(): Promise<TradingPair[]> {
+    if (await isDemo()) return DemoSpot.getTradingPairs();
     const { data, error } = await supabase
       .from('trading_pairs')
       .select('*')
@@ -64,6 +67,7 @@ export class SpotTradingService {
   }
 
   static async getPairById(pairId: string): Promise<TradingPair | null> {
+    if (await isDemo()) return DemoSpot.getPairById(pairId);
     const { data, error } = await supabase
       .from('trading_pairs')
       .select('*')
@@ -81,6 +85,7 @@ export class SpotTradingService {
   }
 
   static async getOrderBook(pairId: string): Promise<OrderBook> {
+    if (await isDemo()) return DemoSpot.getOrderBook(pairId);
     const { data: orders, error } = await supabase
       .from('spot_orders')
       .select('*')
@@ -143,6 +148,7 @@ export class SpotTradingService {
     stopPrice?: number,
     timeInForce: 'GTC' | 'IOC' | 'FOK' = 'GTC'
   ): Promise<{ success: boolean; orderId?: string; error?: string }> {
+    if (await isDemo()) return DemoSpot.placeOrder(userId, pairId, side, orderType, quantity, price, stopPrice, timeInForce);
     try {
       const orderData: any = {
         user_id: userId,
@@ -201,6 +207,7 @@ export class SpotTradingService {
   }
 
   static async cancelOrder(orderId: string): Promise<{ success: boolean; error?: string }> {
+    if (await isDemo()) return DemoSpot.cancelOrder(orderId);
     try {
       const { error } = await supabase
         .from('spot_orders')
@@ -218,6 +225,7 @@ export class SpotTradingService {
   }
 
   static async getOpenOrders(userId: string, pairId?: string): Promise<SpotOrder[]> {
+    if (await isDemo()) return DemoSpot.getOpenOrders(userId, pairId);
     let query = supabase
       .from('spot_orders')
       .select('*')
@@ -246,6 +254,7 @@ export class SpotTradingService {
   }
 
   static async getOrderHistory(userId: string, limit: number = 50): Promise<SpotOrder[]> {
+    if (await isDemo()) return DemoSpot.getOrderHistory(userId, limit);
     const { data, error } = await supabase
       .from('spot_orders')
       .select('*')

@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { SpotTradingService, OrderBook } from '@/services/SpotTradingService';
 import { supabase } from '@/integrations/supabase/client';
+import { isDemoSync } from '@/services/demo/DemoBackend';
 import { cn } from '@/lib/utils';
 
 interface Props {
@@ -25,6 +26,12 @@ export const RealTimeOrderBook = ({ pairId, onPriceClick }: Props) => {
 
   useEffect(() => {
     fetchOrderBook();
+
+    if (isDemoSync()) {
+      // Demo mode: the simulated market moves on a tick — poll the book.
+      const interval = setInterval(fetchOrderBook, 2500);
+      return () => clearInterval(interval);
+    }
 
     // Subscribe to real-time changes
     const channel = supabase

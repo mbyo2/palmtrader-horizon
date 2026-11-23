@@ -1,4 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
+import { isDemo, isDemoSync } from '@/services/demo/DemoBackend';
+import { DemoConvert } from '@/services/demo/demoExchange';
+import { crossRate } from '@/services/demo/demoMarket';
 
 export interface ConvertQuote {
   fromCurrency: string;
@@ -42,6 +45,7 @@ export class ConvertService {
   };
 
   static async getQuote(fromCurrency: string, toCurrency: string, fromAmount: number): Promise<ConvertQuote> {
+    if (await isDemo()) return DemoConvert.getQuote(fromCurrency, toCurrency, fromAmount);
     const fromRate = this.BASE_RATES[fromCurrency] || 1;
     const toRate = this.BASE_RATES[toCurrency] || 1;
     
@@ -70,6 +74,7 @@ export class ConvertService {
     toCurrency: string,
     fromAmount: number
   ): Promise<{ success: boolean; toAmount?: number; error?: string }> {
+    if (await isDemo()) return DemoConvert.executeConvert(userId, fromCurrency, toCurrency, fromAmount);
     try {
       const quote = await this.getQuote(fromCurrency, toCurrency, fromAmount);
 
@@ -97,6 +102,7 @@ export class ConvertService {
   }
 
   static async getHistory(userId: string, limit: number = 50): Promise<ConvertHistory[]> {
+    if (await isDemo()) return DemoConvert.getHistory(userId, limit);
     const { data, error } = await supabase
       .from('convert_history')
       .select('*')
@@ -117,10 +123,13 @@ export class ConvertService {
   }
 
   static getSupportedCurrencies(): string[] {
-    return Object.keys(this.BASE_RATES);
+    const base = Object.keys(this.BASE_RATES);
+    // Demo mode adds ZMW (and the live cross-rate engine behind it).
+    return isDemoSync() ? [...base, 'ZMW'] : base;
   }
 
   static getRate(fromCurrency: string, toCurrency: string): number {
+    if (isDemoSync()) return crossRate(fromCurrency, toCurrency);
     const fromRate = this.BASE_RATES[fromCurrency] || 1;
     const toRate = this.BASE_RATES[toCurrency] || 1;
     return fromRate / toRate;

@@ -15,6 +15,9 @@ import { toast } from 'sonner';
 import { TrendingUp, TrendingDown, AlertTriangle, DollarSign, Target, StopCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRealTimePrice, useMultipleRealTimePrices } from '@/hooks/useRealTimePrice';
+import { useDemoPrice } from '@/hooks/useDemoPrice';
+import { getCryptoPrice } from '@/services/demo/demoMarket';
+import { isDemoSync } from '@/services/demo/DemoBackend';
 
 const FUTURES_SYMBOLS = [
   { symbol: 'BTCUSDT', name: 'Bitcoin', priceSymbol: 'BTC' },
@@ -36,7 +39,8 @@ export const FuturesTrading = () => {
 
   const currentPair = FUTURES_SYMBOLS.find(p => p.symbol === selectedSymbol);
   const { price: livePrice } = useRealTimePrice(currentPair?.priceSymbol || null);
-  const currentPrice = livePrice ?? 0;
+  const { price: demoPrice } = useDemoPrice(currentPair?.priceSymbol || null);
+  const currentPrice = livePrice ?? demoPrice ?? 0;
 
   const { data: positions = [], refetch } = useQuery({
     queryKey: ['futures-positions', user?.id],
@@ -77,22 +81,33 @@ export const FuturesTrading = () => {
         setTakeProfit('');
         setStopLoss('');
         queryClient.invalidateQueries({ queryKey: ['futures-positions'] });
+        queryClient.invalidateQueries({ queryKey: ['crypto-wallets'] });
       } else {
         toast.error(result.error || 'Failed to open position');
       }
     }
   });
 
+  // Price for an arbitrary position's symbol (demo market in demo mode;
+  // otherwise the selected symbol's live price, as before).
+  const priceFor = (symbol: string) => {
+    if (isDemoSync()) return getCryptoPrice(symbol.replace('USDT', '').replace('PERP', ''));
+    return currentPrice;
+  };
+
   const closeMutation = useMutation({
     mutationFn: async (positionId: string) => {
-      if (!currentPrice) throw new Error('Price unavailable');
-      return FuturesService.closePosition(positionId, currentPrice);
+      const position = positions.find(p => p.id === positionId);
+      const exitPrice = position ? priceFor(position.symbol) : currentPrice;
+      if (!exitPrice) throw new Error('Price unavailable');
+      return FuturesService.closePosition(positionId, exitPrice);
     },
     onSuccess: (result) => {
       if (result.success) {
         toast.success(`Position closed. PnL: $${result.pnl?.toFixed(2)}`);
         queryClient.invalidateQueries({ queryKey: ['futures-positions'] });
         queryClient.invalidateQueries({ queryKey: ['futures-history'] });
+        queryClient.invalidateQueries({ queryKey: ['crypto-wallets'] });
       }
     }
   });
@@ -104,8 +119,9 @@ export const FuturesTrading = () => {
     : 0;
 
   const totalUnrealizedPnL = positions.reduce((sum, p) => {
-    if (!currentPrice) return sum;
-    const pnl = FuturesService.calculatePnL(p.entry_price, currentPrice, p.quantity, p.side, p.leverage);
+    const px = priceFor(p.symbol);
+    if (!px) return sum;
+    const pnl = FuturesService.calculatePnL(p.entry_price, px, p.quantity, p.side, p.leverage);
     return sum + pnl;
   }, 0);
 
@@ -169,8 +185,9 @@ export const FuturesTrading = () => {
               ) : (
                 <div className="space-y-3">
                   {positions.map(position => {
-                    const pnl = currentPrice ? FuturesService.calculatePnL(position.entry_price, currentPrice, position.quantity, position.side, position.leverage) : 0;
-                    const roe = currentPrice ? FuturesService.calculateROE(position.entry_price, currentPrice, position.leverage, position.side) : 0;
+                    const posPrice = priceFor(position.symbol);
+                    const pnl = posPrice ? FuturesService.calculatePnL(position.entry_price, posPrice, position.quantity, position.side, position.leverage) : 0;
+                    const roe = posPrice ? FuturesService.calculateROE(position.entry_price, posPrice, position.leverage, position.side) : 0;
 
                     return (
                       <div key={position.id} className="p-3 rounded-lg bg-muted/50">
