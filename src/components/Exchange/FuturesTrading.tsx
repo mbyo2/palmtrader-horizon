@@ -40,7 +40,10 @@ export const FuturesTrading = () => {
   const currentPair = FUTURES_SYMBOLS.find(p => p.symbol === selectedSymbol);
   const { price: livePrice } = useRealTimePrice(currentPair?.priceSymbol || null);
   const { price: demoPrice } = useDemoPrice(currentPair?.priceSymbol || null);
-  const currentPrice = livePrice ?? demoPrice ?? 0;
+  // In demo mode the demo market is the only truthful price source (the
+  // "live" hook's stock simulator fabricates a price for crypto symbols);
+  // position closes already settle at the demo price via priceFor() below.
+  const currentPrice = isDemoSync() ? (demoPrice ?? livePrice ?? 0) : (livePrice ?? demoPrice ?? 0);
 
   const { data: positions = [], refetch } = useQuery({
     queryKey: ['futures-positions', user?.id],

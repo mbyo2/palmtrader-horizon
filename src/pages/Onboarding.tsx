@@ -34,7 +34,7 @@ interface OnboardingData {
 }
 
 const Onboarding = () => {
-  const { user, accountDetails } = useAuth();
+  const { user, accountDetails, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
@@ -60,6 +60,10 @@ const Onboarding = () => {
   const progress = (currentStep / totalSteps) * 100;
 
   useEffect(() => {
+    // Wait for the auth session to settle: on a cold load `user` is still
+    // null while the stored session restores — bouncing to /auth here would
+    // kick out a signed-in user who deep-linked or refreshed this page.
+    if (authLoading) return;
     if (!user) {
       navigate('/auth');
       return;
@@ -79,7 +83,7 @@ const Onboarding = () => {
       }));
       setKycStatus(accountDetails.kyc_status as any || 'not_started');
     }
-  }, [user, accountDetails, navigate]);
+  }, [user, accountDetails, navigate, authLoading]);
 
   const canProceedFromStep = (step: number): boolean => {
     switch (step) {

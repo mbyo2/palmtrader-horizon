@@ -263,8 +263,8 @@ const ComplianceSystem = () => {
         <CardContent>
           <div className="space-y-4">
             {checks.map((check) => (
-              <div key={check.id} className="flex items-center justify-between p-4 border rounded-lg">
-                <div className="flex items-center gap-3">
+              <div key={check.id} className="flex flex-wrap items-center justify-between gap-3 p-4 border rounded-lg">
+                <div className="flex min-w-0 items-center gap-3">
                   {getStatusIcon(check.status)}
                   <div>
                     <h4 className="font-semibold">{check.title}</h4>

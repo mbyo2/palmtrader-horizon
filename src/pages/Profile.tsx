@@ -98,8 +98,8 @@ const Profile = () => {
   return (
     <div className="container py-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex min-w-0 items-center space-x-4">
           <Avatar className="h-20 w-20">
             <AvatarImage src="/placeholder-avatar.jpg" alt="Profile" />
             <AvatarFallback className="text-xl bg-gradient-to-r from-primary to-secondary text-primary-foreground">

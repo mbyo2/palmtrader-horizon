@@ -42,7 +42,7 @@ interface IPOApplication {
 
 const IPODetails = () => {
   const { id } = useParams<{ id: string }>();
-  const { user, requireAuth } = useAuth();
+  const { user, requireAuth, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -52,6 +52,10 @@ const IPODetails = () => {
   const [lots, setLots] = useState(1);
   
   useEffect(() => {
+    // Wait for the auth session to settle before judging: on a cold load
+    // `user` is still null while the stored session restores, and
+    // requireAuth would bounce a signed-in user to /auth.
+    if (authLoading) return;
     requireAuth(async () => {
       if (!id) return;
       
@@ -99,7 +103,7 @@ const IPODetails = () => {
         setLoading(false);
       }
     });
-  }, [id, requireAuth, user?.id]);
+  }, [id, requireAuth, user?.id, authLoading]);
 
   const handleApply = async () => {
     if (!ipo || !user) return;

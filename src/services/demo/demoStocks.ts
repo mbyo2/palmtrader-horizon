@@ -2,7 +2,7 @@
 // execution against the simulated market, portfolio/positions and the
 // watchlist. All state lives in demoStore (localStorage-persisted), using
 // the store's own shapes (StockPosition.averagePrice, useOrders Order).
-import { loadDemoState, updateDemoState, DEMO_USER_ID, uid } from './demoStore';
+import { loadDemoState, updateDemoState, DEMO_USER_ID, uid, type DemoPriceAlert } from './demoStore';
 import { getStockDef, getPrice } from './demoMarket';
 
 const now = () => new Date().toISOString();
@@ -312,14 +312,26 @@ export const DemoCopyTrading = {
 // ---------------------------------------------------------------------------
 export const DemoAlerts = {
   list(): any[] {
-    updateDemoState(s => {
-      for (const a of s.priceAlerts) {
+    // Evaluate triggers, but only write when one actually fires. Writing on
+    // every read made updateDemoState dispatch DEMO_EVENT unconditionally,
+    // and listeners that re-read alerts (PriceAlertList) recursed until the
+    // stack overflowed.
+    const evaluate = (alerts: DemoPriceAlert[]): boolean => {
+      let changed = false;
+      for (const a of alerts) {
         if (!a.is_active || a.is_triggered) continue;
         const px = getPrice(a.symbol);
         const hit = a.condition === 'above' ? px >= a.target_price : px <= a.target_price;
-        if (hit) { a.is_triggered = true; a.is_active = false; }
+        if (hit) { a.is_triggered = true; a.is_active = false; changed = true; }
       }
-    });
+      return changed;
+    };
+    if (evaluate(loadState().priceAlerts)) {
+      // A trigger fired inside the read-only pass against the live cache;
+      // persist + notify once (the store's saveState idiom). The nested
+      // re-read finds nothing left to change, so it does not write again.
+      saveState();
+    }
     return [...loadState().priceAlerts].sort((a, b) => b.created_at.localeCompare(a.created_at));
   },
   create(symbol: string, targetPrice: number, condition: 'above' | 'below') {

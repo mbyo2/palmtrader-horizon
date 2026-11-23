@@ -36,13 +36,17 @@ interface IPOListing {
 }
 
 const IPO = () => {
-  const { user, requireAuth } = useAuth();
+  const { user, requireAuth, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [ipoListings, setIpoListings] = useState<IPOListing[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Wait for the auth session to settle before judging: on a cold load
+    // `user` is still null while the stored session restores, and
+    // requireAuth would bounce a signed-in user to /auth.
+    if (authLoading) return;
     requireAuth(async () => {
       try {
         if (isDemoSync()) { setIpoListings(DemoIPO.listings()); setLoading(false); return; }
@@ -71,7 +75,7 @@ const IPO = () => {
         setLoading(false);
       }
     });
-  }, [requireAuth]);
+  }, [requireAuth, authLoading]);
 
   const getStatusBadgeVariant = (status: IPOListing['status']) => {
     switch (status) {

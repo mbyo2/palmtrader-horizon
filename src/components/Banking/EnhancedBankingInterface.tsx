@@ -230,7 +230,7 @@ export default function EnhancedBankingInterface() {
       </div>
 
       <Tabs defaultValue="transfer" className="space-y-6">
-        <TabsList>
+        <TabsList className="flex h-auto w-full flex-wrap justify-start">
           <TabsTrigger value="transfer">Transfer Funds</TabsTrigger>
           <TabsTrigger value="kyc">Identity Verification</TabsTrigger>
           <TabsTrigger value="transactions">Transaction History</TabsTrigger>

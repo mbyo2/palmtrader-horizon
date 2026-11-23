@@ -206,9 +206,9 @@ const Verification = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium">{user?.email}</p>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="font-medium break-all">{user?.email}</p>
                 <p className="text-sm text-muted-foreground">
                   {accountDetails?.is_email_verified ? 'Verified' : 'Verification required'}
                 </p>
