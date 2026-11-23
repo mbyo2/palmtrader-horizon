@@ -1,6 +1,8 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { isDemoSync } from '@/services/demo/DemoBackend';
+import { getCryptoPrice, getChangePct } from '@/services/demo/demoMarket';
 
 interface CryptoPrice {
   price: number;
@@ -41,6 +43,11 @@ export function useCryptoData(cryptoId: string) {
   const { data, isLoading, error } = useQuery({
     queryKey: ['cryptoPrice', cryptoId],
     queryFn: async () => {
+      if (isDemoSync()) {
+        const SYMBOLS: Record<string, string> = { bitcoin: 'BTC', ethereum: 'ETH', solana: 'SOL', ripple: 'XRP', cardano: 'ADA', polkadot: 'DOT' };
+        const sym = SYMBOLS[cryptoId] || cryptoId.toUpperCase();
+        return { price: getCryptoPrice(sym), change: getChangePct(sym), timestamp: Date.now() };
+      }
       try {
         const response = await fetch(
           `https://api.coingecko.com/api/v3/simple/price?ids=${cryptoId}&vs_currencies=usd&include_24hr_change=true`

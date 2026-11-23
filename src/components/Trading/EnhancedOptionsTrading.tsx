@@ -11,6 +11,8 @@ import { TrendingUp, TrendingDown, Calculator, AlertTriangle, DollarSign } from 
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { isDemoSync } from '@/services/demo/DemoBackend';
+import { DemoOptions } from '@/services/demo/demoStocks';
 
 interface OptionChain {
   strike: number;
@@ -60,6 +62,8 @@ const EnhancedOptionsTrading = () => {
   const loadOptionPositions = async () => {
     if (!user) return;
 
+    if (isDemoSync()) { setPositions(DemoOptions.positions()); return; }
+
     try {
       const { data, error } = await supabase
         .from('options_trades')
@@ -83,7 +87,8 @@ const EnhancedOptionsTrading = () => {
   };
 
   const loadOptionChain = () => {
-    // Mock option chain data
+    if (isDemoSync()) { setOptionChain(DemoOptions.chainFor(symbol.toUpperCase())); return; }
+    // Fallback chain centred on round strikes when no live feed is connected
     const mockChain: OptionChain[] = [
       { strike: 150, callBid: 8.50, callAsk: 8.80, callVolume: 1250, putBid: 2.10, putAsk: 2.30, putVolume: 890, expiry: "2024-03-15" },
       { strike: 155, callBid: 5.20, callAsk: 5.50, callVolume: 2100, putBid: 4.80, putAsk: 5.10, putVolume: 1450, expiry: "2024-03-15" },
@@ -160,6 +165,23 @@ const EnhancedOptionsTrading = () => {
     setLoading(true);
 
     try {
+      if (isDemoSync()) {
+        const r = DemoOptions.placeTrade({
+          symbol, optionType, strikePrice: parseFloat(strikePrice),
+          expirationDate, contracts: parseInt(contracts), premium: parseFloat(premium),
+        });
+        if (!r.success) throw new Error(r.error || 'Options order failed');
+        toast({
+          title: "Options Order Placed",
+          description: `${optionType} option order for ${symbol} placed successfully`,
+        });
+        setStrikePrice("");
+        setExpirationDate("");
+        setContracts("1");
+        setPremium("");
+        await loadOptionPositions();
+        return;
+      }
       const { error } = await supabase.from("options_trades").insert({
         user_id: user.id,
         symbol: symbol.toUpperCase(),

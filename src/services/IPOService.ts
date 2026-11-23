@@ -1,5 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { isDemo, isDemoSync } from '@/services/demo/DemoBackend';
+import { DemoIPO } from '@/services/demo/demoStocks';
 
 export interface IPOListing {
   id: string;
@@ -35,6 +37,7 @@ export interface IPOApplication {
 
 export class IPOService {
   static async getIPOListings(): Promise<IPOListing[]> {
+    if (await isDemo()) return DemoIPO.listings() as unknown as IPOListing[];
     try {
       const { data, error } = await supabase
         .from('ipo_listings')
@@ -58,6 +61,7 @@ export class IPOService {
   }
 
   static async applyForIPO(application: Omit<IPOApplication, 'id' | 'created_at' | 'updated_at'>): Promise<IPOApplication> {
+    if (await isDemo()) return DemoIPO.apply(application.ipo_id, application.shares_applied, application.price_per_share) as unknown as IPOApplication;
     try {
       const { data, error } = await supabase
         .from('ipo_applications')
@@ -83,6 +87,7 @@ export class IPOService {
   }
 
   static async getUserIPOApplications(userId: string): Promise<IPOApplication[]> {
+    if (await isDemo()) return DemoIPO.applications() as unknown as IPOApplication[];
     try {
       const { data, error } = await supabase
         .from('ipo_applications')

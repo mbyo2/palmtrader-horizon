@@ -4,6 +4,10 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Bell, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { isDemoSync } from '@/services/demo/DemoBackend';
+import { DemoAlerts } from '@/services/demo/demoStocks';
+import { subscribePrices } from '@/services/demo/demoMarket';
+import { DEMO_EVENT } from '@/services/demo/demoStore';
 
 interface PriceAlert {
   id: string;
@@ -21,6 +25,13 @@ const PriceAlertList = () => {
   useEffect(() => {
     fetchAlerts();
     
+    if (isDemoSync()) {
+      fetchAlerts();
+      const unsub = subscribePrices(fetchAlerts);
+      window.addEventListener(DEMO_EVENT, fetchAlerts);
+      return () => { unsub(); window.removeEventListener(DEMO_EVENT, fetchAlerts); };
+    }
+
     // Subscribe to real-time updates
     const channel = supabase
       .channel('price-alerts')
@@ -54,6 +65,8 @@ const PriceAlertList = () => {
 
   const fetchAlerts = async () => {
     try {
+    if (isDemoSync()) { setAlerts(DemoAlerts.list() as PriceAlert[]); return; }
+
       const { data, error } = await supabase
         .from("price_alerts")
         .select("*")
@@ -70,6 +83,13 @@ const PriceAlertList = () => {
 
   const deleteAlert = async (id: string) => {
     try {
+    if (isDemoSync()) {
+      DemoAlerts.remove(id);
+      toast({ title: "Success", description: "Price alert deleted successfully" });
+      setAlerts(alerts.filter(alert => alert.id !== id));
+      return;
+    }
+
       const { error } = await supabase
         .from("price_alerts")
         .delete()

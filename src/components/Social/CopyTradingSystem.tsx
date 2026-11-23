@@ -12,6 +12,8 @@ import { Users, Copy, Award, TrendingUp, DollarSign, Settings2, X } from "lucide
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { isDemoSync } from '@/services/demo/DemoBackend';
+import { DemoCopyTrading } from '@/services/demo/demoStocks';
 
 interface TraderProfile {
   id: string;
@@ -53,6 +55,8 @@ const CopyTradingSystem = () => {
 
   const loadTraders = async () => {
     try {
+    if (isDemoSync()) { setTraders(DemoCopyTrading.traders()); setLoading(false); return; }
+
       const { data, error } = await supabase
         .from('trader_stats')
         .select('*')
@@ -72,6 +76,8 @@ const CopyTradingSystem = () => {
   const loadMyFollows = async () => {
     if (!user) return;
     try {
+    if (isDemoSync()) { setMyFollows(DemoCopyTrading.follows()); return; }
+
       const { data, error } = await supabase
         .from('copy_trading_follows')
         .select('*')
@@ -97,6 +103,13 @@ const CopyTradingSystem = () => {
       return;
     }
 
+    if (isDemoSync()) {
+      DemoCopyTrading.follow(trader.user_id, amount);
+      toast.success(`Now copying ${trader.display_name} with $${amount}`);
+      setSelectedTrader(null);
+      loadMyFollows();
+      return;
+    }
     try {
       const { error } = await supabase
         .from('copy_trading_follows')
@@ -120,6 +133,13 @@ const CopyTradingSystem = () => {
 
   const handleStopCopying = async (followId: string) => {
     try {
+    if (isDemoSync()) {
+      DemoCopyTrading.unfollow(followId);
+      toast.success('Stopped copying trader');
+      loadMyFollows();
+      return;
+    }
+
       const { error } = await supabase
         .from('copy_trading_follows')
         .update({ is_active: false })

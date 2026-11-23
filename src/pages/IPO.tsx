@@ -15,6 +15,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { useToast } from "@/components/ui/use-toast";
+import { isDemo, isDemoSync } from '@/services/demo/DemoBackend';
+import { DemoIPO } from '@/services/demo/demoStocks';
 
 interface IPOListing {
   id: string;
@@ -43,6 +45,7 @@ const IPO = () => {
   useEffect(() => {
     requireAuth(async () => {
       try {
+        if (isDemoSync()) { setIpoListings(DemoIPO.listings()); setLoading(false); return; }
         const { data, error } = await supabase
           .from('ipo_listings')
           .select('*')

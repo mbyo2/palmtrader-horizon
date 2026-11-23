@@ -7,6 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Bell } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { isDemoSync } from '@/services/demo/DemoBackend';
+import { DemoAlerts } from '@/services/demo/demoStocks';
 
 interface PriceAlertFormProps {
   symbol?: string;
@@ -24,6 +26,13 @@ export const PriceAlertForm = ({ symbol = "", currentPrice }: PriceAlertFormProp
     
     try {
       const { data: { user } } = await supabase.auth.getUser();
+      if (isDemoSync()) {
+        DemoAlerts.create(symbolValue, parseFloat(targetPrice), condition);
+        toast({ title: "Success", description: "Price alert created successfully" });
+        if (!symbol) { setSymbolValue(""); setTargetPrice(""); setCondition("above"); }
+        return;
+      }
+
       if (!user) {
         toast({
           title: "Error",

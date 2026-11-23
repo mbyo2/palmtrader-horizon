@@ -257,3 +257,234 @@ export const DemoStockTrading = {
     updateDemoState(s => { s.watchlist = s.watchlist.filter(x => x !== symbol); });
   },
 };
+
+// ---------------------------------------------------------------------------
+// Copy trading — demo trader leaderboard (labelled demo profiles); follows
+// persist in demoStore.followedTraders with allocations alongside.
+// ---------------------------------------------------------------------------
+export const DEMO_TRADERS: any[] = [
+  { id: 'tr-1', user_id: 'trader-mwansa', display_name: 'Mwansa K. (Demo Trader)', bio: 'Demo profile — LuSE blue chips and dividend stocks.', total_return_pct: 42.8, win_rate: 68, total_trades: 214, followers_count: 318, risk_score: 3, is_verified: true, specialization: 'LuSE Equities' },
+  { id: 'tr-2', user_id: 'trader-chanda', display_name: 'Chanda M. (Demo Trader)', bio: 'Demo profile — crypto swing trading on BTC and ETH.', total_return_pct: 87.3, win_rate: 61, total_trades: 486, followers_count: 542, risk_score: 6, is_verified: true, specialization: 'Crypto Swing' },
+  { id: 'tr-3', user_id: 'trader-bwalya', display_name: 'Bwalya T. (Demo Trader)', bio: 'Demo profile — US tech momentum with strict position sizing.', total_return_pct: 35.1, win_rate: 64, total_trades: 167, followers_count: 203, risk_score: 4, is_verified: false, specialization: 'US Tech' },
+  { id: 'tr-4', user_id: 'trader-ngoma', display_name: 'Ngoma S. (Demo Trader)', bio: 'Demo profile — conservative options income strategies.', total_return_pct: 18.9, win_rate: 74, total_trades: 98, followers_count: 121, risk_score: 2, is_verified: true, specialization: 'Options Income' },
+];
+
+const ALLOC_KEY = 'palmtrader:copy-allocations:v1';
+function loadAllocations(): Record<string, number> {
+  try { return JSON.parse(localStorage.getItem(ALLOC_KEY) || '{}'); } catch { return {}; }
+}
+
+export const DemoCopyTrading = {
+  traders(): any[] { return DEMO_TRADERS; },
+  follows(): any[] {
+    const allocs = loadAllocations();
+    return loadState().followedTraders
+      .map(leaderId => {
+        const trader = DEMO_TRADERS.find(t => t.user_id === leaderId);
+        if (!trader) return null;
+        const allocation = allocs[leaderId] ?? 500;
+        return {
+          id: `follow-${leaderId}`, leader_id: leaderId,
+          allocation_amount: allocation, max_trade_size: allocation * 0.1,
+          is_active: true, total_profit: 0, total_trades_copied: 0, leader: trader,
+        };
+      })
+      .filter(Boolean);
+  },
+  follow(leaderId: string, allocation: number) {
+    const allocs = loadAllocations();
+    allocs[leaderId] = allocation;
+    try { localStorage.setItem(ALLOC_KEY, JSON.stringify(allocs)); } catch { /* ignore */ }
+    updateDemoState(s => { if (!s.followedTraders.includes(leaderId)) s.followedTraders.push(leaderId); });
+    const trader = DEMO_TRADERS.find(t => t.user_id === leaderId);
+    if (trader) trader.followers_count += 1;
+  },
+  unfollow(followId: string) {
+    const leaderId = followId.replace('follow-', '');
+    updateDemoState(s => { s.followedTraders = s.followedTraders.filter(id => id !== leaderId); });
+    const trader = DEMO_TRADERS.find(t => t.user_id === leaderId);
+    if (trader && trader.followers_count > 0) trader.followers_count -= 1;
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Price alerts — evaluated against the simulated market on every read.
+// ---------------------------------------------------------------------------
+export const DemoAlerts = {
+  list(): any[] {
+    updateDemoState(s => {
+      for (const a of s.priceAlerts) {
+        if (!a.is_active || a.is_triggered) continue;
+        const px = getPrice(a.symbol);
+        const hit = a.condition === 'above' ? px >= a.target_price : px <= a.target_price;
+        if (hit) { a.is_triggered = true; a.is_active = false; }
+      }
+    });
+    return [...loadState().priceAlerts].sort((a, b) => b.created_at.localeCompare(a.created_at));
+  },
+  create(symbol: string, targetPrice: number, condition: 'above' | 'below') {
+    updateDemoState(s => {
+      s.priceAlerts.unshift({
+        id: uid('alert'), user_id: DEMO_USER_ID, symbol: symbol.toUpperCase(),
+        target_price: targetPrice, condition, is_active: true, is_triggered: false,
+        created_at: now(),
+      });
+    });
+  },
+  remove(id: string) {
+    updateDemoState(s => { s.priceAlerts = s.priceAlerts.filter(a => a.id !== id); });
+  },
+};
+
+// ---------------------------------------------------------------------------
+// IPO — fictional demo listings (labelled as such), applications reserve
+// ZMW cash from the demo stock account.
+// ---------------------------------------------------------------------------
+function inDays(days: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d.toISOString();
+}
+
+export const DEMO_IPO_LISTINGS: any[] = [
+  {
+    id: 'ipo-demo-1', company_name: 'Copperline Solar Ltd', symbol: 'CSOL',
+    description: 'Demo listing — a fictional Zambian solar equipment assembler used to demonstrate the IPO flow. Not a real offer.',
+    sector: 'Energy', issue_price_min: 2.40, issue_price_max: 2.80, total_shares: 40000000,
+    retail_allocation_percentage: 30, subscription_start_date: inDays(-3), subscription_end_date: inDays(11),
+    listing_date: inDays(25), minimum_lot_size: 100, status: 'open', created_at: inDays(-10), updated_at: inDays(-1),
+  },
+  {
+    id: 'ipo-demo-2', company_name: 'Lusaka Agro Processors Ltd', symbol: 'LAGP',
+    description: 'Demo listing — a fictional agro-processing company used to demonstrate the IPO flow. Not a real offer.',
+    sector: 'Agriculture', issue_price_min: 5.00, issue_price_max: 5.60, total_shares: 25000000,
+    retail_allocation_percentage: 25, subscription_start_date: inDays(6), subscription_end_date: inDays(20),
+    listing_date: inDays(34), minimum_lot_size: 50, status: 'upcoming', created_at: inDays(-6), updated_at: inDays(-2),
+  },
+  {
+    id: 'ipo-demo-3', company_name: 'Zambezi Microfinance Group Ltd', symbol: 'ZMFG',
+    description: 'Demo listing — a fictional microfinance group used to demonstrate the IPO flow. Not a real offer.',
+    sector: 'Financial Services', issue_price_min: 1.80, issue_price_max: 2.10, total_shares: 60000000,
+    retail_allocation_percentage: 40, subscription_start_date: inDays(-40), subscription_end_date: inDays(-18),
+    listing_date: inDays(-4), minimum_lot_size: 100, status: 'listed', created_at: inDays(-60), updated_at: inDays(-4),
+  },
+];
+
+export const DemoIPO = {
+  listings(): any[] { return DEMO_IPO_LISTINGS; },
+  getListing(id: string): any | null { return DEMO_IPO_LISTINGS.find(l => l.id === id) || null; },
+
+  applications(): any[] {
+    return loadState().ipoApplications.map(a => ({
+      id: a.id, user_id: a.user_id, ipo_id: a.ipo_id,
+      shares_applied: a.shares_requested,
+      price_per_share: a.shares_requested ? a.amount / a.shares_requested : 0,
+      total_amount: a.amount,
+      status: a.status === 'allocated' ? 'allocated' : a.status === 'rejected' ? 'rejected' : 'pending',
+      payment_status: 'completed', created_at: a.created_at, updated_at: a.created_at,
+    }));
+  },
+
+  applicationFor(ipoId: string): any | null {
+    return this.applications().find(a => a.ipo_id === ipoId) || null;
+  },
+
+  apply(ipoId: string, shares: number, pricePerShare: number): any {
+    const listing = this.getListing(ipoId);
+    if (!listing) throw new Error('IPO not found');
+    const total = shares * pricePerShare;
+    if ((loadState().stockCash.ZMW || 0) < total) {
+      throw new Error('Insufficient ZMW cash in your demo account for this application');
+    }
+    const app: any = {
+      id: uid('ipo'), user_id: DEMO_USER_ID, ipo_id: ipoId,
+      shares_applied: shares, price_per_share: pricePerShare, total_amount: total,
+      status: 'pending', payment_status: 'completed', created_at: now(), updated_at: now(),
+    };
+    updateDemoState(s => {
+      s.stockCash.ZMW -= total;
+      s.ipoApplications.unshift({
+        id: app.id, user_id: DEMO_USER_ID, ipo_id: ipoId,
+        shares_requested: shares, amount: total, status: 'pending', created_at: app.created_at,
+      });
+    });
+    return app;
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Options — chain priced off the live demo price with a simple
+// intrinsic + time-value model; premiums move the USD stock cash balance.
+// ---------------------------------------------------------------------------
+function optionPremium(spot: number, strike: number, type: 'call' | 'put', daysToExpiry = 30): number {
+  const intrinsic = type === 'call' ? Math.max(0, spot - strike) : Math.max(0, strike - spot);
+  const timeValue = 0.35 * spot * 0.30 * Math.sqrt(Math.max(daysToExpiry, 1) / 365) * Math.exp(-Math.abs(spot - strike) / (spot * 0.25));
+  return Math.max(0.05, intrinsic + timeValue);
+}
+
+function nextExpiry(): string {
+  const d = new Date();
+  d.setDate(d.getDate() + 30);
+  return d.toISOString().slice(0, 10);
+}
+
+export const DemoOptions = {
+  chainFor(symbol: string) {
+    const spot = getPrice(symbol);
+    const expiry = nextExpiry();
+    const offsets = [-0.10, -0.05, -0.025, 0, 0.025, 0.05, 0.10];
+    return offsets.map((off, i) => {
+      const strike = Math.round(spot * (1 + off) * 100) / 100;
+      const call = optionPremium(spot, strike, 'call');
+      const put = optionPremium(spot, strike, 'put');
+      const vol = Math.round(2400 * Math.exp(-Math.abs(off) * 14)) + 120;
+      return {
+        strike,
+        callBid: Math.max(0.01, call * 0.97), callAsk: call * 1.03, callVolume: vol,
+        putBid: Math.max(0.01, put * 0.97), putAsk: put * 1.03, putVolume: Math.round(vol * 0.7),
+        expiry,
+      };
+    });
+  },
+
+  placeTrade(params: {
+    symbol: string; optionType: 'CALL' | 'PUT'; strikePrice: number;
+    expirationDate: string; contracts: number; premium: number;
+  }): { success: boolean; error?: string } {
+    const cost = params.premium * params.contracts;
+    const s = loadState();
+    if ((s.stockCash.USD || 0) < cost) {
+      return { success: false, error: 'Insufficient USD cash for this options premium' };
+    }
+    updateDemoState(state => {
+      state.stockCash.USD -= cost;
+      state.optionsTrades.unshift({
+        id: uid('opt'), user_id: DEMO_USER_ID, symbol: params.symbol.toUpperCase(),
+        option_type: params.optionType.toLowerCase() as 'call' | 'put',
+        strike_price: params.strikePrice, expiration_date: params.expirationDate,
+        premium: params.premium, quantity: params.contracts, side: 'buy',
+        status: 'open', created_at: now(),
+      });
+    });
+    return { success: true };
+  },
+
+  /** Positions in the EnhancedOptionsTrading OptionPosition shape, marked live. */
+  positions(): any[] {
+    return loadState().optionsTrades
+      .filter(t => t.status === 'open')
+      .map(t => {
+        const spot = getPrice(t.symbol);
+        const days = Math.max(1, Math.round((new Date(t.expiration_date).getTime() - Date.now()) / 86400000));
+        const mark = optionPremium(spot, t.strike_price, t.option_type, days);
+        const current_value = mark * t.quantity;
+        const paid = t.premium * t.quantity;
+        return {
+          id: t.id, symbol: t.symbol, option_type: t.option_type.toUpperCase(),
+          strike_price: t.strike_price, expiration_date: t.expiration_date,
+          contracts: t.quantity, premium_per_contract: t.premium,
+          current_value, pnl: current_value - paid, status: t.status,
+        };
+      });
+  },
+};

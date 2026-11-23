@@ -11,6 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { useToast } from "@/components/ui/use-toast";
 import { FileText } from "lucide-react";
+import { isDemo, isDemoSync } from '@/services/demo/DemoBackend';
+import { DemoIPO } from '@/services/demo/demoStocks';
 
 interface IPOListing {
   id: string;
@@ -54,6 +56,16 @@ const IPODetails = () => {
       if (!id) return;
       
       try {
+      if (isDemoSync()) {
+        const listing = DemoIPO.getListing(id);
+        if (!listing) { toast({ variant: "destructive", title: "Error", description: "IPO not found." }); navigate('/ipo'); setLoading(false); return; }
+        setIpo(listing as IPOListing);
+        const existing = DemoIPO.applicationFor(id);
+        if (existing) setExistingApplication(existing as IPOApplication);
+        setLoading(false);
+        return;
+      }
+
         // Fetch IPO details
         const { data: ipoData, error: ipoError } = await supabase
           .from('ipo_listings')
@@ -97,6 +109,12 @@ const IPODetails = () => {
     const total_amount = shares * price_per_share;
 
     try {
+      if (isDemoSync()) {
+        const created = DemoIPO.apply(ipo.id, shares, price_per_share);
+        toast({ title: "Application Submitted", description: "Your IPO application has been submitted successfully." });
+        setExistingApplication(created as IPOApplication);
+        return;
+      }
       const { error } = await supabase
         .from('ipo_applications')
         .insert({

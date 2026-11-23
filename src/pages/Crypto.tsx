@@ -10,6 +10,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import CryptoTrading from "@/components/Trading/CryptoTrading";
 import { useCryptoData } from "@/hooks/useCryptoData";
 import { CryptoErrorBoundary } from "@/components/ErrorBoundary/CryptoErrorBoundary";
+import { isDemo, isDemoSync } from '@/services/demo/DemoBackend';
+import { generateChartData, getCryptoPrice } from '@/services/demo/demoMarket';
+import { loadDemoState } from '@/services/demo/demoStore';
 
 const popularCryptos = [
   { symbol: "bitcoin", name: "Bitcoin", ticker: "BTC" },
@@ -26,6 +29,13 @@ const Crypto = () => {
   const { data: cryptoData, isLoading } = useQuery({
     queryKey: ['cryptoHistorical', selectedCrypto.symbol],
     queryFn: async () => {
+      if (isDemoSync()) {
+        return generateChartData(selectedCrypto.ticker, 30).map((c, i) => ({
+          symbol: selectedCrypto.ticker,
+          timestamp: (Date.now() - (29 - i) * 86400000).toString(),
+          price: c.close, close: c.close, type: 'crypto' as const,
+        }));
+      }
       try {
         const response = await fetch(
           `https://api.coingecko.com/api/v3/coins/${selectedCrypto.symbol}/market_chart?vs_currency=usd&days=30&interval=daily`
@@ -152,6 +162,17 @@ const CryptoPortfolio = () => {
     queryKey: ['cryptoPortfolio'],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
+      if (await isDemo()) {
+        const tickers = popularCryptos.map(c => c.ticker);
+        return loadDemoState().cryptoWallets
+          .filter(w => w.wallet_type === 'spot' && tickers.includes(w.currency) && (w.available_balance + w.locked_balance) > 0)
+          .map(w => ({
+            id: w.id, symbol: w.currency,
+            shares: w.available_balance + w.locked_balance,
+            average_price: getCryptoPrice(w.currency),
+          }));
+      }
+
       if (!user) return [];
       const { data, error } = await supabase
         .from("portfolio").select("*").eq("user_id", user.id)
