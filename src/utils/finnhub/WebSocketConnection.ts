@@ -23,25 +23,9 @@ export class WebSocketConnection {
     this.isConnecting = true;
 
     try {
-      // Get API key from edge function if not provided
-      if (this.apiKey === "demo") {
-        try {
-          const { createClient } = await import('@supabase/supabase-js');
-          const supabaseUrl = "https://hvrcchjbqumlknaboczh.supabase.co";
-          const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2cmNjaGpicXVtbGtuYWJvY3poIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzYyNjUxMDgsImV4cCI6MjA1MTg0MTEwOH0.F4Tyt3Ei2VYQiXoMdlRtLRF8gxMLeBfTVFOL32q3iYQ";
-          const client = createClient(supabaseUrl, supabaseKey);
-          const { data, error } = await client.functions.invoke('finnhub-websocket', {
-            body: { action: 'get_api_key' }
-          });
-          
-          if (!error && data?.apiKey) {
-            this.apiKey = data.apiKey;
-          }
-        } catch (fetchError) {
-          console.warn('Could not fetch API key, using demo mode:', fetchError);
-          // Continue with demo key
-        }
-      }
+      // The edge function no longer distributes the raw Finnhub API key
+      // (get_api_key removed for security). Live data is proxied through
+      // the function's REST actions; this direct socket stays in demo mode.
 
       const wsUrl = `wss://ws.finnhub.io?token=${this.apiKey}`;
       console.log('Connecting to Finnhub WebSocket...');

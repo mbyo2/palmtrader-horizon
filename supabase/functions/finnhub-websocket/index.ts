@@ -112,6 +112,8 @@ serve(async (req) => {
   }
 
   try {
+    // Public quote/candle/news proxy. The shared Finnhub quota is protected by
+    // the in-memory cache, inflight de-duplication, and rate-limiter above.
     const apiKey = Deno.env.get('FINNHUB_API_KEY');
     
     if (!apiKey) {
@@ -125,11 +127,13 @@ serve(async (req) => {
     const body = await req.json();
     const { action, symbol, resolution, from, to } = body;
     
-    // Return API key for WebSocket connection
+    // Direct API-key retrieval removed for security. Clients must proxy
+    // quote/candle/news requests through this function; raw WebSocket
+    // subscriptions to Finnhub from the browser are no longer supported.
     if (action === 'get_api_key') {
       return new Response(
-        JSON.stringify({ apiKey, status: 'success' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'This action has been removed. Use get_quote / get_candles / get_news via this proxy instead.' }),
+        { status: 410, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 

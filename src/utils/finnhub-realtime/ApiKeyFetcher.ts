@@ -1,17 +1,9 @@
-import { supabase } from '@/integrations/supabase/client';
-
+// The finnhub-websocket edge function no longer hands out the raw Finnhub
+// API key (the get_api_key action was removed for security — any signed-in
+// user could extract and abuse the shared key). Quotes, candles and news
+// are proxied through the edge function instead. The direct browser
+// WebSocket therefore runs in demo mode; live prices come from the
+// proxied REST actions (get_quote / get_candles / get_news).
 export async function fetchFinnhubApiKey(): Promise<string> {
-  try {
-    const { data, error } = await supabase.functions.invoke('finnhub-websocket', {
-      body: { action: 'get_api_key' },
-    });
-
-    if (!error && data?.apiKey) {
-      return data.apiKey;
-    }
-    console.warn('Could not retrieve Finnhub API key, using demo mode');
-  } catch (err) {
-    console.warn('Error fetching API key:', err);
-  }
   return 'demo';
 }

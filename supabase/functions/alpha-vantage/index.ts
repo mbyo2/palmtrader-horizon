@@ -1,5 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -198,7 +199,9 @@ async function fetchWithFallback(params: URLSearchParams, fallbackFn: () => any)
     
     const data = await response.json();
     
-    if (data['Error Message'] || data['Note'] || data['Information']?.includes('rate limit')) {
+    // ANY Information/Note payload is a non-data response (rate-limit notice,
+    // premium-endpoint notice, etc.) — never return it to clients as data.
+    if (data['Error Message'] || data['Note'] || data['Information']) {
       console.log('API rate limited or error, using demo data');
       return fallbackFn();
     }
@@ -216,6 +219,27 @@ serve(async (req) => {
   }
 
   try {
+    // Require an authenticated caller — this proxy consumes paid Alpha Vantage quota.
+    const authHeader = req.headers.get('Authorization') ?? '';
+    if (!authHeader.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    const supabaseAuth = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
+    );
+    const { data: userData, error: authErr } = await supabaseAuth.auth.getUser(authHeader.replace('Bearer ', ''));
+    if (authErr || !userData?.user) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const body = await req.json();
     const { function: func, symbol, interval, time_period, series_type, outputsize,
             from_currency, to_currency, tickers, topics, maturity } = body;
