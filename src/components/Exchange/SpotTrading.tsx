@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,6 +17,8 @@ import { toast } from 'sonner';
 import { RefreshCw, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { RealTimeOrderBook } from './RealTimeOrderBook';
+import { AdvancedStockChart } from '@/components/Research/AdvancedStockChart';
+import { generateChartData } from '@/services/demo/demoMarket';
 
 export const SpotTrading = () => {
   const { user } = useAuth();
@@ -54,6 +56,16 @@ export const SpotTrading = () => {
   });
 
   const { price: livePrice, changePct } = useDemoPrice(selectedPairId || null);
+
+  // Chart series for the selected pair (same demo market generator as the Crypto page)
+  const chartData = useMemo(() => {
+    if (!selectedPair) return [];
+    return generateChartData(selectedPair.base_currency, 60).map((c, i) => ({
+      symbol: selectedPair.base_currency,
+      timestamp: (Date.now() - (59 - i) * 3600000).toString(),
+      price: c.close, close: c.close, type: 'crypto' as const,
+    }));
+  }, [selectedPair]);
 
   const spotAvailable = (currency?: string) =>
     wallets.find(w => w.currency === currency && w.wallet_type === 'spot')?.available_balance ?? 0;
@@ -114,10 +126,9 @@ export const SpotTrading = () => {
   const currentFee = userVolume?.current_tier;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-      {/* Left: Pair selector + Order Book + Open Orders */}
-      <div className="lg:col-span-3 space-y-4">
-        <Card>
+    <div className="space-y-4">
+      {/* Ticker header strip */}
+      <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-4 flex-wrap">
               <Select value={selectedPairId} onValueChange={setSelectedPairId}>
@@ -136,7 +147,7 @@ export const SpotTrading = () => {
               {livePrice !== null && selectedPair && (
                 <div className="flex items-baseline gap-2">
                   <span className="text-xl font-bold">{livePrice.toLocaleString(undefined, { maximumFractionDigits: 2 })} {selectedPair.quote_currency}</span>
-                  <span className={changePct >= 0 ? 'text-green-500 text-sm font-medium' : 'text-red-500 text-sm font-medium'}>
+                  <span className={changePct >= 0 ? 'text-gain text-sm font-medium' : 'text-loss text-sm font-medium'}>
                     {changePct >= 0 ? '+' : ''}{changePct.toFixed(2)}%
                   </span>
                 </div>
@@ -151,60 +162,40 @@ export const SpotTrading = () => {
           </CardContent>
         </Card>
 
-        {/* Real-Time Order Book with Supabase Realtime */}
-        {selectedPairId && (
-          <RealTimeOrderBook pairId={selectedPairId} onPriceClick={handlePriceClick} />
-        )}
+      {/* Binance arrangement: chart centre, order book + trade panel right rail (desktop);
+          on mobile the trade panel sits directly under the chart, book below it. */}
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
+        <div className="xl:col-span-6 order-1 min-w-0">
+          {selectedPair ? (
+            <AdvancedStockChart
+              symbol={`${selectedPair.base_currency}/${selectedPair.quote_currency}`}
+              data={chartData}
+              compact
+            />
+          ) : (
+            <Card>
+              <CardContent className="py-16 text-center text-muted-foreground">
+                Select a pair to view its chart
+              </CardContent>
+            </Card>
+          )}
+        </div>
 
-        {/* Open Orders */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">Open Orders ({openOrders.length})</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {openOrders.length === 0 ? (
-              <div className="text-center text-muted-foreground py-4">No open orders</div>
-            ) : (
-              <div className="space-y-2">
-                {openOrders.map(order => (
-                  <div key={order.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
-                    <div className="flex items-center gap-3">
-                      <Badge variant={order.side === 'buy' ? 'default' : 'destructive'}>
-                        {order.side.toUpperCase()}
-                      </Badge>
-                      <span className="font-medium text-sm">{order.quantity} @ {order.price}</span>
-                      <Badge variant="outline">{order.order_type}</Badge>
-                      {order.status === 'partially_filled' && (
-                        <Badge variant="secondary" className="text-xs">
-                          Filled: {order.filled_quantity}/{order.quantity}
-                        </Badge>
-                      )}
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => cancelMutation.mutate(order.id)}
-                      aria-label="Cancel order"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+        <div className="xl:col-span-3 order-3 xl:order-2 min-w-0">
+          {selectedPairId && (
+            <RealTimeOrderBook pairId={selectedPairId} onPriceClick={handlePriceClick} />
+          )}
+        </div>
 
-      {/* Right: Order Form */}
-      <Card>
+        <div className="xl:col-span-3 order-2 xl:order-3 min-w-0">
+          <Card>
         <CardContent className="p-4">
           <Tabs value={side} onValueChange={(v) => setSide(v as 'buy' | 'sell')}>
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="buy" className={cn("data-[state=active]:bg-green-600 data-[state=active]:text-white")}>
+              <TabsTrigger value="buy" className={cn("data-[state=active]:bg-gain data-[state=active]:text-white")}>
                 Buy
               </TabsTrigger>
-              <TabsTrigger value="sell" className={cn("data-[state=active]:bg-red-600 data-[state=active]:text-white")}>
+              <TabsTrigger value="sell" className={cn("data-[state=active]:bg-loss data-[state=active]:text-white")}>
                 Sell
               </TabsTrigger>
             </TabsList>
@@ -297,7 +288,7 @@ export const SpotTrading = () => {
             <Button 
               className={cn(
                 "w-full",
-                side === 'buy' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'
+                side === 'buy' ? 'bg-gain hover:bg-gain/90 text-white' : 'bg-loss hover:bg-loss/90 text-white'
               )}
               onClick={() => placeMutation.mutate()}
               disabled={placeMutation.isPending || !quantity || (orderType === 'limit' && !price)}
@@ -307,6 +298,47 @@ export const SpotTrading = () => {
           </div>
         </CardContent>
       </Card>
+        </div>
+      </div>
+
+      {/* Open orders / history below */}
+      <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Open Orders ({openOrders.length})</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {openOrders.length === 0 ? (
+              <div className="text-center text-muted-foreground py-4">No open orders</div>
+            ) : (
+              <div className="space-y-2">
+                {openOrders.map(order => (
+                  <div key={order.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
+                    <div className="flex items-center gap-3">
+                      <Badge variant={order.side === 'buy' ? 'default' : 'destructive'}>
+                        {order.side.toUpperCase()}
+                      </Badge>
+                      <span className="font-medium text-sm">{order.quantity} @ {order.price}</span>
+                      <Badge variant="outline">{order.order_type}</Badge>
+                      {order.status === 'partially_filled' && (
+                        <Badge variant="secondary" className="text-xs">
+                          Filled: {order.filled_quantity}/{order.quantity}
+                        </Badge>
+                      )}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => cancelMutation.mutate(order.id)}
+                      aria-label="Cancel order"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
     </div>
   );
 };
