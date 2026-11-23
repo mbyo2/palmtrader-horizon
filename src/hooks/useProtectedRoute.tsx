@@ -15,7 +15,14 @@ export const useProtectedRoute = () => {
     const checkAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        
+
+        // Demo mode: signed-out visitors use the local demo layer, so
+        // protected pages stay reachable unless Supabase was forced on.
+        const forcedSupabase = localStorage.getItem('palmtrader:backend') === 'supabase';
+        if (!session && !forcedSupabase) {
+          return;
+        }
+
         if (!session) {
           // Store the current path in localStorage before redirecting
           localStorage.setItem('redirectAfterLogin', location.pathname);

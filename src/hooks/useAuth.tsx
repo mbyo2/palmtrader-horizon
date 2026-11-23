@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
 import { UserInitService } from '@/services/UserInitService';
+import { buildDemoUser, setDemoSessionState, DEMO_USER_ID } from '@/services/demo/DemoBackend';
 
 interface AccountDetails {
   role: 'basic' | 'premium' | 'admin';
@@ -68,6 +69,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const navigate = useNavigate();
 
   const fetchAccountDetails = async (userId: string) => {
+    if (userId === DEMO_USER_ID) { setAccountDetails(null); return; }
     try {
       const { data, error } = await supabase
         .from('account_details')
@@ -84,6 +86,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   const fetchUserRoles = async (userId: string) => {
+    if (userId === DEMO_USER_ID) { setUserRoles(['user']); return; }
     try {
       // Use the security definer function to get roles safely
       const { data, error } = await supabase
@@ -115,7 +118,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
-      setUser(session?.user ?? null);
+      setDemoSessionState(!!session);
+      // No live session → demo mode: expose the synthetic demo user so the
+      // whole frontend (queries gated on `user`) works against the demo layer.
+      setUser(session?.user ?? (buildDemoUser() as unknown as User));
       if (session?.user) {
         // Defer data loading to prevent auth deadlock
         setTimeout(() => {
@@ -139,7 +145,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     // THEN get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      setUser(session?.user ?? null);
+      setDemoSessionState(!!session);
+      setUser(session?.user ?? (buildDemoUser() as unknown as User));
       if (session?.user) {
         fetchAccountDetails(session.user.id);
         fetchUserRoles(session.user.id);

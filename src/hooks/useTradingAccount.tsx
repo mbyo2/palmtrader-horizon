@@ -70,6 +70,8 @@ export const TradingAccountProvider: React.FC<{ children: React.ReactNode }> = (
 
   const ensureWalletExists = useCallback(async (balance: number) => {
     if (!user) return;
+    // Demo mode keeps its ledger in the local demo store — no Supabase wallet.
+    if (user.id === 'demo-user') return;
     try {
       const { data: wallet } = await supabase
         .from('wallets')
