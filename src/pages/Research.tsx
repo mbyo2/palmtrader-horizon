@@ -1,3 +1,4 @@
+import { Helmet } from "react-helmet-async";
 
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -22,6 +23,7 @@ const Research = () => {
 
   return (
     <div className="container py-6 space-y-6 px-4">
+      <Helmet><title>Market Research — PalmCacia</title><meta name="description" content="Stock and crypto research, analysis tools and market insights on PalmCacia." /><link rel="canonical" href={`${window.location.origin}/research`} /></Helmet>
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold">Market Research</h1>

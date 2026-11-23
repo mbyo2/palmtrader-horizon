@@ -1,3 +1,4 @@
+import { Helmet } from "react-helmet-async";
 
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +13,7 @@ import { HelpCircle, MessageSquare, Phone, Mail, BookOpen } from "lucide-react";
 const Help = () => {
   return (
     <div className="container py-6 space-y-6">
+      <Helmet><title>Help & Support — PalmCacia</title><meta name="description" content="PalmCacia help centre: guides and support for trading US stocks, crypto and Zambian markets." /><link rel="canonical" href={`${window.location.origin}/help`} /></Helmet>
       <div className="flex items-center space-x-3">
         <HelpCircle className="h-8 w-8 text-primary" />
         <h1 className="text-3xl font-bold">Help & Support</h1>

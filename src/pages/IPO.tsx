@@ -1,3 +1,4 @@
+import { Helmet } from "react-helmet-async";
 
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -105,6 +106,7 @@ const IPO = () => {
 
   return (
     <div className="container mx-auto p-6">
+      <Helmet><title>IPOs — PalmCacia</title><meta name="description" content="Initial public offerings and new listings on PalmCacia." /><link rel="canonical" href={`${window.location.origin}/ipo`} /></Helmet>
       <h1 className="text-2xl font-bold mb-4">Initial Public Offerings</h1>
       
       {ipoListings.length === 0 ? (

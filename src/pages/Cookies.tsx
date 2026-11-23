@@ -4,8 +4,8 @@ const Cookies = () => {
   return (
     <>
       <Helmet>
-        <title>Cookie Policy — Palm Cacia</title>
-        <meta name="description" content="Palm Cacia Cookie Policy: how we use cookies and how you can manage preferences." />
+        <title>Cookie Policy — PalmCacia</title>
+        <meta name="description" content="PalmCacia Cookie Policy: how we use cookies and how you can manage preferences." />
         <link rel="canonical" href={`${window.location.origin}/cookies`} />
       </Helmet>
       <main id="main" className="container py-8 space-y-8">

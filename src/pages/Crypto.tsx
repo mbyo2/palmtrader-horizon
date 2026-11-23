@@ -1,3 +1,4 @@
+import { Helmet } from "react-helmet-async";
 
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -59,6 +60,7 @@ const Crypto = () => {
   
   return (
     <CryptoErrorBoundary>
+      <Helmet><title>Crypto Trading — PalmCacia</title><meta name="description" content="Trade major cryptocurrencies on PalmCacia's exchange-style interface, with an order book, charts and portfolio tracking." /><link rel="canonical" href={`${window.location.origin}/crypto`} /></Helmet>
       <div className="container py-4 sm:py-6 px-3 sm:px-4 space-y-6">
         <h1 className="text-2xl sm:text-3xl font-bold">Cryptocurrency</h1>
         

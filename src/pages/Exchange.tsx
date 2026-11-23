@@ -1,3 +1,4 @@
+import { Helmet } from "react-helmet-async";
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { WalletOverview } from '@/components/Exchange/WalletOverview';
@@ -38,6 +39,7 @@ const Exchange = () => {
 
   return (
     <div className="container mx-auto px-4 py-6">
+      <Helmet><title>Exchange — PalmCacia</title><meta name="description" content="PalmCacia's exchange: spot crypto trading with order book, market, limit and stop orders." /><link rel="canonical" href={`${window.location.origin}/exchange`} /></Helmet>
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <div className="overflow-x-auto pb-2">
           <TabsList className="inline-flex w-auto min-w-full md:w-full">

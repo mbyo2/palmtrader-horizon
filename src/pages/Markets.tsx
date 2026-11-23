@@ -1,3 +1,4 @@
+import { Helmet } from "react-helmet-async";
 
 import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
@@ -41,6 +42,7 @@ const Markets = () => {
 
   return (
     <div className="container py-4 sm:py-6 px-3 sm:px-4 space-y-6">
+      <Helmet><title>Markets — PalmCacia</title><meta name="description" content="Live market data for US stocks, crypto and Lusaka Securities Exchange (LuSE) shares on PalmCacia." /><link rel="canonical" href={`${window.location.origin}/markets`} /></Helmet>
       <h1 className="text-xl sm:text-2xl font-semibold">Markets</h1>
       
       {/* Market Overview */}

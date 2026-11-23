@@ -1,3 +1,4 @@
+import { Helmet } from "react-helmet-async";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AfricanMarketOverview from "@/components/African/AfricanMarketOverview";
@@ -8,6 +9,7 @@ import CommodityTrading from "@/components/African/CommodityTrading";
 const AfricanMarkets = () => {
   return (
     <div className="container py-6">
+      <Helmet><title>African Markets — PalmCacia</title><meta name="description" content="Zambian (LuSE) and other African market access on PalmCacia. African markets are simulated at this stage while a LuSE partnership is in talks." /><link rel="canonical" href={`${window.location.origin}/african-markets`} /></Helmet>
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold">African Markets</h1>

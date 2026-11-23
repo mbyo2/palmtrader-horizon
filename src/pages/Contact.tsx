@@ -4,8 +4,8 @@ const Contact = () => {
   return (
     <>
       <Helmet>
-        <title>Contact Palm Cacia — Get Support</title>
-        <meta name="description" content="Contact Palm Cacia for support, feedback, or partnership inquiries." />
+        <title>Contact PalmCacia — Get Support</title>
+        <meta name="description" content="Contact PalmCacia for support, feedback, or partnership inquiries." />
         <link rel="canonical" href={`${window.location.origin}/contact`} />
       </Helmet>
       <main id="main" className="container max-w-5xl py-8 space-y-8">

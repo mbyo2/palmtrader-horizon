@@ -1,0 +1,38 @@
+# PalmCacia
+
+> PalmCacia is a stock and crypto trading platform for Zambian and global retail traders. It combines Robinhood-style stock trading with a Binance-style crypto exchange interface, plus Zambian (LuSE) and other African market access, portfolio tools, watchlists and research.
+
+## What PalmCacia offers
+
+- US stocks: browse, research and trade US-listed shares.
+- Crypto: trade major cryptocurrencies through an exchange-style interface.
+- Zambian market access: Lusaka Securities Exchange (LuSE) shares and other African markets.
+- Tools: portfolio tracking, watchlists, price alerts, market research and news.
+
+## How execution works (current stage — stated plainly)
+
+- US stocks and Alpaca-listed crypto execute via the Alpaca sandbox (paper) broker. This is paper trading, not live-money execution, at this stage.
+- Zambian (LuSE) and other African markets, and P2P crypto, are simulated at this stage.
+- A LuSE partnership is in talks; no partnership has been signed yet. Simulated markets are not live markets.
+
+## Who it is for
+
+- Zambian retail traders who want US stocks, crypto and local-market access in one platform.
+- Global retail traders interested in African market exposure alongside US stocks and crypto.
+
+## Key facts
+
+- Brand name: PalmCacia (one word). The product is also known as PalmTrader Horizon.
+- Founder: Mabvuto Banda.
+- Website: https://palmtrader-horizon.lovable.app/
+
+## Key pages
+
+- Home: https://palmtrader-horizon.lovable.app/
+- Markets: https://palmtrader-horizon.lovable.app/markets
+- Crypto: https://palmtrader-horizon.lovable.app/crypto
+- Exchange: https://palmtrader-horizon.lovable.app/exchange
+- African markets: https://palmtrader-horizon.lovable.app/african-markets
+- Research: https://palmtrader-horizon.lovable.app/research
+- About: https://palmtrader-horizon.lovable.app/about
+- Contact: https://palmtrader-horizon.lovable.app/contact

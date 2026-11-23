@@ -1,3 +1,4 @@
+import { Helmet } from "react-helmet-async";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
@@ -145,6 +146,7 @@ export default function Index() {
 
   return (
     <div className="min-h-screen bg-background">
+      <Helmet><title>PalmCacia — Trade US Stocks, Crypto & Zambian Markets</title><meta name="description" content="PalmCacia is a stock and crypto trading platform for Zambian and global retail traders: US stocks, crypto, and Zambian (LuSE) and African market access." /><link rel="canonical" href={`${window.location.origin}/`} /></Helmet>
       <TickerStrip />
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
         <div className="flex flex-wrap items-center justify-between gap-3 pb-5">
